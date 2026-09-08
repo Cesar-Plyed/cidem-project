@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: integrity-core-fr:latest
+    container_name: integrity-core-fr
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    networks:
+      - integrity-net
+
+networks:
+  integrity-net:
+    driver: bridge

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+www/
+.angular/
+.git/
+.gitignore
+.vscode/
+*.md
+.env
+.env.*

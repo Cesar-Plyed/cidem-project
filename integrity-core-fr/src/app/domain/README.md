@@ -1,0 +1,1 @@
+Son las reglas de negocio puras

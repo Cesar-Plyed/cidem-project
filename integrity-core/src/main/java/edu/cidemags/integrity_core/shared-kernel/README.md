@@ -1,0 +1,1 @@
+excepciones/utilidades comunes a todos

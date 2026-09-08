@@ -1,0 +1,1 @@
+Aquí vive la lógica de qué pasa cuando el usuario hace algo

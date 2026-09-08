@@ -1,0 +1,1 @@
+HttpClient, SQLite, WebSockets, Electron APIs. Implementa las interfaces de domain/ports
