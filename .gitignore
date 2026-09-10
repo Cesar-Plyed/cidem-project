@@ -1,0 +1,71 @@
+# ==========================================
+# 1. Archivos globales del sistema y editores
+# ==========================================
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# IDEs y Editores
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*.tmp
+
+# ==========================================
+# 2. Archivos de entorno y secretos
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+ssh_keys/authorized_keys
+
+# ==========================================
+# 3. Backend (Spring Boot / Maven)
+# ==========================================
+# Archivos de compilación de Maven
+integrity-core/target/
+integrity-core/build/
+integrity-core/.mvn/timing.properties
+integrity-core/.mvn/wrapper/maven-wrapper.jar
+
+# Configuración de IDEs específica de Java
+integrity-core/.classpath
+integrity-core/.project
+integrity-core/.settings/
+integrity-core/*.iml
+integrity-core/*.ipr
+integrity-core/*.iws
+
+# Archivo de entorno local del backend
+integrity-core/.env
+
+# ==========================================
+# 4. Frontend (Ionic / Angular / Node)
+# ==========================================
+# Dependencias de Node
+integrity-core-fr/node_modules/
+
+# Caché y builds de Angular / Ionic
+integrity-core-fr/.angular/
+integrity-core-fr/dist/
+integrity-core-fr/www/
+integrity-core-fr/.ionic/
+
+# Registros de npm/yarn
+integrity-core-fr/npm-debug.log*
+integrity-core-fr/yarn-debug.log*
+integrity-core-fr/yarn-error.log*
+
+# Archivo de entorno local del frontend
+integrity-core-fr/.env
+
+# ==========================================
+# 5. Infraestructura y Podman
+# ==========================================
+infra/ssh_keys/authorized_keys
