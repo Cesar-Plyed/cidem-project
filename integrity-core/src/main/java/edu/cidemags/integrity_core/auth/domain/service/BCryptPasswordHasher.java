@@ -1,8 +1,10 @@
 package edu.cidemags.integrity_core.auth.domain.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
-public class BCryptPasswordHasher implements PasswordHasher{
+@Component
+public class BCryptPasswordHasher implements PasswordHasher {
     private final PasswordEncoder passwordEncoder;
 
     public BCryptPasswordHasher(PasswordEncoder passwordEncoder) {

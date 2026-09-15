@@ -258,6 +258,31 @@ BCrypt vía `PasswordEncoder` de Spring Security, detrás del puerto `PasswordHa
     <version>0.12.6</version>
     <scope>runtime</scope>
 </dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-test</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <scope>test</scope>
+</dependency>
 ```
 
 *(Opcional pero recomendado: `flyway-core` + `org.postgresql:postgresql` para versionar las migraciones SQL provistas en `src/main/resources/db/migration`.)*
@@ -294,6 +319,8 @@ security:
 Orden de migraciones:
 1. Tu script SQL original (`countries`, `users`, `phone_numbers`, `refresh_tokens`) → `V1__init_schema.sql`.
 2. `V2__add_role_to_users.sql` (incluido) → agrega `users.role`.
+
+**Verifica siempre** que ambos archivos existan en `src/main/resources/db/migration/` de tu proyecto real antes de correr contra una base nueva (incluyendo el contenedor de Testcontainers en los tests de integración) — si falta la `V2`, los `INSERT` sobre `users` fallan con `column "role" does not exist`, un error que ya se presentó una vez durante el desarrollo.
 
 ---
 
@@ -332,7 +359,39 @@ curl -X POST http://localhost:8080/auth/logout \
 
 ---
 
-## 9. Pendientes / mejoras futuras (no implementadas)
+## 9. Tests
+
+El módulo tiene cobertura completa: unitaria, de slice web, y de integración end-to-end con base de datos real.
+
+| Capa | Archivos | Qué cubre |
+|---|---|---|
+| Dominio | `UserTest`, `CountryTest`, `PhoneTest`, `RefreshTokenTest` | Invariantes de constructor, reglas de negocio (teléfono primario, expiración/revocación) |
+| Casos de uso | `RegisterUserUseCaseTest`, `LoginUseCaseTest`, `RefreshAccessTokenUseCaseTest`, `LogoutUseCaseTest` | Flujos completos con mocks de los puertos (Mockito) |
+| Seguridad | `ConfigRegistrationCodeValidatorTest`, `JwtTokenProviderTest`, `JwtAuthenticationFilterTest`, `BCryptPasswordHasherTest` | Códigos por rol, generación/validación de JWT (corrupto/expirado/firmado con otra clave), filtro completo (con `SecurityContextHolder` limpio entre tests), hash/verify de contraseñas |
+| Persistencia | `CountryMapperTest`, `PhoneMapperTest`, `UserMapperTest`, `RefreshTokenMapperTest`, `UserRepositoryImplTest`, `CountryRepositoryImplTest`, `RefreshTokenRepositoryImplTest` | Mapeo dominio↔JPA y que los adapters delegan correctamente a los repositorios Spring Data (con mocks) |
+| Web | `AuthControllerTest` (`@WebMvcTest`) | Cada endpoint de `AuthController` (201/400/401/403/404/409/500) y que `GlobalExceptionHandler` mapea cada excepción de dominio al HTTP correcto, incluida la red de seguridad que evita filtrar detalles internos en errores 500 |
+| Autorización | `AdminRegisterAuthorizationTest` (`@WebMvcTest` + `@Import(SecurityConfig)` + `@WithMockUser`) | `@PreAuthorize("hasRole('ADMINISTRATIVO')")` real en `/auth/admin/register`: acepta al rol correcto, rechaza con 403 a los demás roles, rechaza sin autenticar |
+| Integración | `AuthFlowIntegrationTest` (`@SpringBootTest` + Testcontainers) | Flujo completo HTTP → Controller → Caso de uso → JPA → **PostgreSQL real** (contenedor Docker/Podman), con migraciones Flyway aplicándose de verdad: registro, login, rotación de refresh token (incluye que el token viejo deja de servir), logout, y conflicto de email duplicado contra la constraint `UNIQUE` real |
+
+Correr todos los tests:
+
+```bash
+mvn test
+```
+
+Correr solo los rápidos (sin Testcontainers/Docker):
+
+```bash
+mvn test -Dtest='!AuthFlowIntegrationTest'
+```
+
+`AuthFlowIntegrationTest` es la única clase que requiere Docker (o Podman configurado como socket compatible) disponible en la máquina — todo lo demás corre sin dependencias externas.
+
+Ver `GUIA_TESTS.md` para una explicación conceptual de cómo están armados estos tests (útil si el equipo no tiene experiencia previa con JUnit 5 / Mockito / Testcontainers).
+
+---
+
+## 10. Pendientes / mejoras futuras (no implementadas)
 
 Estas quedaron identificadas durante el desarrollo pero fuera del alcance actual:
 
@@ -340,13 +399,12 @@ Estas quedaron identificadas durante el desarrollo pero fuera del alcance actual
 - **`Phone.equals()`/`hashCode()`**: no implementados; puede causar comportamiento inesperado al comparar/deduplicar teléfonos en listas.
 - **Validación de teléfono duplicado**: `User.addPhone` no valida que el número ya exista en la lista.
 - **Endpoint de "logout en todos los dispositivos"**: el caso de uso `LogoutUseCase.executeForAllDevices(userId)` ya existe pero no está expuesto por ningún controller todavía.
-- **Tests**: no se generaron pruebas unitarias/de integración en esta iteración.
 - **Rate limiting** en `/auth/login` y `/auth/register` para mitigar fuerza bruta — no implementado.
 - **CORS**: no configurado; agregar según el/los dominios del frontend cuando se conozcan.
 
 ---
 
-## 10. Inventario de archivos del módulo
+## 11. Inventario de archivos del módulo
 
 ```
 domain/model/          AuthTokens, Country, Phone, RefreshToken, Role, User
@@ -374,6 +432,18 @@ infrastructure/web/dto/          RegisterRequest, LoginRequest, RefreshTokenRequ
                                   AuthResponse, UserResponse, ErrorResponse
 infrastructure/web/exception/    GlobalExceptionHandler
 
-resources/db/migration/    V2__add_role_to_users.sql
+resources/db/migration/    V1__init_schema.sql, V2__add_role_to_users.sql
 resources/                 application-security-snippet.yml
+
+test/domain/model/                     UserTest, CountryTest, PhoneTest, RefreshTokenTest
+test/application/usecase/              RegisterUserUseCaseTest, LoginUseCaseTest,
+                                        RefreshAccessTokenUseCaseTest, LogoutUseCaseTest
+test/infrastructure/security/           ConfigRegistrationCodeValidatorTest, JwtTokenProviderTest,
+                                        JwtAuthenticationFilterTest, BCryptPasswordHasherTest
+test/infrastructure/persistence/mapper/    CountryMapperTest, PhoneMapperTest,
+                                        UserMapperTest, RefreshTokenMapperTest
+test/infrastructure/persistence/adapter/   UserRepositoryImplTest, CountryRepositoryImplTest,
+                                        RefreshTokenRepositoryImplTest
+test/infrastructure/web/controller/     AuthControllerTest, AdminRegisterAuthorizationTest
+test/integration/                       AuthFlowIntegrationTest (Testcontainers)
 ```

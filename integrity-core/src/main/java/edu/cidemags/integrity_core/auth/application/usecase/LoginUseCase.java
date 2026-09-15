@@ -10,11 +10,13 @@ import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import edu.cidemags.integrity_core.auth.domain.service.PasswordHasher;
 import edu.cidemags.integrity_core.auth.domain.service.TokenProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@Service
 public class LoginUseCase {
 
     private final UserRepository userRepository;

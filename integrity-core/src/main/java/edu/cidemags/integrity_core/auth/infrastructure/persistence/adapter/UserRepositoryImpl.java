@@ -11,13 +11,17 @@ import edu.cidemags.integrity_core.auth.infrastructure.persistence.port.UserJpaR
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class UserRepositoryImpl implements UserRepository {
 
     private final UserJpaRepository userJpaRepository;
     private final CountryJpaRepository countryJpaRepository;
     private final UserMapper userMapper;
 
-    public UserRepositoryImpl(UserJpaRepository userJpaRepository, CountryJpaRepository countryJpaRepository, UserMapper userMapper) {
+    public UserRepositoryImpl(UserJpaRepository userJpaRepository, CountryJpaRepository countryJpaRepository,
+            UserMapper userMapper) {
         this.userJpaRepository = userJpaRepository;
         this.countryJpaRepository = countryJpaRepository;
         this.userMapper = userMapper;
