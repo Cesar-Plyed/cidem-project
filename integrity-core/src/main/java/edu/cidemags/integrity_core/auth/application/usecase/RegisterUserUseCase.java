@@ -25,31 +25,25 @@ public class RegisterUserUseCase {
     private final RegistrationCodeValidator registrationCodeValidator;
 
     public RegisterUserUseCase(UserRepository userRepository, CountryRepository countryRepository,
-                               PasswordHasher passwordHasher, RegistrationCodeValidator registrationCodeValidator) {
+            PasswordHasher passwordHasher, RegistrationCodeValidator registrationCodeValidator) {
         this.userRepository = userRepository;
         this.countryRepository = countryRepository;
         this.passwordHasher = passwordHasher;
         this.registrationCodeValidator = registrationCodeValidator;
     }
 
-    /**
-     * Registro publico (self-service), usado por el endpoint POST /auth/register.
-     * ALUMNO no requiere codigo. ADMINISTRATIVO y PROFESOR requieren un codigo de
-     * registro valido (ver RegistrationCodeValidator), para evitar escalamiento de privilegios.
-     */
     @Transactional
     public User execute(RegisterUserCommand command) {
         if (!registrationCodeValidator.isValid(command.role(), command.registrationCode())) {
             throw new InvalidRoleAssignmentException(
                     "Codigo de registro invalido o faltante para el rol " + command.role());
         }
-        return doRegister(command);
+        User user = doRegister(command);
+        registrationCodeValidator.consume(command.registrationCode());
+        return user;
     }
 
-    /**
-     * Registro privilegiado: permite asignar cualquier rol sin necesidad de codigo.
-     * Debe exponerse solo en un endpoint protegido por @PreAuthorize("hasRole('ADMINISTRATIVO')").
-     */
+
     @Transactional
     public User executeAsAdmin(RegisterUserCommand command) {
         return doRegister(command);
@@ -74,8 +68,7 @@ public class RegisterUserUseCase {
                 passwordHash,
                 country,
                 phones,
-                command.role()
-        );
+                command.role());
 
         if (command.phoneNumber() != null && !command.phoneNumber().isBlank()) {
             user.addPhone(command.phoneNumber(), true);

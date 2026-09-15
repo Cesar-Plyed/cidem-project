@@ -1,18 +1,25 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.controller;
 
+import edu.cidemags.integrity_core.auth.application.dto.GenerateRegistrationCodeCommand;
 import edu.cidemags.integrity_core.auth.application.dto.LoginCommand;
 import edu.cidemags.integrity_core.auth.application.dto.RegisterUserCommand;
+import edu.cidemags.integrity_core.auth.application.usecase.GenerateRegistrationCodeUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LoginUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LogoutUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.RefreshAccessTokenUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.RegisterUserUseCase;
 import edu.cidemags.integrity_core.auth.domain.model.AuthTokens;
+import edu.cidemags.integrity_core.auth.domain.model.RegistrationCode;
 import edu.cidemags.integrity_core.auth.domain.model.User;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.*;
 import jakarta.validation.Valid;
+
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,15 +30,17 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final RefreshAccessTokenUseCase refreshAccessTokenUseCase;
     private final LogoutUseCase logoutUseCase;
+    private final GenerateRegistrationCodeUseCase generateRegistrationCodeUseCase;
 
     public AuthController(RegisterUserUseCase registerUserUseCase,
-                          LoginUseCase loginUseCase,
-                          RefreshAccessTokenUseCase refreshAccessTokenUseCase,
-                          LogoutUseCase logoutUseCase) {
+            LoginUseCase loginUseCase,
+            RefreshAccessTokenUseCase refreshAccessTokenUseCase,
+            LogoutUseCase logoutUseCase, GenerateRegistrationCodeUseCase generateRegistrationCodeUseCase) {
         this.registerUserUseCase = registerUserUseCase;
         this.loginUseCase = loginUseCase;
         this.refreshAccessTokenUseCase = refreshAccessTokenUseCase;
         this.logoutUseCase = logoutUseCase;
+        this.generateRegistrationCodeUseCase = generateRegistrationCodeUseCase;
     }
 
     @PostMapping("/register")
@@ -44,8 +53,7 @@ public class AuthController {
                 request.countryId(),
                 request.phoneNumber(),
                 request.role(),
-                request.registrationCode()
-        );
+                request.registrationCode());
         User user = registerUserUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }
@@ -68,6 +76,23 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAllDevices(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        logoutUseCase.executeForAllDevices(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/admin/registration-codes")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public ResponseEntity<GenerateRegistrationCodeResponse> generateRegistrationCode(
+            @Valid @RequestBody GenerateRegistrationCodeRequest request) {
+        RegistrationCode registrationCode = generateRegistrationCodeUseCase.execute(
+                new GenerateRegistrationCodeCommand(request.role(), request.expiresInDays()));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(GenerateRegistrationCodeResponse.from(registrationCode));
+    }
+
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public ResponseEntity<UserResponse> registerAsAdmin(@Valid @RequestBody RegisterRequest request) {
@@ -79,8 +104,7 @@ public class AuthController {
                 request.countryId(),
                 request.phoneNumber(),
                 request.role(),
-                request.registrationCode()
-        );
+                request.registrationCode());
         User user = registerUserUseCase.executeAsAdmin(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }

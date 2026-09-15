@@ -8,4 +8,5 @@ public interface RegistrationCodeValidator {
 
     boolean requiresCode(Role role);
 
+    void consume(String providedCode);
 }

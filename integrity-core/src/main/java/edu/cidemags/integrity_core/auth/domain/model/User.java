@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import edu.cidemags.integrity_core.auth.domain.exception.DuplicatePhoneNumberException;
+
 public class User {
     private UUID id;
     private String firstNames;
@@ -46,6 +48,11 @@ public class User {
     }
 
     public void addPhone(String phoneNumber, boolean isPrimary) {
+        boolean alreadyExists = this.phones.stream()
+                .anyMatch(existing -> existing.getNumber().equals(phoneNumber));
+        if (alreadyExists) {
+            throw new DuplicatePhoneNumberException(phoneNumber);
+        }
         if (isPrimary) {
             this.phones.forEach(Phone::unmarkPrimary);
         }

@@ -1,6 +1,7 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.cidemags.integrity_core.auth.application.usecase.GenerateRegistrationCodeUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LoginUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LogoutUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.RefreshAccessTokenUseCase;
@@ -45,6 +46,8 @@ class AdminRegisterAuthorizationTest {
     private RefreshAccessTokenUseCase refreshAccessTokenUseCase;
     @MockitoBean
     private LogoutUseCase logoutUseCase;
+    @MockitoBean
+    private GenerateRegistrationCodeUseCase generateRegistrationCodeUseCase;
     @MockitoBean
     private TokenProvider tokenProvider;
 

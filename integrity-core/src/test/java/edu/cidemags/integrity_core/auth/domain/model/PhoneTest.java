@@ -48,4 +48,21 @@ class PhoneTest {
         phone.unmarkPrimary();
         assertThat(phone.isPrimary()).isFalse();
     }
+
+    @Test
+    void two_phones_with_the_same_number_should_be_equal_regardless_of_id_or_primary_flag() {
+        Phone phone1 = new Phone(UUID.randomUUID(), "1212121212", true);
+        Phone phone2 = new Phone(UUID.randomUUID(), "1212121212", false);
+
+        assertThat(phone1).isEqualTo(phone2);
+        assertThat(phone1.hashCode()).isEqualTo(phone2.hashCode());
+    }
+
+    @Test
+    void two_phones_with_different_numbers_should_not_be_equal() {
+        Phone phone1 = new Phone("1212121212", false);
+        Phone phone2 = new Phone("1212121213", false);
+
+        assertThat(phone1).isNotEqualTo(phone2);
+    }
 }

@@ -1,6 +1,7 @@
 package edu.cidemags.integrity_core.auth.domain.model;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 public class RefreshToken {
@@ -25,20 +26,8 @@ public class RefreshToken {
         this.revoked = revoked;
     }
 
-    private void validate(UUID userId, String token, OffsetDateTime expiresAt) {
-        if (userId == null) {
-            throw new IllegalArgumentException("El refresh token debe pertenecer a un usuario");
-        }
-        if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("El token no puede estar vacio");
-        }
-        if (expiresAt == null) {
-            throw new IllegalArgumentException("El refresh token debe tener fecha de expiracion");
-        }
-    }
-
     public boolean isExpired(){
-        return OffsetDateTime.now().isAfter(expiresAt);
+        return OffsetDateTime.now(ZoneId.systemDefault()).isAfter(expiresAt);
     }
 
     public boolean isValid(){

@@ -1,9 +1,12 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -11,8 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.core.Authentication;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -21,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.cidemags.integrity_core.auth.application.usecase.GenerateRegistrationCodeUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LoginUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.LogoutUseCase;
 import edu.cidemags.integrity_core.auth.application.usecase.RefreshAccessTokenUseCase;
@@ -33,9 +39,11 @@ import edu.cidemags.integrity_core.auth.domain.exception.InvalidRoleAssignmentEx
 import edu.cidemags.integrity_core.auth.domain.exception.UserNotFoundException;
 import edu.cidemags.integrity_core.auth.domain.model.AuthTokens;
 import edu.cidemags.integrity_core.auth.domain.model.Country;
+import edu.cidemags.integrity_core.auth.domain.model.RegistrationCode;
 import edu.cidemags.integrity_core.auth.domain.model.Role;
 import edu.cidemags.integrity_core.auth.domain.model.User;
 import edu.cidemags.integrity_core.auth.domain.service.TokenProvider;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.GenerateRegistrationCodeRequest;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.LoginRequest;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.RefreshTokenRequest;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.RegisterRequest;
@@ -59,6 +67,8 @@ class AuthControllerTest {
         private LogoutUseCase logoutUseCase;
         @MockitoBean
         private TokenProvider tokenProvider;
+        @MockitoBean
+        private GenerateRegistrationCodeUseCase generateRegistrationCodeUseCase;
 
         private User sampleUser() {
                 Country country = new Country(UUID.randomUUID(), "Mexico", "MEX");
@@ -280,6 +290,34 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isNoContent())
                                 .andExpect(content().string(""));
+        }
+
+        @Test
+        void logoutAll_should_return_204_and_revoke_all_tokens_for_the_authenticated_user() throws Exception {
+                UUID userId = UUID.randomUUID();
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+
+                mockMvc.perform(post("/auth/logout-all").principal(authentication))
+                                .andExpect(status().isNoContent());
+
+                verify(logoutUseCase).executeForAllDevices(userId);
+        }
+
+        // Regsitration Codes
+        @Test
+        void generateRegistrationCode_should_return_201_with_the_generated_code() throws Exception {
+                GenerateRegistrationCodeRequest request = new GenerateRegistrationCodeRequest(Role.PROFESOR, 7);
+                RegistrationCode generated = new RegistrationCode(
+                                "test-generated-code", Role.PROFESOR, OffsetDateTime.now().plusDays(7));
+
+                when(generateRegistrationCodeUseCase.execute(any())).thenReturn(generated);
+
+                mockMvc.perform(post("/auth/admin/registration-codes")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.code").value("test-generated-code"))
+                                .andExpect(jsonPath("$.role").value("PROFESOR"));
         }
 
         private static org.hamcrest.Matcher<String> containsStringIgnoringCase(String substring) {

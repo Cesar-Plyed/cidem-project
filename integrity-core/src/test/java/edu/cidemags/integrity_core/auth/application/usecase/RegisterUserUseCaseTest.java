@@ -75,11 +75,43 @@ class RegisterUserUseCaseTest {
     }
 
     @Test
+    void should_consume_the_registration_code_only_after_a_successful_registration() {
+        RegisterUserCommand command = new RegisterUserCommand(
+                "Juan", "Perez", "juan.perez@example.com", "password123",
+                countryId, null, Role.PROFESOR, "valid-code");
+
+        when(registrationCodeValidator.isValid(Role.PROFESOR, "valid-code")).thenReturn(true);
+        when(userRepository.existsByEmail("juan.perez@example.com")).thenReturn(false);
+        when(countryRepository.findById(countryId)).thenReturn(Optional.of(country));
+        when(passwordHasher.hash("password123")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.execute(command);
+
+        verify(registrationCodeValidator, times(1)).consume("valid-code");
+    }
+
+    @Test
+    void should_never_consume_the_registration_code_when_registration_fails_afterwards() {
+        RegisterUserCommand command = new RegisterUserCommand(
+                "Juan", "Perez", "juan.perez@example.com", "password123",
+                countryId, null, Role.PROFESOR, "valid-code");
+
+        when(registrationCodeValidator.isValid(Role.PROFESOR, "valid-code")).thenReturn(true);
+        when(userRepository.existsByEmail("juan.perez@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(command))
+                .isInstanceOf(EmailAlreadyRegisteredException.class);
+
+        verify(registrationCodeValidator, never()).consume(any());
+    }
+
+    @Test
     void this_should_reject_registration_if_the_email_already_exists(){
-        RegisterUserCommand command = new RegisterUserCommand("Ana", "Ruiz", "ana@example.com", "Arroz123", countryId, null, Role.ALUMNO, null);
+        RegisterUserCommand command = new RegisterUserCommand("Ana", "Ruiz", "ana.ruiz@example.com", "Arroz123", countryId, null, Role.ALUMNO, null);
 
         when(registrationCodeValidator.isValid(Role.ALUMNO, null)).thenReturn(true);
-        when(userRepository.existsByEmail("ana@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail("ana.ruiz@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command)).isInstanceOf(EmailAlreadyRegisteredException.class);
 
@@ -88,10 +120,10 @@ class RegisterUserUseCaseTest {
 
     @Test 
     void this_should_reject_registration_if_the_country_does_not_exist(){
-        RegisterUserCommand command = new RegisterUserCommand("Ana", "Ruiz", "ana@example.com", "Arroz123", countryId, null, Role.ALUMNO, null);
+        RegisterUserCommand command = new RegisterUserCommand("Ana", "Ruiz", "ana.ruiz@example.com", "Arroz123", countryId, null, Role.ALUMNO, null);
 
         when(registrationCodeValidator.isValid(Role.ALUMNO, null)).thenReturn(true);
-        when(userRepository.existsByEmail("ana@example.com")).thenReturn(false);
+        when(userRepository.existsByEmail("ana.ruiz@example.com")).thenReturn(false);
         when(countryRepository.findById(countryId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(command)).isInstanceOf(CountryNotFoundException.class);
@@ -107,6 +139,7 @@ class RegisterUserUseCaseTest {
 
         verify(userRepository, never()).existsByEmail(any());
         verify(countryRepository, never()).findById(any());
+        verify(registrationCodeValidator, never()).consume(any());
     }
 
     @Test

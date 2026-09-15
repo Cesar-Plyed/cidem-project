@@ -1,5 +1,6 @@
 package edu.cidemags.integrity_core.auth.domain.model;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class Phone {
@@ -24,6 +25,20 @@ public class Phone {
         if(number == null || number.isBlank()){
             throw new IllegalArgumentException("El numero de telefono no puede estar vacio");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Phone phone))
+            return false;
+        return Objects.equals(number, phone.number);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(number);
     }
 
     public void markAsPrimary(){
