@@ -4,6 +4,8 @@ import edu.cidemags.integrity_core.evaluator.application.dto.ReviewOpenEndedAnsw
 import edu.cidemags.integrity_core.evaluator.application.usecase.ReviewOpenEndedAnswerUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,7 +19,11 @@ public class EvaluationReviewController {
     }
 
     @PostMapping("/reviews/open-ended")
-    public ResponseEntity<EvaluationReview> reviewOpenEndedAnswer(@RequestBody ReviewOpenEndedAnswerCommand command) {
-        return ResponseEntity.ok(reviewOpenEndedAnswerUseCase.execute(command));
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
+    public ResponseEntity<EvaluationReview> reviewOpenEndedAnswer(@RequestBody ReviewOpenEndedAnswerCommand command,
+            Authentication authentication) {
+        return ResponseEntity.ok(reviewOpenEndedAnswerUseCase.execute(new ReviewOpenEndedAnswerCommand(
+                command.answerId(), (java.util.UUID) authentication.getPrincipal(), command.score(),
+                command.feedback())));
     }
 }

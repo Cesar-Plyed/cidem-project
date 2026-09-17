@@ -34,6 +34,11 @@ public class EvaluationReviewRepositoryImpl implements EvaluationReviewRepositor
         return repository.findById(id).map(this::toDomain);
     }
 
+    @Override
+    public Optional<EvaluationReview> findByAnswerId(UUID answerId) {
+        return repository.findByAnswerId(answerId).map(this::toDomain);
+    }
+
     private EvaluationReview toDomain(EvaluationReviewEntity entity) {
         return new EvaluationReview(entity.getId(), entity.getAnswerId(), entity.getReviewerId(),
                 entity.getScore(), entity.getFeedback());

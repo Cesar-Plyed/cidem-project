@@ -4,6 +4,7 @@ import edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,7 +40,7 @@ public class ExamEntity {
     }
 
     public ExamEntity(UUID id, String title, String description, UUID createdByUserId,
-                     OffsetDateTime createdAt, ExamStatus status) {
+            OffsetDateTime createdAt, ExamStatus status) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -51,7 +52,7 @@ public class ExamEntity {
     @PrePersist
     void prePersist() {
         if (createdAt == null) {
-            createdAt = OffsetDateTime.now();
+            createdAt = OffsetDateTime.now(ZoneId.systemDefault());
         }
     }
 
@@ -101,5 +102,6 @@ public class ExamEntity {
 
     public void setQuestions(List<QuestionEntity> questions) {
         this.questions = questions;
+        this.questions.forEach(question -> question.setExam(this));
     }
 }

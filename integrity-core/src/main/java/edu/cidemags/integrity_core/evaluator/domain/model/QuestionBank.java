@@ -7,19 +7,25 @@ import java.util.UUID;
 
 public class QuestionBank {
     private final UUID id;
-    private final String name;
-    private final String description;
+    private final UUID createdByUserId;
+    private String name;
+    private String description;
     private final List<Question> questions;
 
     public QuestionBank(String name, String description) {
-        this(UUID.randomUUID(), name, description, new ArrayList<>());
+        this(UUID.randomUUID(), name, description, null, new ArrayList<>());
     }
 
     public QuestionBank(UUID id, String name, String description, List<Question> questions) {
+        this(id, name, description, null, questions);
+    }
+
+    public QuestionBank(UUID id, String name, String description, UUID createdByUserId, List<Question> questions) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("El nombre del banco no puede estar vacio");
         }
         this.id = id;
+        this.createdByUserId = createdByUserId;
         this.name = name;
         this.description = description;
         this.questions = questions == null ? new ArrayList<>() : new ArrayList<>(questions);
@@ -27,6 +33,10 @@ public class QuestionBank {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getCreatedByUserId() {
+        return createdByUserId;
     }
 
     public String getName() {
@@ -46,5 +56,13 @@ public class QuestionBank {
             throw new IllegalArgumentException("La pregunta no puede ser nula");
         }
         this.questions.add(question);
+    }
+
+    public void updateDetails(String name, String description) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("El nombre del banco no puede estar vacio");
+        }
+        this.name = name;
+        this.description = description;
     }
 }

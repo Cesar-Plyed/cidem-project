@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,7 +28,8 @@ class GenerateExamAccessCodeUseCaseTest {
 
         UUID examId = UUID.randomUUID();
         Exam exam = new Exam(examId, "Historia", "Examen", UUID.randomUUID(), java.time.OffsetDateTime.now(),
-                java.util.Collections.emptyList(), edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus.DRAFT);
+                java.util.Collections.emptyList(),
+                edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus.PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(codeRepository.save(any(ExamAccessCode.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -37,5 +39,14 @@ class GenerateExamAccessCodeUseCaseTest {
         assertEquals(examId, code.getExamId());
         assertEquals("ABCD1234", code.getCode());
         verify(codeRepository).save(any(ExamAccessCode.class));
+    }
+
+    @Test
+    void shouldRejectNonPositiveExpiration() {
+        GenerateExamAccessCodeUseCase useCase = new GenerateExamAccessCodeUseCase(
+                mock(ExamRepository.class), mock(ExamAccessCodeRepository.class));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> useCase.execute(new GenerateExamAccessCodeCommand(UUID.randomUUID(), null, 0)));
     }
 }

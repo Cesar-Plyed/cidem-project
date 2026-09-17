@@ -4,6 +4,7 @@ import edu.cidemags.integrity_core.evaluator.application.dto.ReviewOpenEndedAnsw
 import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
 import edu.cidemags.integrity_core.evaluator.domain.port.EvaluationReviewRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -16,6 +17,7 @@ public class ReviewOpenEndedAnswerUseCase {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "exam-attempt-results", allEntries = true)
     public EvaluationReview execute(ReviewOpenEndedAnswerCommand command) {
         if (command == null) {
             throw new IllegalArgumentException("El comando no puede ser nulo");
