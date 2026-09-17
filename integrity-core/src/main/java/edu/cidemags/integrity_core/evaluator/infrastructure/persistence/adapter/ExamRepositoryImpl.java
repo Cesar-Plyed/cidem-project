@@ -7,6 +7,7 @@ import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.mapper.E
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.port.ExamJpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,5 +32,15 @@ public class ExamRepositoryImpl implements ExamRepository {
     @Override
     public Optional<Exam> findById(UUID id) {
         return examJpaRepository.findById(id).map(examMapper::toDomain);
+    }
+
+    @Override
+    public List<Exam> findAll() {
+        return examJpaRepository.findAll().stream().map(examMapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        examJpaRepository.deleteById(id);
     }
 }

@@ -4,8 +4,6 @@ import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity.ExamEntity;
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
-
 @Component
 public class ExamMapper {
 
@@ -26,7 +24,7 @@ public class ExamMapper {
                 entity.getDescription(),
                 entity.getCreatedByUserId(),
                 entity.getCreatedAt(),
-                entity.getQuestions().stream().map(questionMapper::toDomain).collect(Collectors.toList()),
+                entity.getQuestions().stream().map(questionMapper::toDomain).toList(),
                 entity.getStatus());
     }
 
@@ -43,7 +41,8 @@ public class ExamMapper {
                 domain.getCreatedAt(),
                 domain.getStatus());
 
-        entity.setQuestions(domain.getQuestions().stream().map(questionMapper::toEntity).collect(Collectors.toList()));
+        entity.setQuestions(domain.getQuestions().stream().map(questionMapper::toEntity).toList());
+        entity.getQuestions().forEach(question -> question.setExam(entity));
         return entity;
     }
 }
