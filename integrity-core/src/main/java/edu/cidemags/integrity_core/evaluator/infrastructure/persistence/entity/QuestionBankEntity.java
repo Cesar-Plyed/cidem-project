@@ -14,6 +14,9 @@ public class QuestionBankEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "created_by_user_id")
+    private UUID createdByUserId;
+
     @Column(nullable = false, length = 200)
     private String name;
 
@@ -28,13 +31,22 @@ public class QuestionBankEntity {
     }
 
     public QuestionBankEntity(UUID id, String name, String description) {
+        this(id, name, description, null);
+    }
+
+    public QuestionBankEntity(UUID id, String name, String description, UUID createdByUserId) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.createdByUserId = createdByUserId;
     }
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getCreatedByUserId() {
+        return createdByUserId;
     }
 
     public String getName() {
