@@ -387,9 +387,24 @@ mvn test -Dtest='!AuthFlowIntegrationTest'
 
 `AuthFlowIntegrationTest` es la única clase que requiere Docker (o Podman configurado como socket compatible) disponible en la máquina — todo lo demás corre sin dependencias externas.
 
+Ver `GUIA_TESTS.md` para una explicación conceptual de cómo están armados estos tests (útil si el equipo no tiene experiencia previa con JUnit 5 / Mockito / Testcontainers).
+
 ---
 
-## 10. Inventario de archivos del módulo
+## 10. Pendientes / mejoras futuras (no implementadas)
+
+Estas quedaron identificadas durante el desarrollo pero fuera del alcance actual:
+
+- **Registration codes de un solo uso / expirables**: hoy son fijos por config; migrar a tabla en BD si se necesita mayor control.
+- **`Phone.equals()`/`hashCode()`**: no implementados; puede causar comportamiento inesperado al comparar/deduplicar teléfonos en listas.
+- **Validación de teléfono duplicado**: `User.addPhone` no valida que el número ya exista en la lista.
+- **Endpoint de "logout en todos los dispositivos"**: el caso de uso `LogoutUseCase.executeForAllDevices(userId)` ya existe pero no está expuesto por ningún controller todavía.
+- **Rate limiting** en `/auth/login` y `/auth/register` para mitigar fuerza bruta — no implementado.
+- **CORS**: no configurado; agregar según el/los dominios del frontend cuando se conozcan.
+
+---
+
+## 11. Inventario de archivos del módulo
 
 ```
 domain/model/          AuthTokens, Country, Phone, RefreshToken, Role, User
