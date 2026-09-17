@@ -9,15 +9,16 @@ import java.util.UUID;
 
 public class Exam {
     private final UUID id;
-    private final String title;
-    private final String description;
+    private String title;
+    private String description;
     private final UUID createdByUserId;
     private final OffsetDateTime createdAt;
     private final List<Question> questions;
     private ExamStatus status;
 
     public Exam(String title, String description, UUID createdByUserId) {
-        this(UUID.randomUUID(), title, description, createdByUserId, OffsetDateTime.now(ZoneId.systemDefault()), new ArrayList<>(),
+        this(UUID.randomUUID(), title, description, createdByUserId, OffsetDateTime.now(ZoneId.systemDefault()),
+                new ArrayList<>(),
                 ExamStatus.DRAFT);
     }
 
@@ -76,7 +77,31 @@ public class Exam {
         this.questions.add(question);
     }
 
+    public void removeQuestion(UUID questionId) {
+        if (status != ExamStatus.DRAFT) {
+            throw new IllegalStateException("Solo se pueden eliminar preguntas de un examen en borrador");
+        }
+        boolean removed = questions.removeIf(question -> question.getId().equals(questionId));
+        if (!removed) {
+            throw new IllegalArgumentException("La pregunta no pertenece al examen");
+        }
+    }
+
+    public void updateDetails(String title, String description) {
+        if (status != ExamStatus.DRAFT) {
+            throw new IllegalStateException("Solo se puede editar un examen en borrador");
+        }
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("El titulo del examen no puede estar vacio");
+        }
+        this.title = title;
+        this.description = description;
+    }
+
     public void publish() {
+        if (status != ExamStatus.DRAFT) {
+            throw new IllegalStateException("Solo se puede publicar un examen en borrador");
+        }
         if (questions == null || questions.isEmpty()) {
             throw new IllegalArgumentException("No se puede publicar un examen sin preguntas");
         }
@@ -84,6 +109,9 @@ public class Exam {
     }
 
     public void close() {
+        if (status != ExamStatus.PUBLISHED) {
+            throw new IllegalStateException("Solo se puede cerrar un examen publicado");
+        }
         this.status = ExamStatus.CLOSED;
     }
 }

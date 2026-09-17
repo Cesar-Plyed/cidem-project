@@ -34,12 +34,19 @@ public class JoinExamByAccessCodeUseCase {
         if (command == null) {
             throw new IllegalArgumentException("El comando no puede ser nulo");
         }
+        if (command.examId() == null || command.studentId() == null || command.code() == null
+                || command.code().isBlank()) {
+            throw new IllegalArgumentException("Examen, estudiante y codigo son obligatorios");
+        }
 
         Exam exam = examRepository.findById(command.examId())
                 .orElseThrow(() -> new ExamNotFoundException(command.examId()));
 
         if (exam.getStatus() == ExamStatus.CLOSED) {
             throw new ExamClosedException(command.examId());
+        }
+        if (exam.getStatus() != ExamStatus.PUBLISHED) {
+            throw new IllegalStateException("El examen aun no esta publicado");
         }
 
         ExamAccessCode accessCode = examAccessCodeRepository.findByExamIdAndCode(command.examId(), command.code())

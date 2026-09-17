@@ -9,4 +9,6 @@ public interface EvaluationReviewRepository {
     EvaluationReview save(EvaluationReview review);
 
     Optional<EvaluationReview> findById(UUID id);
+
+    Optional<EvaluationReview> findByAnswerId(UUID answerId);
 }

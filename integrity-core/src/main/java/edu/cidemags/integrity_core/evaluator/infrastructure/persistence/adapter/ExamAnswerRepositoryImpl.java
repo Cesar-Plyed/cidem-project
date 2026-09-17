@@ -6,6 +6,7 @@ import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity.E
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.port.ExamAnswerJpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +33,16 @@ public class ExamAnswerRepositoryImpl implements ExamAnswerRepository {
     @Override
     public Optional<ExamAnswer> findById(UUID id) {
         return repository.findById(id).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<ExamAnswer> findByAttemptIdAndQuestionId(UUID attemptId, UUID questionId) {
+        return repository.findByAttemptIdAndQuestionId(attemptId, questionId).map(this::toDomain);
+    }
+
+    @Override
+    public List<ExamAnswer> findByAttemptId(UUID attemptId) {
+        return repository.findByAttemptId(attemptId).stream().map(this::toDomain).toList();
     }
 
     private ExamAnswer toDomain(ExamAnswerEntity entity) {
