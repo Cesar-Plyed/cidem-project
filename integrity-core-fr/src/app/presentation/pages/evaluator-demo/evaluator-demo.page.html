@@ -1,0 +1,153 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Verificación: backend evaluator</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-text color="medium">
+    <p class="intro">
+      Pantalla de prueba, no de producto. Ejercita paso a paso las 5 operaciones reales que
+      expone el backend hoy. Cada tarjeta precarga el id que devuelve el paso anterior.
+    </p>
+  </ion-text>
+
+  <!-- 1. Crear examen -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>1. Crear examen (real)</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="createExamForm" (ngSubmit)="createExam()">
+        <ion-list lines="full">
+          <ion-item>
+            <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label="Descripción" labelPlacement="floating" formControlName="description"></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" type="submit" class="ion-margin-top">Crear examen</ion-button>
+      </form>
+      <ion-text color="danger" *ngIf="createExamError"><p>{{ createExamError }}</p></ion-text>
+      <pre *ngIf="createExamResult">{{ createExamResult | json }}</pre>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- 2. Generar código -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>2. Generar código de acceso</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="accessCodeForm" (ngSubmit)="generateAccessCode()">
+        <ion-list lines="full">
+          <ion-item>
+            <ion-input label="Exam ID" labelPlacement="floating" formControlName="examId"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Expira en (min)"
+              labelPlacement="floating"
+              type="number"
+              formControlName="expiresInMinutes"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label="Código (opcional)" labelPlacement="floating" formControlName="code"></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" type="submit" class="ion-margin-top">Generar código</ion-button>
+      </form>
+      <ion-text color="danger" *ngIf="accessCodeError"><p>{{ accessCodeError }}</p></ion-text>
+      <pre *ngIf="accessCodeResult">{{ accessCodeResult | json }}</pre>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- 3. Unirse -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>3. Unirse al examen (alumno)</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
+        <ion-list lines="full">
+          <ion-item>
+            <ion-input label="Exam ID" labelPlacement="floating" formControlName="examId"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label="Código" labelPlacement="floating" formControlName="code"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label="Student ID" labelPlacement="floating" formControlName="studentId"></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" type="submit" class="ion-margin-top">Unirse</ion-button>
+      </form>
+      <ion-text color="danger" *ngIf="joinError"><p>{{ joinError }}</p></ion-text>
+      <pre *ngIf="joinResult">{{ joinResult | json }}</pre>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- 4. Responder pregunta -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>4. Enviar respuesta</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-text color="medium">
+        <p class="note">
+          El backend no tiene forma de decirnos qué preguntas tiene el examen, así que aquí el
+          questionId lo escribes a mano (o lo dejas y esta llamada fallará con 404/500 — es
+          esperado hasta que exista un examen real con preguntas reales).
+        </p>
+      </ion-text>
+      <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()">
+        <ion-list lines="full">
+          <ion-item>
+            <ion-input label="Attempt ID" labelPlacement="floating" formControlName="attemptId"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label="Question ID" labelPlacement="floating" formControlName="questionId"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Option IDs (separados por coma)"
+              labelPlacement="floating"
+              formControlName="selectedOptionIds"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Respuesta abierta (opcional)"
+              labelPlacement="floating"
+              formControlName="openTextAnswer"
+            ></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" type="submit" class="ion-margin-top">Enviar respuesta</ion-button>
+      </form>
+      <ion-text color="danger" *ngIf="answerError"><p>{{ answerError }}</p></ion-text>
+      <pre *ngIf="answerResult">{{ answerResult | json }}</pre>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- 5. Entregar intento -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>5. Entregar intento</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="submitForm" (ngSubmit)="submitAttempt()">
+        <ion-list lines="full">
+          <ion-item>
+            <ion-input label="Attempt ID" labelPlacement="floating" formControlName="attemptId"></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" type="submit" class="ion-margin-top" color="success">Entregar</ion-button>
+      </form>
+      <ion-text color="danger" *ngIf="submitError"><p>{{ submitError }}</p></ion-text>
+      <pre *ngIf="submitResult">{{ submitResult | json }}</pre>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

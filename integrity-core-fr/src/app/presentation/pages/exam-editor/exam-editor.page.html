@@ -1,0 +1,108 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/exams"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ examId ? 'Editar examen' : 'Nuevo examen' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="loading" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading">
+    <ion-list lines="full">
+      <ion-item>
+        <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Descripción" labelPlacement="floating" formControlName="description"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input
+          label="Duración (minutos)"
+          labelPlacement="floating"
+          type="number"
+          formControlName="durationMinutes"
+        ></ion-input>
+      </ion-item>
+    </ion-list>
+
+    <div formArrayName="questions">
+      <ion-card *ngFor="let questionGroup of questions.controls; let i = index" [formGroupName]="i">
+        <ion-card-content>
+          <div class="question-header">
+            <h3>Pregunta {{ i + 1 }}</h3>
+            <ion-button
+              fill="clear"
+              color="danger"
+              (click)="removeQuestion(i)"
+              [disabled]="questions.length === 1"
+            >
+              <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+
+          <ion-item>
+            <ion-select
+              label="Tipo de pregunta"
+              labelPlacement="floating"
+              formControlName="type"
+              (ionChange)="onTypeChange(i)"
+            >
+              <ion-select-option [value]="QuestionType.MULTIPLE_CHOICE">Opción múltiple</ion-select-option>
+              <ion-select-option [value]="QuestionType.OPEN">Respuesta abierta</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-input label="Enunciado" labelPlacement="floating" formControlName="statement"></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-input label="Puntos" labelPlacement="floating" type="number" formControlName="points"></ion-input>
+          </ion-item>
+
+          <div *ngIf="isMultipleChoice(i)" formArrayName="options" class="options">
+            <ion-radio-group formControlName="correctOptionId">
+              <ion-item *ngFor="let optionGroup of optionsOf(i).controls; let j = index" [formGroupName]="j" lines="none">
+                <ion-radio [value]="optionGroup.value.id" slot="start"></ion-radio>
+                <ion-input formControlName="text" placeholder="Texto de la opción"></ion-input>
+                <ion-button
+                  fill="clear"
+                  color="danger"
+                  slot="end"
+                  (click)="removeOption(i, j)"
+                  [disabled]="optionsOf(i).length <= 2"
+                >
+                  <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                </ion-button>
+              </ion-item>
+            </ion-radio-group>
+            <ion-button fill="outline" size="small" (click)="addOption(i)">
+              <ion-icon name="add-outline" slot="start"></ion-icon>
+              Agregar opción
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <ion-button expand="block" fill="outline" (click)="addQuestion()">
+      <ion-icon name="add-outline" slot="start"></ion-icon>
+      Agregar pregunta
+    </ion-button>
+
+    <ion-text color="danger" *ngIf="errorMessage">
+      <p class="form-error">{{ errorMessage }}</p>
+    </ion-text>
+
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="saving">
+      <ion-spinner *ngIf="saving" name="crescent" slot="start"></ion-spinner>
+      <span *ngIf="!saving">Guardar examen</span>
+      <span *ngIf="saving">Guardando...</span>
+    </ion-button>
+  </form>
+</ion-content>

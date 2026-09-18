@@ -1,0 +1,37 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Mis exámenes</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="loading" *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item *ngFor="let exam of exams">
+      <ion-label>
+        <h2>{{ exam.title }}</h2>
+        <p>{{ exam.description }}</p>
+        <p>{{ exam.questions.length }} preguntas · {{ exam.durationMinutes }} min</p>
+      </ion-label>
+      <ion-button fill="clear" slot="end" [routerLink]="['/exams', exam.id, 'edit']">
+        <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" color="danger" slot="end" (click)="confirmDelete(exam)">
+        <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-item>
+
+    <ion-item *ngIf="exams.length === 0">
+      <ion-label class="ion-text-center">Aún no tienes exámenes. Crea el primero.</ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button routerLink="/exams/new">
+      <ion-icon name="add-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>
