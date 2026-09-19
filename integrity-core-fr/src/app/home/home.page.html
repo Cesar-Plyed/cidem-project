@@ -1,20 +1,129 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>Panel principal</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Cerrar sesión" (click)="logout()">
+        Cerrar sesión
+      </ion-button>
+    </ion-buttons>
+    <ion-title>{{ role() }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (loading()) {
+  <div class="dashboard-loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando tu panel...</p>
   </div>
+  }
+
+  <ng-container>
+    @if (!loading()) {
+    <section class="dashboard-heading">
+      <p class="eyebrow">Integridad académica</p>
+
+      @switch (role()) { @case (Role.ADMINISTRATIVO) {
+      <h1>Panel administrativo</h1>
+      } @case (Role.PROFESOR) {
+      <h1>Panel del profesor</h1>
+      } @case (Role.ALUMNO) {
+      <h1>Panel del alumno</h1>
+      } }
+    </section>
+
+    @if (role() === Role.ADMINISTRATIVO || role() === Role.PROFESOR) {
+    <div class="dashboard-grid">
+      <ion-card>
+        <ion-card-header
+          ><ion-card-title>Gestión de exámenes</ion-card-title></ion-card-header
+        >
+        <ion-card-content>
+          <p>
+            {{ role() === Role.ADMINISTRATIVO ? 'Administra los exámenes de toda la plataforma.' : 'Crea y administra tus exámenes.' }}
+          </p>
+          <ion-button expand="block" routerLink="/exams"
+            >Ver exámenes</ion-button
+          >
+          <ion-button expand="block" fill="outline" routerLink="/exams/new"
+            >Crear examen</ion-button
+          >
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header
+          ><ion-card-title>Acceso de alumnos</ion-card-title></ion-card-header
+        >
+        <ion-card-content>
+          <p>Genera códigos para que los alumnos ingresen a una evaluación.</p>
+          <ion-button expand="block" fill="outline" routerLink="/evaluator-demo"
+            >Generar código</ion-button
+          >
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header
+          ><ion-card-title
+            >{{ role() === Role.ADMINISTRATIVO ? 'Todos los usuarios' : 'Alumnos'
+            }}</ion-card-title
+          ></ion-card-header
+        >
+        <ion-card-content>
+          <ion-list>
+            @for (user of users(); track user.id) {
+            <ion-item>
+              <ion-label>
+                <h2>{{ user.firstNames }} {{ user.lastNames }}</h2>
+                <p>{{ user.email }} · {{ user.role }}</p>
+              </ion-label>
+            </ion-item>
+            } @if (usersLoading()) {
+            <ion-item><ion-spinner name="dots"></ion-spinner></ion-item>
+            } @else if (users().length === 0) {
+            <ion-item
+              ><ion-label>No hay usuarios para mostrar.</ion-label></ion-item
+            >
+            }
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+    } @if (role() === Role.ALUMNO) {<ion-card>
+      <ion-card-header
+        ><ion-card-title>Ingresar a un examen</ion-card-title></ion-card-header
+      >
+      <ion-card-content>
+        <p>Usa el código que te entregó tu profesor.</p>
+        <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
+          <ion-list lines="full">
+            <ion-item>
+              <ion-input
+                label="Código de acceso"
+                labelPlacement="floating"
+                formControlName="code"
+              ></ion-input>
+            </ion-item>
+          </ion-list>
+          <ion-button
+            expand="block"
+            type="submit"
+            class="ion-margin-top"
+            [disabled]="joining()"
+          >
+            @if (joining()) {
+            <ion-spinner name="crescent" slot="start"></ion-spinner>
+            <span>Entrando...</span>
+            } @else {
+            <span>Comenzar examen</span>
+            }
+          </ion-button>
+        </form>
+        @if(errorMessage()){<ion-text color="danger"
+          ><p>{{ errorMessage() }}</p></ion-text
+        >}
+      </ion-card-content> </ion-card
+    >} }
+  </ng-container>
 </ion-content>

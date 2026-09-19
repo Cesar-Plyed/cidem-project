@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,6 +18,8 @@ import {
   IonSpinner,
 } from '@ionic/angular';
 import { RegisterUseCase } from '../../../application/use-cases/register.use-case';
+import { ListCountriesUseCase } from '../../../application/use-cases/list-countries.use-case';
+import { Country } from '../../../domain/models/country.model';
 import { Role } from '../../../domain/models/role.enum';
 import { ApiError } from '../../../domain/models/api-error.model';
 
@@ -43,7 +45,12 @@ import { ApiError } from '../../../domain/models/api-error.model';
     IonSpinner,
   ],
 })
-export class RegisterPage {
+export class RegisterPage implements OnInit {
+  private readonly fb = inject(FormBuilder)
+  private readonly registerUseCase = inject(RegisterUseCase)
+  private readonly listCountriesUseCase = inject(ListCountriesUseCase)
+  private readonly router = inject(Router)
+
   readonly Role = Role;
 
   readonly form = this.fb.group({
@@ -60,11 +67,10 @@ export class RegisterPage {
   loading = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  countries: Country[] = [];
 
   constructor(
-    private readonly fb: FormBuilder,
-    private readonly registerUseCase: RegisterUseCase,
-    private readonly router: Router,
+
   ) {
     // El código de registro solo es obligatorio para PROFESOR/ADMINISTRATIVO.
     // Se revalida cada vez que el usuario cambia el rol.
@@ -72,6 +78,13 @@ export class RegisterPage {
       const control = this.form.controls.registrationCode;
       control.setValidators(this.needsRegistrationCode ? [Validators.required] : []);
       control.updateValueAndValidity();
+    });
+  }
+
+  ngOnInit(): void {
+    this.listCountriesUseCase.execute().subscribe({
+      next: (countries) => (this.countries = countries),
+      error: () => (this.errorMessage = 'No se pudo cargar el catálogo de países.'),
     });
   }
 

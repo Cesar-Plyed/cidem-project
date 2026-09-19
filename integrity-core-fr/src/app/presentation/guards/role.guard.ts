@@ -13,14 +13,13 @@ export function roleGuard(allowedRoles: Role[]): CanActivateFn {
     const sessionService = inject(SessionService);
     const router = inject(Router);
 
-    const authenticated = await sessionService.isAuthenticated();
-    if (!authenticated) {
+    const session = await sessionService.getSession();
+    if (!session.role || !session.userId) {
       router.navigate(['/login']);
       return false;
     }
 
-    const role = await sessionService.getRole();
-    if (!role || !allowedRoles.includes(role)) {
+    if (!allowedRoles.includes(session.role)) {
       router.navigate(['/home']);
       return false;
     }

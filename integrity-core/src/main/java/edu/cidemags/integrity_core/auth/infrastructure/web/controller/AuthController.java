@@ -1,5 +1,19 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.controller;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import edu.cidemags.integrity_core.auth.application.dto.GenerateRegistrationCodeCommand;
 import edu.cidemags.integrity_core.auth.application.dto.LoginCommand;
 import edu.cidemags.integrity_core.auth.application.dto.RegisterUserCommand;
@@ -10,17 +24,17 @@ import edu.cidemags.integrity_core.auth.application.usecase.RefreshAccessTokenUs
 import edu.cidemags.integrity_core.auth.application.usecase.RegisterUserUseCase;
 import edu.cidemags.integrity_core.auth.domain.model.AuthTokens;
 import edu.cidemags.integrity_core.auth.domain.model.RegistrationCode;
+import edu.cidemags.integrity_core.auth.domain.model.Role;
 import edu.cidemags.integrity_core.auth.domain.model.User;
-import edu.cidemags.integrity_core.auth.infrastructure.web.dto.*;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.AuthResponse;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.CountryResponse;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.GenerateRegistrationCodeRequest;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.GenerateRegistrationCodeResponse;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.LoginRequest;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.RefreshTokenRequest;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.RegisterRequest;
+import edu.cidemags.integrity_core.auth.infrastructure.web.dto.UserResponse;
 import jakarta.validation.Valid;
-
-import java.util.UUID;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,6 +56,23 @@ public class AuthController {
         this.logoutUseCase = logoutUseCase;
         this.generateRegistrationCodeUseCase = generateRegistrationCodeUseCase;
     }
+
+    @GetMapping("/countries")
+    public ResponseEntity<List<CountryResponse>> countries() {
+        return ResponseEntity.ok(registerUserUseCase.listCountries().stream()
+                .map(CountryResponse::from)
+                .collect(Collectors.toList()));
+    }
+
+            @GetMapping("/users")
+            @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
+            public ResponseEntity<List<UserResponse>> users(Authentication authentication) {
+            Role role = Role.valueOf(authentication.getAuthorities().stream()
+                .findFirst().orElseThrow().getAuthority().replace("ROLE_", ""));
+            return ResponseEntity.ok(registerUserUseCase.listUsers(role).stream()
+                .map(UserResponse::from)
+                .collect(Collectors.toList()));
+            }
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {

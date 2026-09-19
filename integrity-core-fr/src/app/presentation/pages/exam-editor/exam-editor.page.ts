@@ -1,7 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   IonHeader,
   IonToolbar,
@@ -69,12 +76,20 @@ interface QuestionFormValue {
   ],
 })
 export class ExamEditorPage implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly getExamUseCase = inject(GetExamUseCase);
+  private readonly createExamUseCase = inject(CreateExamUseCase);
+  private readonly updateExamUseCase = inject(UpdateExamUseCase);
+
   readonly QuestionType = QuestionType;
 
   examId: string | null = null;
-  loading = false;
-  saving = false;
-  errorMessage: string | null = null;
+  // Signals: sin zone.js, Angular solo refresca la vista cuando cambia un signal.
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.group({
     title: ['', Validators.required],
@@ -83,14 +98,7 @@ export class ExamEditorPage implements OnInit {
     questions: this.fb.array<FormGroup>([]),
   });
 
-  constructor(
-    private readonly fb: FormBuilder,
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly getExamUseCase: GetExamUseCase,
-    private readonly createExamUseCase: CreateExamUseCase,
-    private readonly updateExamUseCase: UpdateExamUseCase,
-  ) {
+  constructor() {
     addIcons({ addOutline, trashOutline });
   }
 
@@ -108,14 +116,20 @@ export class ExamEditorPage implements OnInit {
   }
 
   private loadExam(id: string): void {
-    this.loading = true;
-    this.getExamUseCase.execute(id).subscribe((exam) => {
-      this.loading = false;
-      if (!exam) {
-        this.errorMessage = 'No se encontró el examen.';
-        return;
-      }
-      this.patchForm(exam);
+    this.loading.set(true);
+    this.getExamUseCase.execute(id).subscribe({
+      next: (exam) => {
+        this.loading.set(false);
+        if (!exam) {
+          this.errorMessage.set('No se encontró el examen.');
+          return;
+        }
+        this.patchForm(exam);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.errorMessage.set(`No se pudo cargar el examen (${err.status}).`);
+      },
     });
   }
 
@@ -144,7 +158,9 @@ export class ExamEditorPage implements OnInit {
     });
   }
 
-  private buildQuestionGroup(type: QuestionType = QuestionType.MULTIPLE_CHOICE): FormGroup {
+  private buildQuestionGroup(
+    type: QuestionType = QuestionType.MULTIPLE_CHOICE,
+  ): FormGroup {
     return this.fb.group({
       id: [crypto.randomUUID()],
       type: [type, Validators.required],
@@ -159,7 +175,10 @@ export class ExamEditorPage implements OnInit {
     });
   }
 
-  private buildOptionGroup(id: string = crypto.randomUUID(), text: string = ''): FormGroup {
+  private buildOptionGroup(
+    id: string = crypto.randomUUID(),
+    text: string = '',
+  ): FormGroup {
     return this.fb.group({
       id: [id],
       text: [text, Validators.required],
@@ -175,7 +194,9 @@ export class ExamEditorPage implements OnInit {
   }
 
   optionsOf(questionIndex: number): FormArray<FormGroup> {
-    return this.questions.at(questionIndex).controls['options'] as FormArray<FormGroup>;
+    return this.questions.at(questionIndex).controls[
+      'options'
+    ] as FormArray<FormGroup>;
   }
 
   addOption(questionIndex: number): void {
@@ -209,27 +230,36 @@ export class ExamEditorPage implements OnInit {
   }
 
   isMultipleChoice(questionIndex: number): boolean {
-    return this.questions.at(questionIndex).value['type'] === QuestionType.MULTIPLE_CHOICE;
+    return (
+      this.questions.at(questionIndex).value['type'] ===
+      QuestionType.MULTIPLE_CHOICE
+    );
   }
 
   save(): void {
     if (this.form.invalid || this.questions.length === 0) {
       this.form.markAllAsTouched();
-      this.errorMessage =
-        this.questions.length === 0 ? 'Agrega al menos una pregunta.' : 'Revisa los campos marcados.';
+      this.errorMessage.set(
+        this.questions.length === 0
+          ? 'Agrega al menos una pregunta.'
+          : 'Revisa los campos marcados.',
+      );
       return;
     }
 
     const missingCorrectAnswer = this.questions.controls.some(
-      (group, index) => this.isMultipleChoice(index) && !group.value['correctOptionId'],
+      (group, index) =>
+        this.isMultipleChoice(index) && !group.value['correctOptionId'],
     );
     if (missingCorrectAnswer) {
-      this.errorMessage = 'Marca la respuesta correcta en cada pregunta de opción múltiple.';
+      this.errorMessage.set(
+        'Marca la respuesta correcta en cada pregunta de opción múltiple.',
+      );
       return;
     }
 
-    this.saving = true;
-    this.errorMessage = null;
+    this.saving.set(true);
+    this.errorMessage.set(null);
 
     const raw = this.form.getRawValue();
     const questionValues = raw.questions as unknown as QuestionFormValue[];
@@ -243,8 +273,12 @@ export class ExamEditorPage implements OnInit {
         type: q.type,
         statement: q.statement,
         points: q.points,
-        options: q.type === QuestionType.MULTIPLE_CHOICE ? q.options : undefined,
-        correctOptionId: q.type === QuestionType.MULTIPLE_CHOICE ? (q.correctOptionId ?? undefined) : undefined,
+        options:
+          q.type === QuestionType.MULTIPLE_CHOICE ? q.options : undefined,
+        correctOptionId:
+          q.type === QuestionType.MULTIPLE_CHOICE
+            ? (q.correctOptionId ?? undefined)
+            : undefined,
       })),
     };
 
@@ -254,12 +288,17 @@ export class ExamEditorPage implements OnInit {
 
     request$.subscribe({
       next: () => {
-        this.saving = false;
-        this.router.navigate(['/exams']);
+        // "saving" sigue activo hasta terminar de navegar, para no aceptar otro clic en medio.
+        void this.router.navigate(['/exams']).finally(() => this.saving.set(false));
       },
-      error: () => {
-        this.saving = false;
-        this.errorMessage = 'No se pudo guardar el examen. Intenta de nuevo.';
+      error: (err: HttpErrorResponse) => {
+        // Deja el detalle del backend a la vista: abre la consola (F12) para ver el cuerpo completo.
+        console.error('Error al guardar el examen', err.status, err.error);
+        this.saving.set(false);
+        const serverMessage = (err.error as { message?: string } | null)?.message;
+        this.errorMessage.set(
+          `No se pudo guardar el examen (HTTP ${err.status}).${serverMessage ? ' ' + serverMessage : ''}`,
+        );
       },
     });
   }

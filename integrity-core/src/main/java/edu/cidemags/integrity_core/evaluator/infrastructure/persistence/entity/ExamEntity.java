@@ -1,20 +1,28 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity;
 
-import edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus;
-import jakarta.persistence.*;
-
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 @Entity
 @Table(name = "exams")
 public class ExamEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false, length = 200)

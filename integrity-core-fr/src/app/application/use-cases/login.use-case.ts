@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AuthRepository } from '../../domain/ports/auth.repository';
 import { AuthCredentials } from '../../domain/models/auth-credentials.model';
@@ -11,10 +11,8 @@ import { SessionService } from '../session/session.service';
  */
 @Injectable({ providedIn: 'root' })
 export class LoginUseCase {
-  constructor(
-    private readonly authRepository: AuthRepository,
-    private readonly sessionService: SessionService,
-  ) {}
+  private readonly authRepository = inject(AuthRepository)
+  private readonly sessionService = inject(SessionService)
 
   execute(credentials: AuthCredentials): Observable<AuthTokens> {
     return this.authRepository

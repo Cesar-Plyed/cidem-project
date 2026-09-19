@@ -26,10 +26,8 @@ FROM nginx:alpine AS runtime
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copia el build generado. OJO: revisa el nombre real de la subcarpeta
-# dentro de dist/ (Angular moderno suele meter un subfolder "browser/")
-# y ajusta esta línea si no coincide.
-COPY --from=build /app/dist/*/browser /usr/share/nginx/html
+# Angular 22 genera el bundle en la carpeta configurada como outputPath.
+COPY --from=build /app/www /usr/share/nginx/html
 
 EXPOSE 80
 

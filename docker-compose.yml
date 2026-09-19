@@ -1,0 +1,85 @@
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: integrity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: integrity_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - integrity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d integrity_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - integrity-net
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: integrity-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - integrity-net
+
+  backend:
+    build:
+      context: ./integrity-core
+      dockerfile: Dockerfile
+    image: localhost/integrity-core:local
+    container_name: integrity-core
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/integrity_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: tu_clave_secreta_super_segura_para_jwt_32_caracteres_min
+      ADMIN_REGISTRATION_CODE: admin-local
+      PROFESOR_REGISTRATION_CODE: profesor-local
+    ports:
+      - "8080:8080"
+    networks:
+      - integrity-net
+
+  frontend:
+    build:
+      context: ./integrity-core-fr
+      dockerfile: Dockerfile
+    image: localhost/integrity-core-fr:local
+    container_name: integrity-core-fr
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+    networks:
+      - integrity-net
+
+volumes:
+  integrity-db-data:
+    external: true
+    name: b98896fb802fe6281d6f268378511036b8ffdb8283b9e5c582ee9fc7f79da7c7
+
+networks:
+  integrity-net:
+    name: integrity-net
+    driver: bridge

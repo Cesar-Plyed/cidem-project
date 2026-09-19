@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -39,6 +39,10 @@ import { ApiError } from '../../../domain/models/api-error.model';
   ],
 })
 export class LoginPage {
+  private readonly fb = inject(FormBuilder)
+  private readonly loginUseCase = inject(LoginUseCase)
+  private readonly router = inject(Router)
+
   readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
@@ -48,9 +52,7 @@ export class LoginPage {
   errorMessage: string | null = null;
 
   constructor(
-    private readonly fb: FormBuilder,
-    private readonly loginUseCase: LoginUseCase,
-    private readonly router: Router,
+
   ) {}
 
   submit(): void {

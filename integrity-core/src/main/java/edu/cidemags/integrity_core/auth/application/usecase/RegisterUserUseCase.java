@@ -1,20 +1,22 @@
 package edu.cidemags.integrity_core.auth.application.usecase;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import edu.cidemags.integrity_core.auth.application.dto.RegisterUserCommand;
 import edu.cidemags.integrity_core.auth.domain.exception.CountryNotFoundException;
 import edu.cidemags.integrity_core.auth.domain.exception.EmailAlreadyRegisteredException;
 import edu.cidemags.integrity_core.auth.domain.exception.InvalidRoleAssignmentException;
 import edu.cidemags.integrity_core.auth.domain.model.Country;
+import edu.cidemags.integrity_core.auth.domain.model.Role;
 import edu.cidemags.integrity_core.auth.domain.model.User;
 import edu.cidemags.integrity_core.auth.domain.port.CountryRepository;
 import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import edu.cidemags.integrity_core.auth.domain.service.PasswordHasher;
 import edu.cidemags.integrity_core.auth.domain.service.RegistrationCodeValidator;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class RegisterUserUseCase {
@@ -30,6 +32,20 @@ public class RegisterUserUseCase {
         this.countryRepository = countryRepository;
         this.passwordHasher = passwordHasher;
         this.registrationCodeValidator = registrationCodeValidator;
+    }
+
+    public List<Country> listCountries() {
+        return countryRepository.findAll();
+    }
+
+    public List<User> listUsers(Role requesterRole) {
+        if (requesterRole == Role.ADMINISTRATIVO) {
+            return userRepository.findAll();
+        }
+        if (requesterRole == Role.PROFESOR) {
+            return userRepository.findAllByRole(Role.ALUMNO);
+        }
+        throw new org.springframework.security.access.AccessDeniedException("No tienes permisos para ver usuarios");
     }
 
     @Transactional

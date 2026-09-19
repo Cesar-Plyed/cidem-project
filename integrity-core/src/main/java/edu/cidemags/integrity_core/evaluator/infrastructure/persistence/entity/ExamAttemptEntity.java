@@ -1,16 +1,18 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity;
 
-import jakarta.persistence.*;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "exam_attempts")
 public class ExamAttemptEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "exam_id", nullable = false)

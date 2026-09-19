@@ -12,7 +12,7 @@ import { AuthHttpRepository } from './app/infrastructure/http/auth-http.reposito
 import { authInterceptor } from './app/infrastructure/interceptors/auth.interceptor';
 import { refreshInterceptor } from './app/infrastructure/interceptors/refresh.interceptor';
 import { ExamRepository } from './app/domain/ports/exam.repository';
-import { ExamInMemoryRepository } from './app/infrastructure/mock/exam-in-memory.repository';
+import { ExamHttpRepository } from './app/infrastructure/http/exam-http.repository';
 import { EvaluatorRepository } from './app/domain/ports/evaluator.repository';
 import { EvaluatorHttpRepository } from './app/infrastructure/http/evaluator-http.repository';
 
@@ -26,10 +26,7 @@ bootstrapApplication(AppComponent, {
     provideHttpClient(withInterceptors([authInterceptor, refreshInterceptor])),
     // Conecta el puerto de dominio con su implementación real de infraestructura.
     { provide: AuthRepository, useClass: AuthHttpRepository },
-    // TEMPORAL: mientras el backend de exámenes no tenga endpoints de
-    // lectura (listar/obtener por id/preguntas), la vista docente/alumno
-    // sigue usando este repositorio en memoria.
-    { provide: ExamRepository, useClass: ExamInMemoryRepository },
+    { provide: ExamRepository, useClass: ExamHttpRepository },
     // Este SÍ pega contra el backend real — pero solo cubre las 5
     // operaciones que existen hoy (ver evaluator-demo.page.ts).
     { provide: EvaluatorRepository, useClass: EvaluatorHttpRepository },

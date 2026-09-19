@@ -1,5 +1,7 @@
 package edu.cidemags.integrity_core.sentinel.domain;
 
+import org.springframework.stereotype.Component;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Component
 public class AlertEscalationPolicy {
 
     private static final int FOCUS_LOST_THRESHOLD = 3;

@@ -1,5 +1,10 @@
 package edu.cidemags.integrity_core.evaluator.application.usecase;
 
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import edu.cidemags.integrity_core.evaluator.application.dto.JoinExamByAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAccessCodeNotFoundException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamClosedException;
@@ -11,8 +16,6 @@ import edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAccessCodeRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAttemptRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class JoinExamByAccessCodeUseCase {
@@ -56,7 +59,22 @@ public class JoinExamByAccessCodeUseCase {
             throw new ExamAccessCodeNotFoundException(command.examId(), command.code());
         }
 
-        ExamAttempt attempt = new ExamAttempt(exam.getId(), command.studentId());
-        return examAttemptRepository.save(attempt);
+        // Idempotente: si el alumno ya tiene un intento abierto de este examen, se reutiliza.
+        // Asi, repetir la peticion (doble clic, recarga, reintento) no crea intentos duplicados.
+        return examAttemptRepository.findByStudentId(command.studentId()).stream()
+                .filter(existing -> existing.getExamId().equals(exam.getId()) && !existing.isSubmitted())
+                .findFirst()
+                .orElseGet(() -> examAttemptRepository.save(new ExamAttempt(exam.getId(), command.studentId())));
+    }
+
+    @Transactional
+    public ExamAttempt executeByCode(String code, UUID studentId) {
+        if (code == null || code.isBlank() || studentId == null) {
+            throw new IllegalArgumentException("Codigo y estudiante son obligatorios");
+        }
+
+        ExamAccessCode accessCode = examAccessCodeRepository.findByCode(code)
+                .orElseThrow(() -> new ExamAccessCodeNotFoundException(null, code));
+        return execute(new JoinExamByAccessCodeCommand(accessCode.getExamId(), code, studentId));
     }
 }

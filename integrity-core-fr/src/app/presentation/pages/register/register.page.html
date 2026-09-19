@@ -10,16 +10,16 @@
       <ion-item>
         <ion-input label="Nombres" labelPlacement="floating" formControlName="firstNames"></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="firstNames.touched && firstNames.invalid">
-        <p class="field-error">Los nombres son obligatorios.</p>
-      </ion-text>
+      @if (firstNames.touched && firstNames.invalid) {
+        <ion-text color="danger"><p class="field-error">Los nombres son obligatorios.</p></ion-text>
+      }
 
       <ion-item>
         <ion-input label="Apellidos" labelPlacement="floating" formControlName="lastNames"></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="lastNames.touched && lastNames.invalid">
-        <p class="field-error">Los apellidos son obligatorios.</p>
-      </ion-text>
+      @if (lastNames.touched && lastNames.invalid) {
+        <ion-text color="danger"><p class="field-error">Los apellidos son obligatorios.</p></ion-text>
+      }
 
       <ion-item>
         <ion-input
@@ -31,10 +31,12 @@
           inputmode="email"
         ></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="email.touched && email.invalid">
-        <p class="field-error" *ngIf="email.errors?.['required']">El correo es obligatorio.</p>
-        <p class="field-error" *ngIf="email.errors?.['email']">Ingresa un correo válido.</p>
-      </ion-text>
+      @if (email.touched && email.invalid) {
+        <ion-text color="danger">
+          @if (email.errors?.['required']) { <p class="field-error">El correo es obligatorio.</p> }
+          @if (email.errors?.['email']) { <p class="field-error">Ingresa un correo válido.</p> }
+        </ion-text>
+      }
 
       <ion-item>
         <ion-input
@@ -45,20 +47,23 @@
           autocomplete="new-password"
         ></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="password.touched && password.invalid">
-        <p class="field-error" *ngIf="password.errors?.['required']">La contraseña es obligatoria.</p>
-        <p class="field-error" *ngIf="password.errors?.['minlength']">Debe tener al menos 8 caracteres.</p>
-      </ion-text>
+      @if (password.touched && password.invalid) {
+        <ion-text color="danger">
+          @if (password.errors?.['required']) { <p class="field-error">La contraseña es obligatoria.</p> }
+          @if (password.errors?.['minlength']) { <p class="field-error">Debe tener al menos 8 caracteres.</p> }
+        </ion-text>
+      }
 
       <ion-item>
-        <!-- countryId es un UUID: en un formulario real esto sería un
-             ion-select cargado desde un endpoint de países. Aquí queda
-             como input de texto para no inventar datos de países. -->
-        <ion-input label="País (UUID)" labelPlacement="floating" formControlName="countryId"></ion-input>
+        <ion-select label="País" labelPlacement="floating" formControlName="countryId">
+          @for (country of countries; track country.id) {
+            <ion-select-option [value]="country.id">{{ country.name }}</ion-select-option>
+          }
+        </ion-select>
       </ion-item>
-      <ion-text color="danger" *ngIf="countryId.touched && countryId.invalid">
-        <p class="field-error">El país es obligatorio.</p>
-      </ion-text>
+      @if (countryId.touched && countryId.invalid) {
+        <ion-text color="danger"><p class="field-error">El país es obligatorio.</p></ion-text>
+      }
 
       <ion-item>
         <ion-input
@@ -77,29 +82,23 @@
         </ion-select>
       </ion-item>
 
-      <ion-item *ngIf="needsRegistrationCode">
-        <ion-input
-          label="Código de registro"
-          labelPlacement="floating"
-          formControlName="registrationCode"
-        ></ion-input>
-      </ion-item>
-      <ion-text color="danger" *ngIf="needsRegistrationCode && registrationCode.touched && registrationCode.invalid">
-        <p class="field-error">El código de registro es obligatorio para este rol.</p>
-      </ion-text>
+      @if (needsRegistrationCode) {
+        <ion-item>
+          <ion-input label="Código de registro" labelPlacement="floating" formControlName="registrationCode"></ion-input>
+        </ion-item>
+      }
+      @if (needsRegistrationCode && registrationCode.touched && registrationCode.invalid) {
+        <ion-text color="danger"><p class="field-error">El código de registro es obligatorio para este rol.</p></ion-text>
+      }
     </ion-list>
 
-    <ion-text color="danger" *ngIf="errorMessage">
-      <p class="form-error">{{ errorMessage }}</p>
-    </ion-text>
-    <ion-text color="success" *ngIf="successMessage">
-      <p class="form-error">{{ successMessage }}</p>
-    </ion-text>
+    @if (errorMessage) { <ion-text color="danger"><p class="form-error">{{ errorMessage }}</p></ion-text> }
+    @if (successMessage) { <ion-text color="success"><p class="form-error">{{ successMessage }}</p></ion-text> }
 
     <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="loading">
-      <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
-      <span *ngIf="!loading">Crear cuenta</span>
-      <span *ngIf="loading">Creando cuenta...</span>
+      @if (loading) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
+      @if (!loading) { <span>Crear cuenta</span> }
+      @if (loading) { <span>Creando cuenta...</span> }
     </ion-button>
 
     <p class="login-link">

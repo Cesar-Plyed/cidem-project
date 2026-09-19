@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -58,39 +59,49 @@ import { ExamAnswer } from '../../../domain/models/exam/exam-answer.model';
   ],
 })
 export class ExamTakePage implements OnInit {
+  private readonly fb = inject(FormBuilder)
+  private readonly route = inject(ActivatedRoute)
+  private readonly getExamUseCase = inject(GetExamUseCase)
+  private readonly submitExamAttemptUseCase = inject(SubmitExamAttemptUseCase)
+
   readonly QuestionType = QuestionType;
 
-  exam: Exam | null = null;
-  loading = true;
-  submitting = false;
-  submitted = false;
-  errorMessage: string | null = null;
+  // Signals: sin zone.js, Angular solo refresca la vista cuando cambia un signal.
+  readonly exam = signal<Exam | null>(null);
+  readonly loading = signal(true);
+  readonly submitting = signal(false);
+  readonly submitted = signal(false);
+  readonly errorMessage = signal<string | null>(null);
 
   form: FormGroup = this.fb.group({});
 
   constructor(
-    private readonly fb: FormBuilder,
-    private readonly route: ActivatedRoute,
-    private readonly getExamUseCase: GetExamUseCase,
-    private readonly submitExamAttemptUseCase: SubmitExamAttemptUseCase,
   ) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
-      this.errorMessage = 'Examen no encontrado.';
-      this.loading = false;
+      this.errorMessage.set('Examen no encontrado.');
+      this.loading.set(false);
       return;
     }
 
-    this.getExamUseCase.execute(id).subscribe((exam) => {
-      this.loading = false;
-      if (!exam) {
-        this.errorMessage = 'Examen no encontrado.';
-        return;
-      }
-      this.exam = exam;
-      this.buildAnswerForm(exam);
+    this.getExamUseCase.execute(id).subscribe({
+      next: (exam) => {
+        if (!exam) {
+          this.errorMessage.set('Examen no encontrado.');
+          this.loading.set(false);
+          return;
+        }
+        this.buildAnswerForm(exam); // el form debe existir antes de pintar el examen
+        this.exam.set(exam);
+        this.loading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Error al cargar el examen', err.status, err.error);
+        this.errorMessage.set(`No se pudo cargar el examen (HTTP ${err.status}).`);
+        this.loading.set(false);
+      },
     });
   }
 
@@ -106,31 +117,32 @@ export class ExamTakePage implements OnInit {
   }
 
   submit(): void {
-    if (!this.exam || this.form.invalid) {
+    const exam = this.exam();
+    if (!exam || this.form.invalid) {
       this.form.markAllAsTouched();
-      this.errorMessage = 'Responde todas las preguntas antes de enviar.';
+      this.errorMessage.set('Responde todas las preguntas antes de enviar.');
       return;
     }
 
-    this.submitting = true;
-    this.errorMessage = null;
+    this.submitting.set(true);
+    this.errorMessage.set(null);
 
     const raw = this.form.getRawValue() as Record<string, string | null>;
-    const answers: ExamAnswer[] = this.exam.questions.map((question) => ({
+    const answers: ExamAnswer[] = exam.questions.map((question) => ({
       questionId: question.id,
       selectedOptionId:
         question.type === QuestionType.MULTIPLE_CHOICE ? raw[question.id] ?? undefined : undefined,
       openText: question.type === QuestionType.OPEN ? raw[question.id] ?? undefined : undefined,
     }));
 
-    this.submitExamAttemptUseCase.execute(this.exam.id, answers).subscribe({
+    this.submitExamAttemptUseCase.execute(exam.id, answers).subscribe({
       next: () => {
-        this.submitting = false;
-        this.submitted = true;
+        this.submitting.set(false);
+        this.submitted.set(true);
       },
       error: () => {
-        this.submitting = false;
-        this.errorMessage = 'No se pudo enviar el examen. Intenta de nuevo.';
+        this.submitting.set(false);
+        this.errorMessage.set('No se pudo enviar el examen. Intenta de nuevo.');
       },
     });
   }
