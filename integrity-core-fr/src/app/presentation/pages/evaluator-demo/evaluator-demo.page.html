@@ -29,8 +29,8 @@
         </ion-list>
         <ion-button expand="block" type="submit" class="ion-margin-top">Crear examen</ion-button>
       </form>
-      <ion-text color="danger" *ngIf="createExamError"><p>{{ createExamError }}</p></ion-text>
-      <pre *ngIf="createExamResult">{{ createExamResult | json }}</pre>
+      @if (createExamError) { <ion-text color="danger"><p>{{ createExamError }}</p></ion-text> }
+      @if (createExamResult) { <pre>{{ createExamResult | json }}</pre> }
     </ion-card-content>
   </ion-card>
 
@@ -59,8 +59,8 @@
         </ion-list>
         <ion-button expand="block" type="submit" class="ion-margin-top">Generar código</ion-button>
       </form>
-      <ion-text color="danger" *ngIf="accessCodeError"><p>{{ accessCodeError }}</p></ion-text>
-      <pre *ngIf="accessCodeResult">{{ accessCodeResult | json }}</pre>
+      @if (accessCodeError) { <ion-text color="danger"><p>{{ accessCodeError }}</p></ion-text> }
+      @if (accessCodeResult) { <pre>{{ accessCodeResult | json }}</pre> }
     </ion-card-content>
   </ion-card>
 
@@ -84,8 +84,8 @@
         </ion-list>
         <ion-button expand="block" type="submit" class="ion-margin-top">Unirse</ion-button>
       </form>
-      <ion-text color="danger" *ngIf="joinError"><p>{{ joinError }}</p></ion-text>
-      <pre *ngIf="joinResult">{{ joinResult | json }}</pre>
+      @if (joinError) { <ion-text color="danger"><p>{{ joinError }}</p></ion-text> }
+      @if (joinResult) { <pre>{{ joinResult | json }}</pre> }
     </ion-card-content>
   </ion-card>
 
@@ -127,8 +127,8 @@
         </ion-list>
         <ion-button expand="block" type="submit" class="ion-margin-top">Enviar respuesta</ion-button>
       </form>
-      <ion-text color="danger" *ngIf="answerError"><p>{{ answerError }}</p></ion-text>
-      <pre *ngIf="answerResult">{{ answerResult | json }}</pre>
+      @if (answerError) { <ion-text color="danger"><p>{{ answerError }}</p></ion-text> }
+      @if (answerResult) { <pre>{{ answerResult | json }}</pre> }
     </ion-card-content>
   </ion-card>
 
@@ -146,8 +146,8 @@
         </ion-list>
         <ion-button expand="block" type="submit" class="ion-margin-top" color="success">Entregar</ion-button>
       </form>
-      <ion-text color="danger" *ngIf="submitError"><p>{{ submitError }}</p></ion-text>
-      <pre *ngIf="submitResult">{{ submitResult | json }}</pre>
+      @if (submitError) { <ion-text color="danger"><p>{{ submitError }}</p></ion-text> }
+      @if (submitResult) { <pre>{{ submitResult | json }}</pre> }
     </ion-card-content>
   </ion-card>
 </ion-content>

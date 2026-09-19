@@ -1,3 +1,4 @@
+import { BackendExamStatus } from '../evaluator/evaluator.model';
 import { Question } from './question.model';
 
 export interface Exam {
@@ -6,4 +7,5 @@ export interface Exam {
   description: string;
   durationMinutes: number;
   questions: Question[];
+  status?: BackendExamStatus;
 }

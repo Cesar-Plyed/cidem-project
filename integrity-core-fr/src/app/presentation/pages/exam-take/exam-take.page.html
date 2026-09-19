@@ -3,69 +3,76 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
-    <ion-title>{{ exam?.title ?? 'Examen' }}</ion-title>
+    <ion-title>{{ exam()?.title ?? 'Examen' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div class="loading" *ngIf="loading">
-    <ion-spinner name="crescent"></ion-spinner>
-  </div>
+  @if (loading()) {
+    <div class="loading"><ion-spinner name="crescent"></ion-spinner></div>
+  }
 
-  <ion-text color="danger" *ngIf="!loading && errorMessage && !exam">
-    <p>{{ errorMessage }}</p>
-  </ion-text>
+  @if (!loading() && errorMessage() && !exam()) {
+    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
+  }
 
-  <ng-container *ngIf="!loading && exam">
+  @if (!loading() && exam(); as exam) {
     <div class="exam-summary">
       <p>{{ exam.description }}</p>
       <ion-badge color="medium">{{ exam.durationMinutes }} min</ion-badge>
       <ion-badge color="medium">{{ exam.questions.length }} preguntas</ion-badge>
     </div>
 
-    <div class="submitted-banner" *ngIf="submitted">
+    @if (submitted()) {
+    <div class="submitted-banner">
       <ion-text color="success">
         <p>Examen enviado correctamente. Buena suerte.</p>
       </ion-text>
     </div>
+    }
 
-    <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="!submitted">
-      <ion-card *ngFor="let question of exam.questions; let i = index">
+    @if (!submitted()) {
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      @for (question of exam.questions; track question.id; let i = $index) {
+      <ion-card>
         <ion-card-header>
           <ion-card-title>Pregunta {{ i + 1 }} ({{ question.points }} pts)</ion-card-title>
         </ion-card-header>
         <ion-card-content>
           <p>{{ question.statement }}</p>
 
-          <ion-radio-group
-            *ngIf="question.type === QuestionType.MULTIPLE_CHOICE"
-            [formControlName]="question.id"
-          >
-            <ion-item *ngFor="let option of question.options" lines="none">
+          @if (question.type === QuestionType.MULTIPLE_CHOICE) {
+          <ion-radio-group [formControlName]="question.id">
+            @for (option of question.options; track option.id) {
+            <ion-item lines="none">
               <ion-radio [value]="option.id" slot="start"></ion-radio>
               <ion-label>{{ option.text }}</ion-label>
             </ion-item>
+            }
           </ion-radio-group>
+          }
 
-          <ion-item *ngIf="question.type === QuestionType.OPEN" lines="none">
+          @if (question.type === QuestionType.OPEN) {
+          <ion-item lines="none">
             <ion-textarea
               [formControlName]="question.id"
               placeholder="Escribe tu respuesta..."
               autoGrow="true"
             ></ion-textarea>
           </ion-item>
+          }
         </ion-card-content>
       </ion-card>
+      }
 
-      <ion-text color="danger" *ngIf="errorMessage">
-        <p class="form-error">{{ errorMessage }}</p>
-      </ion-text>
+      @if (errorMessage()) { <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text> }
 
-      <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="submitting">
-        <ion-spinner *ngIf="submitting" name="crescent" slot="start"></ion-spinner>
-        <span *ngIf="!submitting">Enviar examen</span>
-        <span *ngIf="submitting">Enviando...</span>
+      <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="submitting()">
+        @if (submitting()) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
+        @if (!submitting()) { <span>Enviar examen</span> }
+        @if (submitting()) { <span>Enviando...</span> }
       </ion-button>
     </form>
-  </ng-container>
+    }
+  }
 </ion-content>

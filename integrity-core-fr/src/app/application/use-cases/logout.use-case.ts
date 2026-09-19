@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { AuthRepository } from '../../domain/ports/auth.repository';
 import { SessionService } from '../session/session.service';
 
@@ -10,11 +10,9 @@ import { SessionService } from '../session/session.service';
  */
 @Injectable({ providedIn: 'root' })
 export class LogoutUseCase {
-  constructor(
-    private readonly authRepository: AuthRepository,
-    private readonly sessionService: SessionService,
-  ) {}
-
+  private readonly authRepository = inject(AuthRepository)
+  private readonly sessionService = inject(SessionService)
+  
   async execute(): Promise<void> {
     const refreshToken = await this.sessionService.getRefreshToken();
     if (refreshToken) {

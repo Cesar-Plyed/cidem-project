@@ -1,28 +1,37 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.web.controller;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateExamCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateQuestionCommand;
-import edu.cidemags.integrity_core.evaluator.application.dto.GenerateExamAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamResultResponse;
+import edu.cidemags.integrity_core.evaluator.application.dto.GenerateExamAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.PagedExamResultsResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.UpdateExamCommand;
 import edu.cidemags.integrity_core.evaluator.application.usecase.CreateExamUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.ExamManagementUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.ExamQuestionManagementUseCase;
+import edu.cidemags.integrity_core.evaluator.application.usecase.ExportExamResultsUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.GenerateExamAccessCodeUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.GetExamResultUseCase;
-import edu.cidemags.integrity_core.evaluator.application.usecase.ExportExamResultsUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/evaluator")
@@ -54,7 +63,7 @@ public class ExamController {
     public ResponseEntity<Exam> createExam(@RequestBody CreateExamCommand command, Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED).body(createExamUseCase.execute(
-                new CreateExamCommand(command.title(), command.description(), userId)));
+            new CreateExamCommand(command.title(), command.description(), userId, command.questions())));
     }
 
     @GetMapping("/exams")

@@ -3,3 +3,18 @@
   justify-content: center;
   margin-top: 48px;
 }
+
+.access-code {
+  margin-top: 6px;
+
+  strong {
+    font-family: monospace;
+    font-size: 1.1em;
+    letter-spacing: 0.1em;
+    user-select: all;
+  }
+
+  .expires {
+    opacity: 0.7;
+  }
+}

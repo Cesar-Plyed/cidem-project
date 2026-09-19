@@ -17,10 +17,12 @@
           inputmode="email"
         ></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="email.touched && email.invalid">
-        <p class="field-error" *ngIf="email.errors?.['required']">El correo es obligatorio.</p>
-        <p class="field-error" *ngIf="email.errors?.['email']">Ingresa un correo válido.</p>
-      </ion-text>
+      @if (email.touched && email.invalid) {
+        <ion-text color="danger">
+          @if (email.errors?.['required']) { <p class="field-error">El correo es obligatorio.</p> }
+          @if (email.errors?.['email']) { <p class="field-error">Ingresa un correo válido.</p> }
+        </ion-text>
+      }
 
       <ion-item>
         <ion-input
@@ -31,19 +33,21 @@
           autocomplete="current-password"
         ></ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="password.touched && password.invalid">
-        <p class="field-error">La contraseña es obligatoria.</p>
-      </ion-text>
+      @if (password.touched && password.invalid) {
+        <ion-text color="danger">
+          <p class="field-error">La contraseña es obligatoria.</p>
+        </ion-text>
+      }
     </ion-list>
 
-    <ion-text color="danger" *ngIf="errorMessage">
-      <p class="form-error">{{ errorMessage }}</p>
-    </ion-text>
+    @if (errorMessage) {
+      <ion-text color="danger"><p class="form-error">{{ errorMessage }}</p></ion-text>
+    }
 
     <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="loading">
-      <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
-      <span *ngIf="!loading">Entrar</span>
-      <span *ngIf="loading">Entrando...</span>
+      @if (loading) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
+      @if (!loading) { <span>Entrar</span> }
+      @if (loading) { <span>Entrando...</span> }
     </ion-button>
 
     <p class="register-link">

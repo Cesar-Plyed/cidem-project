@@ -1,15 +1,17 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity;
 
-import jakarta.persistence.*;
-
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "evaluation_reviews")
 public class EvaluationReviewEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "answer_id", nullable = false)

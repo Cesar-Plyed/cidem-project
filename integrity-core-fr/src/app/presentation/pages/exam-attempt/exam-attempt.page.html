@@ -1,0 +1,101 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ exam()?.title ?? 'Examen' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (loading()) {
+    <div class="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando examen...</p>
+    </div>
+  }
+
+  @if (!loading() && errorMessage() && !exam()) {
+    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
+    <ion-button fill="outline" routerLink="/home">Volver al panel</ion-button>
+  }
+
+  @if (!loading() && exam(); as current) {
+    <div class="exam-summary">
+      @if (current.description) {
+        <p>{{ current.description }}</p>
+      }
+      <ion-badge color="medium">{{ current.questions.length }} preguntas</ion-badge>
+      @if (!submitted()) {
+        <ion-badge color="primary">Respondidas: {{ answeredCount() }} de {{ current.questions.length }}</ion-badge>
+      }
+    </div>
+
+    @if (submitted()) {
+      <div class="submitted-banner">
+        <ion-text color="success"><p>Examen enviado correctamente. ¡Buen trabajo!</p></ion-text>
+        <ion-button expand="block" routerLink="/home">Volver al panel</ion-button>
+      </div>
+    } @else {
+      @for (question of current.questions; track question.id; let i = $index) {
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Pregunta {{ i + 1 }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <p class="prompt">{{ question.prompt }}</p>
+
+            @switch (question.type) {
+              @case ('SINGLE_CHOICE') {
+                <ion-radio-group
+                  [value]="selected()[question.id]?.[0]"
+                  (ionChange)="selectSingle(question.id, $event.detail.value)"
+                >
+                  @for (option of question.options; track option.id) {
+                    <ion-item lines="none">
+                      <ion-radio [value]="option.id" labelPlacement="end" justify="start">{{ option.text }}</ion-radio>
+                    </ion-item>
+                  }
+                </ion-radio-group>
+              }
+              @case ('MULTIPLE_CHOICE') {
+                <p class="hint">Puede haber más de una respuesta correcta.</p>
+                @for (option of question.options; track option.id) {
+                  <ion-item lines="none">
+                    <ion-checkbox
+                      labelPlacement="end"
+                      justify="start"
+                      [checked]="isSelected(question.id, option.id)"
+                      (ionChange)="toggleOption(question.id, option.id, $event.detail.checked)"
+                      >{{ option.text }}</ion-checkbox
+                    >
+                  </ion-item>
+                }
+              }
+              @case ('OPEN_ENDED') {
+                <ion-item lines="none">
+                  <ion-textarea
+                    placeholder="Escribe tu respuesta..."
+                    [autoGrow]="true"
+                    [value]="texts()[question.id] ?? ''"
+                    (ionInput)="setText(question.id, $event.detail.value)"
+                  ></ion-textarea>
+                </ion-item>
+              }
+            }
+          </ion-card-content>
+        </ion-card>
+      }
+
+      @if (errorMessage()) {
+        <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text>
+      }
+
+      <ion-button expand="block" class="ion-margin-top" [disabled]="submitting()" (click)="confirmSubmit()">
+        @if (submitting()) {
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+          <span>Enviando...</span>
+        } @else {
+          <span>Enviar examen</span>
+        }
+      </ion-button>
+    }
+  }
+</ion-content>

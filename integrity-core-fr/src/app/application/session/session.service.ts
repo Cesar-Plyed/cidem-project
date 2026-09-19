@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { TokenStorageService } from '../../infrastructure/storage/token-storage.service';
@@ -13,63 +13,70 @@ interface AccessTokenPayload {
   exp: number;
 }
 
-/**
- * Orquesta el estado de sesión: guarda los tokens y expone el rol actual
- * de forma reactiva (para guards, menús, etc.).
- *
- * IMPORTANTE: el rol que se decodifica aquí es SOLO para UX (mostrar u
- * ocultar botones/rutas). Cualquiera puede editar un JWT en el navegador
- * antes de que lo leamos, así que esto nunca protege datos reales — esa
- * validación ocurre en el backend, que sí verifica la firma.
- */
+export interface SessionSnapshot {
+  role: Role | null;
+  userId: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SessionService {
-  private readonly roleSubject = new BehaviorSubject<Role | null>(null);
-  readonly role$: Observable<Role | null> = this.roleSubject.asObservable();
+  private readonly tokenStorage = inject(TokenStorageService);
 
-  constructor(private readonly tokenStorage: TokenStorageService) {}
+  private readonly roleSubject = new BehaviorSubject<Role | null>(null);
+  private currentSession: SessionSnapshot = { role: null, userId: null };
+  readonly role$: Observable<Role | null> = this.roleSubject.asObservable();
 
   async persistSession(tokens: AuthTokens): Promise<void> {
     await this.tokenStorage.saveTokens(tokens.accessToken, tokens.refreshToken);
-    this.roleSubject.next(this.decodeRole(tokens.accessToken));
+    this.currentSession = this.decodeSession(tokens.accessToken);
+    this.roleSubject.next(this.currentSession.role);
   }
 
   async clearSession(): Promise<void> {
     await this.tokenStorage.clear();
+    this.currentSession = { role: null, userId: null };
     this.roleSubject.next(null);
   }
 
-  async isAuthenticated(): Promise<boolean> {
+  async getSession(): Promise<SessionSnapshot> {
+    if (this.currentSession.role && this.currentSession.userId) {
+      return this.currentSession;
+    }
+
     const token = await this.tokenStorage.getAccessToken();
-    if (!token) return false;
-    return !this.isExpired(token);
+    if (!token || this.isExpired(token)) {
+      this.currentSession = { role: null, userId: null };
+      return this.currentSession;
+    }
+
+    this.currentSession = this.decodeSession(token);
+    this.roleSubject.next(this.currentSession.role);
+    return this.currentSession;
+  }
+
+  async isAuthenticated(): Promise<boolean> {
+    const session = await this.getSession();
+    return session.role !== null && session.userId !== null;
   }
 
   async getRole(): Promise<Role | null> {
-    const token = await this.tokenStorage.getAccessToken();
-    if (!token) return null;
-    return this.decodeRole(token);
+    return (await this.getSession()).role;
   }
 
   async getUserId(): Promise<string | null> {
-    const token = await this.tokenStorage.getAccessToken();
-    if (!token) return null;
-    try {
-      return jwtDecode<AccessTokenPayload>(token).sub;
-    } catch {
-      return null;
-    }
+    return (await this.getSession()).userId;
   }
 
   getRefreshToken(): Promise<string | null> {
     return this.tokenStorage.getRefreshToken();
   }
 
-  private decodeRole(accessToken: string): Role | null {
+  private decodeSession(accessToken: string): SessionSnapshot {
     try {
-      return jwtDecode<AccessTokenPayload>(accessToken).role;
+      const payload = jwtDecode<AccessTokenPayload>(accessToken);
+      return { role: payload.role, userId: payload.sub };
     } catch {
-      return null;
+      return { role: null, userId: null };
     }
   }
 

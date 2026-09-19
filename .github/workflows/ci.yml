@@ -1,0 +1,110 @@
+name: CI
+
+# Revisa que el código compile, pase lint/tests y que las imágenes Docker construyan.
+# Corre en cada push a main y en cada Pull Request hacia main. No despliega nada.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}   # también se puede lanzar a mano desde la pestaña Actions
+
+# Si llega un commit nuevo a la misma rama/PR, cancela la corrida anterior (ya no sirve).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# El CI solo necesita leer el repositorio.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------
+  # Backend: Spring Boot + Maven (carpeta integrity-core)
+  # ---------------------------------------------------------------
+  backend:
+    name: Backend (integrity-core)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: integrity-core
+    env:
+      # Valores falsos, solo para que Spring resuelva los placeholders de application.yml
+      # durante el CI. NO son secretos reales: no pongas aquí los de producción.
+      JWT_SECRET: ci-only-jwt-secret-with-at-least-32-characters
+      ADMIN_REGISTRATION_CODE: ci-admin-code
+      PROFESOR_REGISTRATION_CODE: ci-profesor-code
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 25 (Temurin) + caché de Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: integrity-core/pom.xml
+
+      - name: Permiso de ejecución para mvnw
+        run: chmod +x mvnw
+
+      # "verify" compila, corre TODOS los tests y empaqueta el jar.
+      # Los tests de integración usan Testcontainers (Postgres y Redis); el runner
+      # de GitHub ya trae Docker, no hace falta configurar nada más.
+      - name: Compilar y correr tests
+        run: ./mvnw -B --no-transfer-progress verify
+
+      - name: Subir reportes de tests (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: integrity-core/target/surefire-reports/
+          retention-days: 7
+
+      # Es lo mismo que hacía el deploy (podman-compose up --build), pero sin desplegar:
+      # detecta un Dockerfile roto antes de que llegue a producción.
+      - name: Verificar que la imagen Docker construye
+        run: docker build -t integrity-core:ci .
+
+  # ---------------------------------------------------------------
+  # Frontend: Angular + Ionic (carpeta integrity-core-fr)
+  # ---------------------------------------------------------------
+  frontend:
+    name: Frontend (integrity-core-fr)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: integrity-core-fr
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Angular 22 exige Node >= 22.22.3 o >= 24.15; Node 24 (LTS) cumple.
+      - name: Node 24 + caché de npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: integrity-core-fr/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Vitest + jsdom, sin navegador. "ci" desactiva el modo watch.
+      - name: Tests unitarios
+        run: npm test -- --configuration=ci
+
+      - name: Build de producción
+        run: npm run build -- --configuration production
+
+      - name: Verificar que la imagen Docker construye
+        run: docker build -t integrity-core-fr:ci .

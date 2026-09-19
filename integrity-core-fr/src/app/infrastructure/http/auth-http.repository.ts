@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -7,6 +7,8 @@ import { AuthCredentials } from '../../domain/models/auth-credentials.model';
 import { RegisterData } from '../../domain/models/register-data.model';
 import { AuthTokens } from '../../domain/models/auth-tokens.model';
 import { User } from '../../domain/models/user.model';
+import { Country } from '../../domain/models/country.model';
+import { DirectoryUser } from '../../domain/models/user-directory.model';
 
 /**
  * Adaptador de salida: implementa el puerto AuthRepository contra el
@@ -16,9 +18,18 @@ import { User } from '../../domain/models/user.model';
 @Injectable({ providedIn: 'root' })
 export class AuthHttpRepository extends AuthRepository {
   private readonly baseUrl = `${environment.apiUrl}/auth`;
-
-  constructor(private readonly http: HttpClient) {
+  private readonly http = inject(HttpClient)
+  
+  constructor() {
     super();
+  }
+
+  getCountries(): Observable<Country[]> {
+    return this.http.get<Country[]>(`${this.baseUrl}/countries`);
+  }
+
+  getUsers(): Observable<DirectoryUser[]> {
+    return this.http.get<DirectoryUser[]>(`${this.baseUrl}/users`);
   }
 
   login(credentials: AuthCredentials): Observable<AuthTokens> {

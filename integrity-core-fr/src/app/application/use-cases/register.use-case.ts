@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthRepository } from '../../domain/ports/auth.repository';
 import { RegisterData } from '../../domain/models/register-data.model';
@@ -10,7 +10,7 @@ import { User } from '../../domain/models/user.model';
  */
 @Injectable({ providedIn: 'root' })
 export class RegisterUseCase {
-  constructor(private readonly authRepository: AuthRepository) {}
+    private readonly authRepository = inject(AuthRepository)
 
   execute(data: RegisterData): Observable<User> {
     return this.authRepository.register(data);

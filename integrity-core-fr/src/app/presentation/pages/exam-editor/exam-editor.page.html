@@ -8,11 +8,12 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div class="loading" *ngIf="loading">
-    <ion-spinner name="crescent"></ion-spinner>
-  </div>
+  @if (loading()) {
+    <div class="loading"><ion-spinner name="crescent"></ion-spinner></div>
+  }
 
-  <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading">
+  @if (!loading()) {
+  <form [formGroup]="form" (ngSubmit)="save()">
     <ion-list lines="full">
       <ion-item>
         <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
@@ -31,7 +32,8 @@
     </ion-list>
 
     <div formArrayName="questions">
-      <ion-card *ngFor="let questionGroup of questions.controls; let i = index" [formGroupName]="i">
+      @for (questionGroup of questions.controls; track questionGroup.value.id; let i = $index) {
+      <ion-card [formGroupName]="i">
         <ion-card-content>
           <div class="question-header">
             <h3>Pregunta {{ i + 1 }}</h3>
@@ -65,9 +67,11 @@
             <ion-input label="Puntos" labelPlacement="floating" type="number" formControlName="points"></ion-input>
           </ion-item>
 
-          <div *ngIf="isMultipleChoice(i)" formArrayName="options" class="options">
-            <ion-radio-group formControlName="correctOptionId">
-              <ion-item *ngFor="let optionGroup of optionsOf(i).controls; let j = index" [formGroupName]="j" lines="none">
+          @if (isMultipleChoice(i)) {
+          <ion-radio-group formControlName="correctOptionId">
+            <div formArrayName="options" class="options">
+              @for (optionGroup of optionsOf(i).controls; track optionGroup.value.id; let j = $index) {
+              <ion-item [formGroupName]="j" lines="none">
                 <ion-radio [value]="optionGroup.value.id" slot="start"></ion-radio>
                 <ion-input formControlName="text" placeholder="Texto de la opción"></ion-input>
                 <ion-button
@@ -80,14 +84,17 @@
                   <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
                 </ion-button>
               </ion-item>
-            </ion-radio-group>
-            <ion-button fill="outline" size="small" (click)="addOption(i)">
-              <ion-icon name="add-outline" slot="start"></ion-icon>
-              Agregar opción
-            </ion-button>
-          </div>
+              }
+              <ion-button fill="outline" size="small" (click)="addOption(i)">
+                <ion-icon name="add-outline" slot="start"></ion-icon>
+                Agregar opción
+              </ion-button>
+            </div>
+          </ion-radio-group>
+          }
         </ion-card-content>
       </ion-card>
+      }
     </div>
 
     <ion-button expand="block" fill="outline" (click)="addQuestion()">
@@ -95,14 +102,13 @@
       Agregar pregunta
     </ion-button>
 
-    <ion-text color="danger" *ngIf="errorMessage">
-      <p class="form-error">{{ errorMessage }}</p>
-    </ion-text>
+    @if (errorMessage()) { <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text> }
 
-    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="saving">
-      <ion-spinner *ngIf="saving" name="crescent" slot="start"></ion-spinner>
-      <span *ngIf="!saving">Guardar examen</span>
-      <span *ngIf="saving">Guardando...</span>
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="saving()">
+      @if (saving()) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
+      @if (!saving()) { <span>Guardar examen</span> }
+      @if (saving()) { <span>Guardando...</span> }
     </ion-button>
   </form>
+  }
 </ion-content>

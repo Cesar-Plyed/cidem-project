@@ -5,6 +5,7 @@ import {
   BackendExamAnswer,
   BackendExamAttempt,
 } from '../models/evaluator/evaluator.model';
+import { AttemptExam } from '../models/evaluator/attempt-exam.model';
 
 /**
  * Puerto para el backend REAL de evaluator (no confundir con
@@ -26,6 +27,8 @@ import {
 export abstract class EvaluatorRepository {
   abstract createExam(title: string, description: string | undefined, createdByUserId: string): Observable<BackendExam>;
 
+  abstract publishExam(examId: string): Observable<BackendExam>;
+
   abstract generateAccessCode(
     examId: string,
     expiresInMinutes: number,
@@ -33,6 +36,10 @@ export abstract class EvaluatorRepository {
   ): Observable<BackendExamAccessCode>;
 
   abstract joinExam(examId: string, code: string, studentId: string): Observable<BackendExamAttempt>;
+
+  abstract joinExamByCode(code: string): Observable<BackendExamAttempt>;
+
+  abstract getAttemptExam(attemptId: string): Observable<AttemptExam>;
 
   abstract submitAnswer(
     attemptId: string,

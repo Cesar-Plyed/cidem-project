@@ -1,13 +1,14 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.persistence.adapter;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Repository;
+
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAccessCodeRepository;
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity.ExamAccessCodeEntity;
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.port.ExamAccessCodeJpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public class ExamAccessCodeRepositoryImpl implements ExamAccessCodeRepository {
@@ -32,6 +33,11 @@ public class ExamAccessCodeRepositoryImpl implements ExamAccessCodeRepository {
     @Override
     public Optional<ExamAccessCode> findByExamIdAndCode(UUID examId, String code) {
         return repository.findByExamIdAndCode(examId, code).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<ExamAccessCode> findByCode(String code) {
+        return repository.findByCode(code).map(this::toDomain);
     }
 
     @Override
