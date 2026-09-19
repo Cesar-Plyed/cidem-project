@@ -1,78 +1,129 @@
-# Servidor SSH de despliegue — guía rápida
+# CIDEM Integrity
 
-## 1. Antes de construir la imagen
-Edita `ssh_keys/authorized_keys` y pega ahí las 4 llaves públicas del equipo
-(una por línea). Si alguien no tiene una:
+Plataforma de integridad academica con un backend Spring Boot y un frontend Angular/Ionic.
+
+## Estructura
+
+- `integrity-core/`: API REST, autenticacion JWT, persistencia JPA, Flyway, evaluator y sentinel.
+- `integrity-core-fr/`: aplicacion web Angular/Ionic.
+- `docker-compose.yml`: entorno completo con PostgreSQL, Redis, backend y frontend.
+
+## Requisitos
+
+- Java 25
+- Node.js y npm
+- Docker o Podman con Compose
+- PostgreSQL y Redis solo son necesarios si el backend se ejecuta fuera de Compose.
+
+## Ejecutar con Compose
+
+Desde la raiz del repositorio:
+
 ```bash
-ssh-keygen -t ed25519 -C "nombre@equipo"
-cat ~/.ssh/id_ed25519.pub   # copiar esta línea al archivo authorized_keys
+docker compose up -d --build
 ```
 
-## 2. Construir y levantar el servidor
-```bash
-cd infra
-docker compose build
-docker compose up -d
-```
-Se publica el puerto **2222 → 22** del contenedor (ajusta en
-`docker-compose.yml` si prefieres exponerlo distinto, o usar
-`network_mode: host` si el host ya vive en el tailnet y quieres que el
-contenedor comparta directamente su IP de Tailscale).
+Servicios disponibles:
 
-Probar conexión:
+- Frontend: http://localhost:8081
+- Backend: http://localhost:8080
+- Health check: http://localhost:8080/actuator/health
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+
+Para detener los servicios:
+
 ```bash
-ssh -p 2222 pawner@<IP-o-MagicDNS-de-Tailscale-del-host>
+docker compose down
 ```
 
-## 3. Preparar `/srv/app` dentro del contenedor (una sola vez)
+El Compose usa el volumen externo configurado en `docker-compose.yml`. Si el volumen no existe en una instalacion nueva, crealo antes de levantar los servicios:
+
 ```bash
-ssh -p 2222 pawner@<host>
-cd /srv/app
-git clone <url-del-repo> .
-# backend/ y frontend/ deben tener cada uno su propio podman-compose.yml
+docker volume create b98896fb802fe6281d6f268378511036b8ffdb8283b9e5c582ee9fc7f79da7c7
 ```
 
-## 4. Llave de despliegue (deploy key) para GitHub Actions
-Genera un par de llaves **exclusivo para CI** (no reutilices la personal):
+## Ejecutar en desarrollo
+
+### Dependencias
+
 ```bash
-ssh-keygen -t ed25519 -f deploy_key -C "github-actions-deploy" -N ""
+docker compose up -d db redis
 ```
-- La **pública** (`deploy_key.pub`) se agrega también a
-  `~/.ssh/authorized_keys` del usuario `pawner` dentro del servidor
-  (además de las 4 personales).
-- La **privada** (`deploy_key`) se guarda como secret de GitHub:
-  `SSH_DEPLOY_KEY`.
 
-## 5. Secrets a configurar en el repo de GitHub
-`Settings → Secrets and variables → Actions`:
+### Backend
 
-| Secret | Valor |
-|---|---|
-| `SSH_HOST` | IP de Tailscale (`100.x.x.x`) o MagicDNS (`servidor.tuTailnet.ts.net`) del host |
-| `SSH_DEPLOY_KEY` | Contenido de la llave privada `deploy_key` generada en el paso 4 |
-| `TS_OAUTH_CLIENT_ID` | Client ID de una OAuth client de Tailscale (admin console → Settings → OAuth clients) |
-| `TS_OAUTH_SECRET` | Secret de esa misma OAuth client |
+Las variables requeridas son:
 
-La OAuth client de Tailscale necesita el scope de **auth keys** y el tag
-`tag:ci` debe existir en tu tailnet (ACLs) para que el runner efímero de
-GitHub pueda unirse y alcanzar al servidor.
+```bash
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/integrity_db
+export SPRING_DATASOURCE_USERNAME=postgres
+export SPRING_DATASOURCE_PASSWORD=postgres
+export JWT_SECRET=tu_clave_secreta_super_segura_para_jwt_32_caracteres_min
+export ADMIN_REGISTRATION_CODE=admin-local
+export PROFESOR_REGISTRATION_CODE=profesor-local
+```
 
-## 6. Flujo del redeploy automático
-Cada `git push` a `main` dispara `.github/workflows/deploy.yml`:
-1. El runner de GitHub se une al tailnet vía OAuth (efímero, se retira al terminar).
-2. Se conecta por SSH como `pawner` usando la deploy key.
-3. Dentro del servidor: `git reset --hard origin/main`, luego
-   `podman-compose up -d --build` en `backend/` y `frontend/`.
-4. Limpia imágenes viejas de Podman.
+Luego:
 
-## Notas
-- El contenedor corre `--privileged` porque Podman anidado (contenedores
-  dentro de contenedor) lo requiere para namespaces/cgroups. Si el host
-  no permite `--privileged` (por política de seguridad), la alternativa es
-  instalar Podman directamente en el host y saltarte este Dockerfile.
-- Recursos (4 CPU / 16 GB RAM) están limitados en `docker-compose.yml`
-  vía `deploy.resources.limits` + `cpus`/`mem_limit` como respaldo, según
-  qué motor de Compose uses.
-- Tailscale **no** se instala dentro del contenedor porque ya está
-  configurado en el host, tal como indicaste; el contenedor solo expone
-  el puerto SSH para que el host lo sirva a través del tailnet.
+```bash
+cd integrity-core
+./mvnw spring-boot:run
+```
+
+Flyway crea y actualiza el esquema automaticamente al iniciar.
+
+### Frontend
+
+En otra terminal:
+
+```bash
+cd integrity-core-fr
+npm install
+npm start
+```
+
+La aplicacion queda disponible en http://localhost:4200 y usa el backend de http://localhost:8080.
+
+## Funcionalidades principales
+
+- Registro e inicio de sesion con JWT.
+- Catalogo de paises con Mexico como registro inicial.
+- Dashboard por rol: administrador, profesor y alumno.
+- Administradores pueden consultar todos los usuarios.
+- Profesores pueden consultar los alumnos.
+- Alumnos ingresan a examenes mediante codigo de acceso.
+- Creacion de examenes con preguntas y opciones correctas en una sola peticion.
+- Modulo evaluator para examenes, intentos, respuestas y resultados.
+- Modulo sentinel para eventos sospechosos y alertas.
+
+## Pruebas y validaciones
+
+Backend:
+
+```bash
+cd integrity-core
+./mvnw test
+```
+
+Frontend:
+
+```bash
+cd integrity-core-fr
+npm run build -- --configuration development
+npm run lint
+```
+
+## Migraciones
+
+Las migraciones de base de datos estan en `integrity-core/src/main/resources/db/migration/` y son administradas por Flyway. No se debe modificar una migracion que ya haya sido aplicada; agrega una nueva con la siguiente version disponible.
+
+## API
+
+La API se publica bajo:
+
+```text
+http://localhost:8080
+```
+
+El endpoint publico de paises es `GET /auth/countries`. La documentacion OpenAPI, si esta habilitada, esta disponible en `/swagger-ui/index.html`.
