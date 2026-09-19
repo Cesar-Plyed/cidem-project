@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -57,6 +57,15 @@ import { SessionService } from '../../../application/session/session.service';
   ],
 })
 export class EvaluatorDemoPage {
+    private readonly fb = inject(FormBuilder)
+    private readonly sessionService = inject(SessionService)
+    private readonly createRemoteExamUseCase = inject(CreateRemoteExamUseCase)
+    private readonly generateAccessCodeUseCase = inject(GenerateAccessCodeUseCase)
+    private readonly joinRemoteExamUseCase = inject(JoinRemoteExamUseCase)
+    private readonly submitRemoteAnswerUseCase = inject(SubmitRemoteAnswerUseCase)
+    private readonly submitRemoteAttemptUseCase = inject(SubmitRemoteAttemptUseCase)
+
+
   currentUserId: string | null = null;
 
   readonly createExamForm = this.fb.group({
@@ -97,15 +106,7 @@ export class EvaluatorDemoPage {
   submitResult: unknown = null;
   submitError: string | null = null;
 
-  constructor(
-    private readonly fb: FormBuilder,
-    private readonly sessionService: SessionService,
-    private readonly createRemoteExamUseCase: CreateRemoteExamUseCase,
-    private readonly generateAccessCodeUseCase: GenerateAccessCodeUseCase,
-    private readonly joinRemoteExamUseCase: JoinRemoteExamUseCase,
-    private readonly submitRemoteAnswerUseCase: SubmitRemoteAnswerUseCase,
-    private readonly submitRemoteAttemptUseCase: SubmitRemoteAttemptUseCase,
-  ) {
+  constructor() {
     this.sessionService.getUserId().then((id) => {
       this.currentUserId = id;
       if (id) {
