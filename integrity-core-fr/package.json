@@ -13,12 +13,12 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "22.0.1",
-    "@angular/compiler": "22.0.1",
-    "@angular/core": "22.0.1",
-    "@angular/forms": "22.0.1",
-    "@angular/platform-browser": "22.0.1",
-    "@angular/router": "22.0.1",
+    "@angular/common": "^22.1.7",
+    "@angular/compiler": "^22.1.7",
+    "@angular/core": "^22.1.7",
+    "@angular/forms": "^22.1.7",
+    "@angular/platform-browser": "^22.1.7",
+    "@angular/router": "^22.1.7",
     "@ionic/angular": "^9.0.0",
     "@ionic/storage-angular": "^4.0.0",
     "ionicons": "^8.1.0",
@@ -27,9 +27,9 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "22.0.1",
-    "@angular/cli": "22.0.1",
-    "@angular/compiler-cli": "22.0.1",
+    "@angular/build": "^22.1.8",
+    "@angular/cli": "^22.1.8",
+    "@angular/compiler-cli": "^22.1.7",
     "@angular/language-service": "22.0.1",
     "@ionic/angular-toolkit": "^13.0.0",
     "angular-eslint": "22.0.0",
@@ -39,5 +39,11 @@
     "typescript-eslint": "^8.61.0",
     "vitest": "^4.0.8"
   },
-  "description": "An Ionic project"
+  "description": "An Ionic project",
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "esbuild@0.28.2": true,
+    "lmdb@3.5.6": true,
+    "msgpackr-extract@3.0.4": true
+  }
 }
