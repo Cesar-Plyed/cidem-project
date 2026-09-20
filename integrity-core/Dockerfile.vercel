@@ -1,0 +1,31 @@
+# ---------- Etapa 1: build ----------
+FROM docker.io/library/eclipse-temurin:25-jdk AS build
+WORKDIR /app
+
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+
+COPY src ./src
+# Los tests ya corren en el CI de GitHub; aquí solo se empaqueta.
+RUN ./mvnw clean package -DskipTests -B
+
+# ---------- Etapa 2: runtime ----------
+FROM docker.io/library/eclipse-temurin:25-jre AS runtime
+WORKDIR /app
+
+# Usuario no-root: por eso la app escucha en 8080 y no en el 80 por defecto de Vercel.
+RUN groupadd -r spring && useradd -r -g spring spring
+
+COPY --from=build /app/target/*.jar app.jar
+COPY vercel-entrypoint.sh entrypoint.sh
+# sed quita los saltos de línea CRLF por si el archivo se editó en Windows.
+RUN sed -i 's/\r$//' entrypoint.sh \
+ && chmod +x entrypoint.sh \
+ && chown spring:spring app.jar entrypoint.sh
+USER spring
+
+EXPOSE 8080
+
+# Sin HEALTHCHECK: Vercel no lo usa y el JRE no trae wget.
+ENTRYPOINT ["/app/entrypoint.sh"]
