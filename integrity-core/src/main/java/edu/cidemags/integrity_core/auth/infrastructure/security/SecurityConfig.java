@@ -1,5 +1,6 @@
 package edu.cidemags.integrity_core.auth.infrastructure.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -21,8 +22,12 @@ public class SecurityConfig {
             "/auth/login",
             "/auth/countries",
             "/auth/refresh",
-            "/auth/logout"
+            "/auth/logout",
+            "/actuator/health"   // solo estado UP/DOWN (show-details: never); sirve para probar el deploy
     };
+
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:4200}")
+    private String[] allowedOrigins;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -49,10 +54,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of(
-                "http://localhost:8081",
-                "http://localhost:4200"
-        ));
+        configuration.setAllowedOrigins(java.util.List.of(allowedOrigins));
         configuration.setAllowedMethods(java.util.List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
