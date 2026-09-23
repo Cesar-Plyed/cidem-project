@@ -3,7 +3,7 @@ import { from, switchMap } from 'rxjs';
 import { inject } from '@angular/core';
 import { TokenStorageService } from '../storage/token-storage.service';
 
-const PUBLIC_PATHS = ['/auth/register', '/auth/login', '/auth/refresh'];
+const PUBLIC_PATHS = ['/auth/register', '/auth/login', '/auth/refresh', '/auth/logout', '/auth/countries'];
 
 /**
  * Adjunta el access token a toda petición saliente, excepto a los

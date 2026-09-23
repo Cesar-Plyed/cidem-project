@@ -39,6 +39,21 @@ export const routes: Routes = [
     loadComponent: () => import('./presentation/pages/exam-editor/exam-editor.page').then((m) => m.ExamEditorPage)
   },
   {
+    path: 'exams/:examId/reviews',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
+    loadComponent: () => import('./presentation/pages/exam-reviews/exam-reviews.page').then((m) => m.ExamReviewsPage)
+  },
+  {
+    path: 'exams/:examId/results',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
+    loadComponent: () => import('./presentation/pages/exam-results/exam-results.page').then((m) => m.ExamResultsPage)
+  },
+  {
+    path: 'attempts/:attemptId/result',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR, Role.ALUMNO])],
+    loadComponent: () => import('./presentation/pages/exam-result/exam-result.page').then((m) => m.ExamResultPage)
+  },
+  {
     path: 'attempts/:attemptId',
     canActivate: [roleGuard([Role.ALUMNO])],
     loadComponent: () => import('./presentation/pages/exam-attempt/exam-attempt.page').then((m) => m.ExamAttemptPage)

@@ -21,7 +21,7 @@ import {
   AlertController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { addOutline, copyOutline, createOutline, keyOutline, trashOutline } from 'ionicons/icons';
+import { addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline } from 'ionicons/icons';
 import { ListExamsUseCase } from '../../../application/use-cases/exam/list-exams.use-case';
 import { DeleteExamUseCase } from '../../../application/use-cases/exam/delete-exam.use-case';
 import { GenerateAccessCodeUseCase } from '../../../application/use-cases/evaluator/generate-access-code.use-case';
@@ -75,7 +75,7 @@ export class ExamListPage implements OnInit {
 
   constructor(
   ) {
-    addIcons({ addOutline, copyOutline, createOutline, keyOutline, trashOutline });
+    addIcons({ addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline });
   }
 
   ngOnInit(): void {
@@ -197,5 +197,12 @@ export class ExamListPage implements OnInit {
       error: (err: HttpErrorResponse) =>
         this.errorMessage.set(`No se pudo eliminar el examen (HTTP ${err.status}).`),
     });
+  }
+
+  onNavigate(event: MouseEvent): void {
+    const target = event.currentTarget as HTMLElement;
+    if (target) {
+      target.blur();
+    }
   }
 }

@@ -74,8 +74,7 @@ class ReceiveSuspiciousEventServiceTest {
 
         Optional<Alert> result = service.receive(command());
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).isEqualTo(alert);
+        assertThat(result).isPresent().isEqualTo(alert);
         verify(alertRepository).save(alert);
 
         ArgumentCaptor<AlertGeneratedEvent> captor = ArgumentCaptor.forClass(AlertGeneratedEvent.class);

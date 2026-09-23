@@ -87,6 +87,14 @@ public class ExamAttemptController {
     @GetMapping("/attempts/{attemptId}/result")
     public ResponseEntity<ExamResultResponse> getResult(@PathVariable UUID attemptId,
             Authentication authentication) {
-        return ResponseEntity.ok(getExamResultUseCase.execute(attemptId, (UUID) authentication.getPrincipal()));
+        boolean administrator = isAdministrator(authentication);
+        return ResponseEntity.ok(getExamResultUseCase.execute(
+                attemptId, (UUID) authentication.getPrincipal(), administrator));
+    }
+
+    private boolean isAdministrator(Authentication authentication) {
+        if (authentication == null) return false;
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMINISTRATIVO"));
     }
 }
