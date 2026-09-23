@@ -62,3 +62,72 @@ export interface BackendExamAnswer {
   selectedOptionIds: string[];
   openTextAnswer: string | null;
 }
+
+export interface BackendEvaluationReview {
+  id: string;
+  answerId: string;
+  reviewerId: string;
+  score: number;
+  feedback: string | null;
+  createdAt: string; // ISO-8601
+  updatedAt: string; // ISO-8601
+}
+
+export interface BackendOpenEndedReview {
+  answerId: string;
+  attemptId: string;
+  studentId: string;
+  questionId: string;
+  questionPrompt: string;
+  openTextAnswer: string | null;
+  score: number | null;
+  feedback: string | null;
+  reviewerId: string | null;
+  reviewed: boolean;
+  createdAt: string | null; // ISO-8601
+  updatedAt: string | null; // ISO-8601
+}
+
+export interface BackendQuestionOptionResult {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+export interface BackendQuestionResult {
+  questionId: string;
+  statement: string;
+  questionType: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'OPEN_ENDED';
+  selectedOptionIds: string[];
+  openTextAnswer: string | null;
+  options: BackendQuestionOptionResult[];
+  answered: boolean;
+  score: number;
+  pendingReview: boolean;
+  feedback: string | null;
+}
+
+export interface BackendExamResult {
+  attemptId: string;
+  examId: string;
+  studentId: string;
+  studentEmail: string | null;
+  studentFirstName: string | null;
+  studentLastName: string | null;
+  studentPhone: string | null;
+  score: number;
+  maxScore: number;
+  pendingReview: boolean;
+  questions: BackendQuestionResult[];
+}
+
+export interface BackendExamAverage {
+  examId: string;
+  examTitle: string;
+  totalAttempts: number;
+  gradedAttempts: number;
+  pendingReviewCount: number;
+  averageScore: number;
+  maxScore: number;
+  averagePercentage: number;
+}

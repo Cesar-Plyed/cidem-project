@@ -32,6 +32,9 @@
       <div class="submitted-banner">
         <ion-text color="success"><p>Examen enviado correctamente. ¡Buen trabajo!</p></ion-text>
         <ion-button expand="block" routerLink="/home">Volver al panel</ion-button>
+        <ion-button expand="block" fill="outline" [routerLink]="['/attempts', current.attemptId, 'result']">
+          Ver resultado
+        </ion-button>
       </div>
     } @else {
       @for (question of current.questions; track question.id; let i = $index) {

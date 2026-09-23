@@ -1,0 +1,136 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Resultado del examen</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (loading()) {
+    <div class="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando resultado...</p>
+    </div>
+  }
+
+  @if (!loading() && errorMessage()) {
+    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
+  }
+
+  @if (!loading() && result(); as result) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Calificación</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>
+          <ion-badge [color]="scoreColor(result.score, result.maxScore)" style="font-size: 1.5rem">
+            {{ result.score }} / {{ result.maxScore }}
+          </ion-badge>
+        </p>
+        @if (result.studentEmail || result.studentFirstName || result.studentLastName || result.studentPhone) {
+          <ion-list lines="none" class="student-info">
+            <ion-item>
+              <ion-label>
+                <p><strong>Nombre:</strong> {{ result.studentFirstName }} {{ result.studentLastName }}</p>
+              </ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-label>
+                <p><strong>Correo:</strong> {{ result.studentEmail }}</p>
+              </ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-label>
+                <p><strong>Teléfono:</strong> {{ result.studentPhone }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        }
+        @if (result.pendingReview) {
+          <ion-badge color="warning">
+            Algunas preguntas abiertas aún están pendientes de revisión
+          </ion-badge>
+        } @else {
+          <ion-text color="success">
+            <p>Todas las respuestas han sido revisadas.</p>
+          </ion-text>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list>
+      @for (question of result.questions; track question.questionId; let i = $index) {
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>
+              Pregunta {{ i + 1 }}
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <p class="statement">{{ question.statement }}</p>
+            <p><ion-text color="medium">Tipo:</ion-text> {{ question.questionType }}</p>
+
+            @if (question.questionType === 'OPEN_ENDED') {
+              <div class="answer-section">
+                <p class="section-label">Respuesta del estudiante:</p>
+                <p class="student-answer">{{ question.openTextAnswer || '(sin respuesta)' }}</p>
+              </div>
+            } @else {
+              <div class="answer-section">
+                <p class="section-label">Respuesta del estudiante:</p>
+                <ul class="answer-list">
+                  @for (optId of question.selectedOptionIds; track optId) {
+                    <li>{{ getOptionText(question, optId) }}</li>
+                  }
+                  @empty {
+                    <li class="empty">No respondió</li>
+                  }
+                </ul>
+              </div>
+
+              <div class="answer-section">
+                <p class="section-label">Respuesta correcta:</p>
+                <ul class="answer-list">
+                  @for (opt of question.options; track opt.id) {
+                    @if (opt.correct) {
+                      <li class="correct-option">{{ opt.text }}</li>
+                    }
+                  }
+                  @empty {
+                    <li class="empty">No hay opción marcada como correcta</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <ion-list lines="none" class="qualification">
+              <ion-item>
+                <ion-label>
+                  <p><strong>Puntuación:</strong> {{ question.score }}</p>
+                </ion-label>
+              </ion-item>
+              @if (question.feedback) {
+                <ion-item>
+                  <ion-label>
+                    <p class="feedback"><strong>Retroalimentación:</strong> {{ question.feedback }}</p>
+                  </ion-label>
+                </ion-item>
+              }
+            </ion-list>
+
+            @if (question.pendingReview) {
+              <ion-badge color="warning">Pendiente de revisión</ion-badge>
+            }
+          </ion-card-content>
+        </ion-card>
+      }
+    </ion-list>
+
+    <ion-button expand="block" class="ion-margin-top" routerLink="/home">
+      Volver al panel
+    </ion-button>
+  }
+</ion-content>

@@ -8,6 +8,10 @@ import {
   BackendExamAccessCode,
   BackendExamAnswer,
   BackendExamAttempt,
+  BackendExamAverage,
+  BackendExamResult,
+  BackendEvaluationReview,
+  BackendOpenEndedReview,
 } from '../../domain/models/evaluator/evaluator.model';
 import { AttemptExam } from '../../domain/models/evaluator/attempt-exam.model';
 
@@ -84,5 +88,39 @@ export class EvaluatorHttpRepository extends EvaluatorRepository {
 
   submitAttempt(attemptId: string): Observable<BackendExamAttempt> {
     return this.http.post<BackendExamAttempt>(`${this.baseUrl}/attempts/${attemptId}/submit`, null);
+  }
+
+  getExamResults(examId: string): Observable<BackendExamResult[]> {
+    return this.http.get<BackendExamResult[]>(`${this.baseUrl}/exams/${examId}/results`);
+  }
+
+  getAttemptResult(attemptId: string): Observable<BackendExamResult> {
+    return this.http.get<BackendExamResult>(`${this.baseUrl}/attempts/${attemptId}/result`);
+  }
+
+  getExamAverage(examId: string): Observable<BackendExamAverage> {
+    return this.http.get<BackendExamAverage>(`${this.baseUrl}/exams/${examId}/average`);
+  }
+
+  listOpenEndedReviews(
+    examId: string,
+    onlyPending = true,
+  ): Observable<BackendOpenEndedReview[]> {
+    const params = new HttpParams().set('pending', onlyPending);
+    return this.http.get<BackendOpenEndedReview[]>(
+      `${this.baseUrl}/exams/${examId}/reviews/open-ended`,
+      { params },
+    );
+  }
+
+  reviewOpenEndedAnswer(
+    answerId: string,
+    score: number,
+    feedback?: string,
+  ): Observable<BackendEvaluationReview> {
+    return this.http.put<BackendEvaluationReview>(
+      `${this.baseUrl}/reviews/open-ended/${answerId}`,
+      { score, feedback: feedback ?? null },
+    );
   }
 }

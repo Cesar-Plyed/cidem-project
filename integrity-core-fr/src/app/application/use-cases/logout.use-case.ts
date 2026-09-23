@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import { firstValueFrom, timeout, catchError } from 'rxjs';
 import { AuthRepository } from '../../domain/ports/auth.repository';
 import { SessionService } from '../session/session.service';
 
@@ -16,7 +17,16 @@ export class LogoutUseCase {
   async execute(): Promise<void> {
     const refreshToken = await this.sessionService.getRefreshToken();
     if (refreshToken) {
-      this.authRepository.logout(refreshToken).subscribe({ error: () => {} });
+      try {
+        await firstValueFrom(
+          this.authRepository.logout(refreshToken).pipe(
+            timeout(5000),
+            catchError(() => []),
+          ),
+        );
+      } catch {
+        // Silently ignore timeout or network errors — session is cleared below regardless
+      }
     }
     await this.sessionService.clearSession();
   }

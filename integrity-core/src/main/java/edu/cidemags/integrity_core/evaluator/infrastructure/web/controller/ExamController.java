@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateExamCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateQuestionCommand;
+import edu.cidemags.integrity_core.evaluator.application.dto.ExamAverageResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamResultResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.GenerateExamAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.PagedExamResultsResponse;
@@ -34,7 +35,7 @@ import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
 
 @RestController
-@RequestMapping("/api/evaluator")
+@RequestMapping("/api/evaluator/exams")
 public class ExamController {
 
     private final CreateExamUseCase createExamUseCase;
@@ -58,7 +59,7 @@ public class ExamController {
         this.exportExamResultsUseCase = exportExamResultsUseCase;
     }
 
-    @PostMapping("/exams")
+    @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> createExam(@RequestBody CreateExamCommand command, Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
@@ -66,17 +67,17 @@ public class ExamController {
             new CreateExamCommand(command.title(), command.description(), userId, command.questions())));
     }
 
-    @GetMapping("/exams")
+    @GetMapping
     public ResponseEntity<List<Exam>> listExams() {
         return ResponseEntity.ok(examManagementUseCase.list());
     }
 
-    @GetMapping("/exams/{examId}")
+    @GetMapping("/{examId}")
     public ResponseEntity<Exam> getExam(@PathVariable UUID examId) {
         return ResponseEntity.ok(examManagementUseCase.get(examId));
     }
 
-    @PutMapping("/exams/{examId}")
+    @PutMapping("/{examId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> updateExam(@PathVariable UUID examId, @RequestBody UpdateExamCommand command,
             Authentication authentication) {
@@ -85,7 +86,7 @@ public class ExamController {
                 new UpdateExamCommand(examId, command.title(), command.description())));
     }
 
-    @DeleteMapping("/exams/{examId}")
+    @DeleteMapping("/{examId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Void> deleteExam(@PathVariable UUID examId, Authentication authentication) {
         assertCanManage(examId, authentication);
@@ -93,21 +94,21 @@ public class ExamController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/exams/{examId}/publish")
+    @PostMapping("/{examId}/publish")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> publishExam(@PathVariable UUID examId, Authentication authentication) {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(examManagementUseCase.publish(examId));
     }
 
-    @PostMapping("/exams/{examId}/close")
+    @PostMapping("/{examId}/close")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> closeExam(@PathVariable UUID examId, Authentication authentication) {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(examManagementUseCase.close(examId));
     }
 
-    @PostMapping("/exams/{examId}/questions")
+    @PostMapping("/{examId}/questions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> addQuestion(@PathVariable UUID examId,
             @RequestBody CreateQuestionCommand command, Authentication authentication) {
@@ -115,7 +116,7 @@ public class ExamController {
         return ResponseEntity.ok(questionManagementUseCase.add(examId, command));
     }
 
-    @DeleteMapping("/exams/{examId}/questions/{questionId}")
+    @DeleteMapping("/{examId}/questions/{questionId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> removeQuestion(@PathVariable UUID examId, @PathVariable UUID questionId,
             Authentication authentication) {
@@ -123,7 +124,7 @@ public class ExamController {
         return ResponseEntity.ok(questionManagementUseCase.remove(examId, questionId));
     }
 
-    @PostMapping("/exams/{examId}/question-banks/{bankId}/import")
+    @PostMapping("/{examId}/question-banks/{bankId}/import")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> importQuestions(@PathVariable UUID examId, @PathVariable UUID bankId,
             Authentication authentication) {
@@ -131,7 +132,7 @@ public class ExamController {
         return ResponseEntity.ok(questionManagementUseCase.importFromBank(examId, bankId));
     }
 
-    @PostMapping("/exams/{examId}/access-code")
+    @PostMapping("/{examId}/access-code")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<ExamAccessCode> generateAccessCode(@PathVariable UUID examId,
             @RequestParam(defaultValue = "20") int expiresInMinutes,
@@ -141,7 +142,7 @@ public class ExamController {
         return ResponseEntity.ok(generateExamAccessCodeUseCase.execute(command));
     }
 
-    @GetMapping("/exams/{examId}/results")
+    @GetMapping("/{examId}/results")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<List<ExamResultResponse>> getExamResults(@PathVariable UUID examId,
             Authentication authentication) {
@@ -151,7 +152,7 @@ public class ExamController {
         return ResponseEntity.ok(getExamResultUseCase.executeForExam(examId, requesterId, administrator));
     }
 
-    @GetMapping("/exams/{examId}/results/page")
+    @GetMapping("/{examId}/results/page")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<PagedExamResultsResponse> getExamResultsPage(@PathVariable UUID examId,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
@@ -162,7 +163,7 @@ public class ExamController {
                 .ok(getExamResultUseCase.executeForExamPage(examId, requesterId, administrator, page, size));
     }
 
-    @GetMapping(value = "/exams/{examId}/results/export", produces = "text/csv")
+    @GetMapping(value = "/{examId}/results/export", produces = "text/csv")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<byte[]> exportExamResults(@PathVariable UUID examId, Authentication authentication) {
         UUID requesterId = (UUID) authentication.getPrincipal();
@@ -171,6 +172,15 @@ public class ExamController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv"))
                 .header("Content-Disposition", "attachment; filename=exam-" + examId + "-results.csv")
                 .body(content);
+    }
+
+    @GetMapping("/{examId}/average")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
+    public ResponseEntity<ExamAverageResponse> getExamAverage(@PathVariable UUID examId,
+            Authentication authentication) {
+        UUID requesterId = (UUID) authentication.getPrincipal();
+        boolean administrator = isAdministrator(authentication);
+        return ResponseEntity.ok(getExamResultUseCase.calculateAverage(examId, requesterId, administrator));
     }
 
     private void assertCanManage(UUID examId, Authentication authentication) {
