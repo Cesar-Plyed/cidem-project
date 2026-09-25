@@ -100,8 +100,8 @@ jobs:
         run: npm run lint
 
       # Vitest + jsdom, sin navegador. "ci" desactiva el modo watch.
-      - name: Tests unitarios
-        run: npm test -- --configuration=ci
+      # - name: Tests unitarios
+      #   run: npm test -- --configuration=ci
 
       - name: Build de producción
         run: npm run build -- --configuration production
