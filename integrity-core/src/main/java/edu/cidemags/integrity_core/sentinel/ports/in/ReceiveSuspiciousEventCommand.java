@@ -8,6 +8,7 @@ import java.util.UUID;
 public record ReceiveSuspiciousEventCommand(
     UUID examSessionId,
     UUID studentId,
+    UUID attemptId,
     EventType type,
     Instant occurredAt
 ) {
