@@ -7,6 +7,7 @@ public record SuspiciousEvent(
     UUID id,
     ExamSessionId examSessionId,
     StudentId studentId,
+    AttemptId attemptId,
     EventType type,
     Instant occurredAt
 ) {
@@ -20,6 +21,9 @@ public record SuspiciousEvent(
         }
         if (studentId == null) {
             throw new IllegalArgumentException("studentId es obligatorio");
+        }
+        if (attemptId == null) {
+            throw new IllegalArgumentException("attemptId es obligatorio");
         }
         if (type == null) {
             throw new IllegalArgumentException("type es obligatorio");

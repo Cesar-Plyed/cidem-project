@@ -5,24 +5,26 @@ import edu.cidemags.integrity_core.sentinel.domain.SuspiciousEvent;
 import edu.cidemags.integrity_core.sentinel.ports.out.SuspiciousEventRepositoryPort;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Repository
-public class InMemorySuspiciousEventRepository implements SuspiciousEventRepositoryPort {
+public class JpaSuspiciousEventRepositoryAdapter implements SuspiciousEventRepositoryPort {
 
-    private final List<SuspiciousEvent> events = new CopyOnWriteArrayList<>();
+    private final SuspiciousEventJpaRepository jpaRepository;
+
+    public JpaSuspiciousEventRepositoryAdapter(SuspiciousEventJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
 
     @Override
     public void save(SuspiciousEvent event) {
-        events.add(event);
+        jpaRepository.save(SuspiciousEventMapper.toEntity(event));
     }
 
     @Override
     public List<SuspiciousEvent> findByExamSessionId(ExamSessionId examSessionId) {
-        return new ArrayList<>(events.stream()
-            .filter(event -> event.examSessionId().equals(examSessionId))
-            .toList());
+        return jpaRepository.findByExamSessionId(examSessionId.value()).stream()
+            .map(SuspiciousEventMapper::toDomain)
+            .toList();
     }
 }

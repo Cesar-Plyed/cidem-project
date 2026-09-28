@@ -36,6 +36,7 @@ public class AlertEscalationPolicy {
                 UUID.randomUUID(),
                 e.examSessionId(),
                 e.studentId(),
+                e.attemptId(),
                 AlertSeverity.HIGH,
                 "Cambio de aplicación/pestaña detectado",
                 List.of(e.id()),
@@ -44,38 +45,37 @@ public class AlertEscalationPolicy {
     }
 
     private Optional<Alert> evaluateFocusLostPattern(List<SuspiciousEvent> events) {
-    List<SuspiciousEvent> focusLostEvents = events.stream()
-        .filter(e -> e.type() == EventType.WINDOW_FOCUS_LOST)
-        .sorted(Comparator.comparing(SuspiciousEvent::occurredAt))
-        .toList();
+        List<SuspiciousEvent> focusLostEvents = events.stream()
+            .filter(e -> e.type() == EventType.WINDOW_FOCUS_LOST)
+            .sorted(Comparator.comparing(SuspiciousEvent::occurredAt))
+            .toList();
 
-    if (focusLostEvents.size() < FOCUS_LOST_THRESHOLD) {
-        return Optional.empty();
+        if (focusLostEvents.size() < FOCUS_LOST_THRESHOLD) {
+            return Optional.empty();
+        }
+
+        int fromIndex = focusLostEvents.size() - FOCUS_LOST_THRESHOLD;
+        List<SuspiciousEvent> windowEvents = focusLostEvents.subList(fromIndex, focusLostEvents.size());
+
+        Instant windowStart = windowEvents.get(0).occurredAt();
+        Instant windowEnd = windowEvents.get(windowEvents.size() - 1).occurredAt();
+
+        if (Duration.between(windowStart, windowEnd).compareTo(FOCUS_LOST_WINDOW) > 0) {
+            return Optional.empty();
+        }
+
+        SuspiciousEvent anyEvent = windowEvents.get(0);
+        List<UUID> sourceIds = windowEvents.stream().map(SuspiciousEvent::id).toList();
+
+        return Optional.of(new Alert(
+            UUID.randomUUID(),
+            anyEvent.examSessionId(),
+            anyEvent.studentId(),
+            anyEvent.attemptId(),
+            AlertSeverity.MEDIUM,
+            "Múltiples pérdidas de foco detectadas en un periodo corto",
+            sourceIds,
+            Instant.now()
+        ));
     }
-
-    int fromIndex = focusLostEvents.size() - FOCUS_LOST_THRESHOLD;
-    List<SuspiciousEvent> windowEvents = focusLostEvents.subList(fromIndex, focusLostEvents.size());
-
-    Instant windowStart = windowEvents.get(0).occurredAt();
-    Instant windowEnd = windowEvents.get(windowEvents.size() - 1).occurredAt();
-
-    if (Duration.between(windowStart, windowEnd).compareTo(FOCUS_LOST_WINDOW) > 0) {
-        return Optional.empty();
-    }
-
-    SuspiciousEvent anyEvent = windowEvents.get(0);
-    List<UUID> sourceIds = windowEvents.stream().map(SuspiciousEvent::id).toList();
-
-    return Optional.of(new Alert(
-        UUID.randomUUID(),
-        anyEvent.examSessionId(),
-        anyEvent.studentId(),
-        AlertSeverity.MEDIUM,
-        "Múltiples pérdidas de foco detectadas en un periodo corto",
-        sourceIds,
-        Instant.now()
-    ));
-}
-
- 
 }

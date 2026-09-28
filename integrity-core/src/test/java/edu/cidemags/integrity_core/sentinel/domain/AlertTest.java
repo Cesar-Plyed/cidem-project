@@ -14,6 +14,7 @@ class AlertTest {
     private final UUID id = UUID.randomUUID();
     private final ExamSessionId examSessionId = new ExamSessionId(UUID.randomUUID());
     private final StudentId studentId = new StudentId(UUID.randomUUID());
+    private final AttemptId attemptId = new AttemptId(UUID.randomUUID());
     private final AlertSeverity severity = AlertSeverity.MEDIUM;
     private final String reason = "Múltiples pérdidas de foco detectadas";
     private final List<UUID> sourceEventIds = List.of(UUID.randomUUID());
@@ -21,11 +22,12 @@ class AlertTest {
 
     @Test
     void shouldCreateAlertWithValidFields() {
-        Alert alert = new Alert(id, examSessionId, studentId, severity, reason, sourceEventIds, generatedAt);
+        Alert alert = new Alert(id, examSessionId, studentId, attemptId, severity, reason, sourceEventIds, generatedAt);
 
         assertThat(alert.id()).isEqualTo(id);
         assertThat(alert.examSessionId()).isEqualTo(examSessionId);
         assertThat(alert.studentId()).isEqualTo(studentId);
+        assertThat(alert.attemptId()).isEqualTo(attemptId);
         assertThat(alert.severity()).isEqualTo(severity);
         assertThat(alert.reason()).isEqualTo(reason);
         assertThat(alert.sourceEventIds()).isEqualTo(sourceEventIds);
@@ -34,49 +36,56 @@ class AlertTest {
 
     @Test
     void shouldThrowExceptionWhenIdIsNull() {
-        assertThatThrownBy(() -> new Alert(null, examSessionId, studentId, severity, reason, sourceEventIds, generatedAt))
+        assertThatThrownBy(() -> new Alert(null, examSessionId, studentId, attemptId, severity, reason, sourceEventIds, generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("id");
     }
 
     @Test
     void shouldThrowExceptionWhenExamSessionIdIsNull() {
-        assertThatThrownBy(() -> new Alert(id, null, studentId, severity, reason, sourceEventIds, generatedAt))
+        assertThatThrownBy(() -> new Alert(id, null, studentId, attemptId, severity, reason, sourceEventIds, generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("examSessionId");
     }
 
     @Test
     void shouldThrowExceptionWhenStudentIdIsNull() {
-        assertThatThrownBy(() -> new Alert(id, examSessionId, null, severity, reason, sourceEventIds, generatedAt))
+        assertThatThrownBy(() -> new Alert(id, examSessionId, null, attemptId, severity, reason, sourceEventIds, generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("studentId");
     }
 
     @Test
+    void shouldThrowExceptionWhenAttemptIdIsNull() {
+        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, null, severity, reason, sourceEventIds, generatedAt))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("attemptId");
+    }
+
+    @Test
     void shouldThrowExceptionWhenSeverityIsNull() {
-        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, null, reason, sourceEventIds, generatedAt))
+        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, attemptId, null, reason, sourceEventIds, generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("severity");
     }
 
     @Test
     void shouldThrowExceptionWhenReasonIsBlank() {
-        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, severity, "  ", sourceEventIds, generatedAt))
+        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, attemptId, severity, "  ", sourceEventIds, generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("reason");
     }
 
     @Test
     void shouldThrowExceptionWhenSourceEventIdsIsEmpty() {
-        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, severity, reason, List.of(), generatedAt))
+        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, attemptId, severity, reason, List.of(), generatedAt))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("evento");
     }
 
     @Test
     void shouldThrowExceptionWhenGeneratedAtIsNull() {
-        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, severity, reason, sourceEventIds, null))
+        assertThatThrownBy(() -> new Alert(id, examSessionId, studentId, attemptId, severity, reason, sourceEventIds, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("generatedAt");
     }
