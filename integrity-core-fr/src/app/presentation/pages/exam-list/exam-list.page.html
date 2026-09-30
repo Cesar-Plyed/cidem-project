@@ -46,9 +46,29 @@
         <ion-icon name="copy-outline" slot="icon-only"></ion-icon>
       </ion-button>
       }
-      <ion-button fill="clear" slot="end" [routerLink]="['/exams', exam.id, 'edit']">
+      <ion-button fill="clear" slot="end" [routerLink]="['/exams', exam.id, 'edit']" (click)="onNavigate($event)">
         <ion-icon name="create-outline" slot="icon-only"></ion-icon>
       </ion-button>
+      @if (exam.status === 'PUBLISHED' || exam.status === 'CLOSED') {
+      <ion-button
+        fill="clear"
+        slot="end"
+        aria-label="Ver resultados"
+        [routerLink]="['/exams', exam.id, 'results']"
+        (click)="onNavigate($event)"
+      >
+        <ion-icon name="eye-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button
+        fill="clear"
+        slot="end"
+        aria-label="Revisar respuestas abiertas"
+        [routerLink]="['/exams', exam.id, 'reviews']"
+        (click)="onNavigate($event)"
+      >
+        <ion-icon name="reader-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      }
       <ion-button fill="clear" color="danger" slot="end" (click)="confirmDelete(exam)">
         <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
       </ion-button>

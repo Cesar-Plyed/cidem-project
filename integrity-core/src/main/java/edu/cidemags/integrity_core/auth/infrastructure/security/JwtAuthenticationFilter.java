@@ -23,6 +23,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/register",
+            "/auth/login",
+            "/auth/countries",
+            "/auth/refresh",
+            "/auth/logout"
+    );
+
     private final TokenProvider tokenProvider;
 
     public JwtAuthenticationFilter(TokenProvider tokenProvider) {
@@ -33,6 +41,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@Nonnull HttpServletRequest request,
                                     @Nonnull HttpServletResponse response,
                                     @Nonnull FilterChain filterChain) throws ServletException, IOException {
+
+        String requestPath = request.getServletPath();
+        boolean isPublicPath = PUBLIC_PATHS.stream().anyMatch(requestPath::startsWith);
 
         String header = request.getHeader(AUTH_HEADER);
 
@@ -54,6 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (InvalidAccessTokenException ex) {
+            if (isPublicPath) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");

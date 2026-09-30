@@ -1,0 +1,104 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/exams"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Revisión de respuestas abiertas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (loading()) {
+    <div class="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando revisiones...</p>
+    </div>
+  }
+
+  @if (!loading() && errorMessage()) {
+    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
+  }
+
+  @if (!loading() && average()) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Resumen del examen</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>
+          <ion-badge color="primary" style="font-size: 1.5rem">
+            {{ average()!.averagePercentage.toFixed(1) }}%
+          </ion-badge>
+          puntuación promedio ({{ average()!.averageScore.toFixed(1) }} / {{ average()!.maxScore }})
+        </p>
+        <p>
+          {{ average()!.totalAttempts }} intentos ·
+          {{ average()!.gradedAttempts }} calificados ·
+          <ion-badge color="warning">{{ average()!.pendingReviewCount }} pendientes</ion-badge>
+        </p>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  @if (!loading() && reviews().length === 0) {
+    <ion-text color="medium">
+      <p>No hay respuestas abiertas pendientes de revisión.</p>
+    </ion-text>
+  }
+
+  @if (!loading() && reviews().length > 0) {
+    <div class="summary-bar">
+      <ion-badge color="warning">{{ pendingCount() }} pendientes</ion-badge>
+      <ion-badge color="success">{{ reviewedCount() }} revisadas</ion-badge>
+    </div>
+
+    @for (review of reviews(); track review.answerId) {
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Pregunta: {{ review.questionPrompt }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="student-answer">{{ review.openTextAnswer }}</p>
+          <ion-item>
+            <ion-label position="stacked">Puntuación</ion-label>
+            <ion-input
+              type="number"
+              min="0"
+              [value]="getScore(review)"
+              (ionInput)="onScoreInput(review, $event.detail.value)"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="stacked">Comentario (feedback)</ion-label>
+            <ion-textarea
+              placeholder="Escribe un comentario para el estudiante..."
+              [value]="getFeedback(review)"
+              (ionInput)="onFeedbackInput(review, $event.detail.value)"
+              [autoGrow]="true"
+            ></ion-textarea>
+          </ion-item>
+
+          @if (review.reviewed) {
+            <p class="revised-by">
+              Revisado · {{ review.updatedAt }}
+            </p>
+          }
+
+          <ion-button
+            expand="block"
+            class="ion-margin-top"
+            [disabled]="submittingId() === review.answerId"
+            (click)="submitReview(review)"
+          >
+            @if (submittingId() === review.answerId) {
+              <ion-spinner name="crescent" slot="start"></ion-spinner>
+              <span>Guardando...</span>
+            } @else {
+              <span>{{ review.reviewed ? 'Actualizar revisión' : 'Guardar revisión' }}</span>
+            }
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+  }
+</ion-content>

@@ -1,7 +1,7 @@
 package edu.cidemags.integrity_core.evaluator.application.usecase;
 
-import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
+import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAnswer;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAttempt;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamStatus;
@@ -12,6 +12,7 @@ import edu.cidemags.integrity_core.evaluator.domain.port.EvaluationReviewReposit
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAnswerRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAttemptRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamRepository;
+import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -20,6 +21,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,7 +34,8 @@ class GetExamResultUseCaseTest {
         ExamRepository exams = mock(ExamRepository.class);
         ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
         EvaluationReviewRepository reviews = mock(EvaluationReviewRepository.class);
-        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews);
+        UserRepository users = mock(UserRepository.class);
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews, users);
 
         UUID attemptId = UUID.randomUUID();
         UUID studentId = UUID.randomUUID();
@@ -53,24 +57,37 @@ class GetExamResultUseCaseTest {
                 new ExamAnswer(UUID.randomUUID(), attemptId, choice.getId(), List.of(correctOptionId), null),
                 new ExamAnswer(UUID.randomUUID(), attemptId, openId, List.of(), "texto")));
         when(reviews.findByAnswerId(org.mockito.ArgumentMatchers.any())).thenReturn(Optional.empty());
+        when(users.findById(studentId)).thenReturn(Optional.of(new edu.cidemags.integrity_core.auth.domain.model.User(
+                studentId, "Juan", "Pérez", "juan@test.com", "hash", null, List.of(), edu.cidemags.integrity_core.auth.domain.model.Role.ALUMNO)));
 
-        var result = useCase.execute(attemptId, studentId);
+        var result = useCase.execute(attemptId, studentId, false);
 
         assertEquals(1, result.score());
         assertEquals(2, result.maxScore());
         org.junit.jupiter.api.Assertions.assertTrue(result.pendingReview());
+        assertEquals("juan@test.com", result.studentEmail());
+        assertEquals("Juan", result.studentFirstName());
+        assertEquals("Pérez", result.studentLastName());
     }
 
     @Test
     void rejectsResultOfAnotherStudent() {
         ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
-        ExamAttempt attempt = new ExamAttempt(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                OffsetDateTime.now(), null, true);
-        when(attempts.findById(attempt.getId())).thenReturn(Optional.of(attempt));
-        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, mock(ExamRepository.class),
-                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class));
+        ExamRepository exams = mock(ExamRepository.class);
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
+        ExamAttempt attempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, true);
+        Exam exam = new Exam(examId, "Exam", null, teacherId, OffsetDateTime.now(), List.of(), ExamStatus.PUBLISHED);
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(attempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams,
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(attempt.getId(), UUID.randomUUID()));
+        // A random user who is neither student nor teacher tries to access
+        assertThrows(IllegalStateException.class,
+                () -> useCase.execute(attemptId, UUID.randomUUID(), false));
     }
 
     @Test
@@ -81,9 +98,94 @@ class GetExamResultUseCaseTest {
                 ExamStatus.DRAFT);
         when(exams.findById(exam.getId())).thenReturn(Optional.of(exam));
         GetExamResultUseCase useCase = new GetExamResultUseCase(mock(ExamAttemptRepository.class), exams,
-                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class));
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
         assertThrows(IllegalStateException.class,
                 () -> useCase.executeForExam(exam.getId(), UUID.randomUUID(), false));
+    }
+
+    @Test
+    void calculateAverageAcrossMultipleAttempts() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
+        EvaluationReviewRepository reviews = mock(EvaluationReviewRepository.class);
+        UserRepository users = mock(UserRepository.class);
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews, users);
+
+        UUID teacherId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID correctOptionId = UUID.randomUUID();
+        UUID wrongOptionId = UUID.randomUUID();
+        Question choice = new Question(UUID.randomUUID(), "2 + 2", QuestionType.SINGLE_CHOICE,
+                List.of(new QuestionOption(correctOptionId, "4", true),
+                        new QuestionOption(wrongOptionId, "5", false)),
+                null);
+        Exam exam = new Exam(examId, "Matematicas", null, teacherId, OffsetDateTime.now(),
+                List.of(choice), ExamStatus.PUBLISHED);
+
+        UUID attempt1Id = UUID.randomUUID();
+        UUID attempt2Id = UUID.randomUUID();
+        UUID student1 = UUID.randomUUID();
+        UUID student2 = UUID.randomUUID();
+        ExamAttempt attempt1 = new ExamAttempt(attempt1Id, examId, student1, OffsetDateTime.now(),
+                OffsetDateTime.now(), true);
+        ExamAttempt attempt2 = new ExamAttempt(attempt2Id, examId, student2, OffsetDateTime.now(),
+                OffsetDateTime.now(), true);
+
+        when(attempts.findByExamId(examId)).thenReturn(List.of(attempt1, attempt2));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        when(answers.findByAttemptId(attempt1Id)).thenReturn(
+                List.of(new ExamAnswer(UUID.randomUUID(), attempt1Id, choice.getId(),
+                        List.of(correctOptionId), null)));
+        when(answers.findByAttemptId(attempt2Id)).thenReturn(
+                List.of(new ExamAnswer(UUID.randomUUID(), attempt2Id, choice.getId(),
+                        List.of(wrongOptionId), null)));
+        when(reviews.findByAnswerId(org.mockito.ArgumentMatchers.any())).thenReturn(Optional.empty());
+
+        var average = useCase.calculateAverage(examId, teacherId, false);
+
+        assertEquals(2, average.totalAttempts());
+        assertEquals(examId, average.examId());
+        assertEquals(1, average.maxScore());
+        assertEquals(0.5, average.averageScore(), 0.001);
+        assertEquals(50.0, average.averagePercentage(), 0.001);
+        assertEquals(0, average.pendingReviewCount());
+        assertEquals(2, average.gradedAttempts());
+    }
+
+    @Test
+    void feedbackIsIncludedInQuestionResultForReviewedOpenAnswer() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
+        EvaluationReviewRepository reviews = mock(EvaluationReviewRepository.class);
+        UserRepository users = mock(UserRepository.class);
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews, users);
+
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID openQuestionId = UUID.randomUUID();
+        UUID answerId = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
+        Question open = new Question(openQuestionId, "Explica", QuestionType.OPEN_ENDED, List.of(), null);
+        Exam exam = new Exam(examId, "Test", null, UUID.randomUUID(), OffsetDateTime.now(),
+                List.of(open), ExamStatus.PUBLISHED);
+        ExamAttempt attempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(),
+                OffsetDateTime.now(), true);
+
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(attempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        when(answers.findByAttemptId(attemptId)).thenReturn(
+                List.of(new ExamAnswer(answerId, attemptId, openQuestionId, List.of(), "respuesta")));
+        when(reviews.findByAnswerId(answerId)).thenReturn(
+                Optional.of(new EvaluationReview(UUID.randomUUID(), answerId, UUID.randomUUID(), 9,
+                        "Muy bien", OffsetDateTime.now(), OffsetDateTime.now())));
+
+        var result = useCase.execute(attemptId, studentId, false);
+
+        assertEquals(9, result.questions().get(0).score());
+        assertEquals("Muy bien", result.questions().get(0).feedback());
+        assertFalse(result.pendingReview());
     }
 }

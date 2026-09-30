@@ -106,6 +106,31 @@ export class ExamEditorPage implements OnInit {
     return this.form.controls.questions;
   }
 
+  get title() {
+    return this.form.controls.title;
+  }
+
+  get description() {
+    return this.form.controls.description;
+  }
+
+  get durationMinutes() {
+    return this.form.controls.durationMinutes;
+  }
+
+  questionCtrl(index: number, name: string) {
+    return this.questions.at(index)?.get(name);
+  }
+
+  questionOptions(index: number): FormArray<FormGroup> {
+    return this.optionsOf(index);
+  }
+
+  optionTextTouched(questionIndex: number, optionIndex: number): boolean {
+    const control = this.optionsOf(questionIndex).at(optionIndex)?.get('text');
+    return control ? control.touched && control.invalid : false;
+  }
+
   ngOnInit(): void {
     this.examId = this.route.snapshot.paramMap.get('id');
     if (this.examId) {
@@ -225,6 +250,7 @@ export class ExamEditorPage implements OnInit {
       options.push(this.buildOptionGroup());
     }
     if (type === QuestionType.OPEN) {
+      options.clear();
       questionGroup.patchValue({ correctOptionId: null });
     }
   }
@@ -236,13 +262,20 @@ export class ExamEditorPage implements OnInit {
     );
   }
 
-  save(): void {
+  save(event?: Event): void {
+    if (this.saving()) return;
+    event?.preventDefault();
     if (this.form.invalid || this.questions.length === 0) {
       this.form.markAllAsTouched();
+      const invalidFields = this.collectInvalidFields();
+      const message = invalidFields.length > 0
+        ? `Revisa los siguientes campos: ${invalidFields.join(', ')}.`
+        : 'Revisa los campos marcados.';
+      console.log('[ExamEditor] Campos inválidos:', invalidFields);
       this.errorMessage.set(
         this.questions.length === 0
           ? 'Agrega al menos una pregunta.'
-          : 'Revisa los campos marcados.',
+          : message,
       );
       return;
     }
@@ -301,5 +334,50 @@ export class ExamEditorPage implements OnInit {
         );
       },
     });
+  }
+
+  private collectInvalidFields(): string[] {
+    const fields: string[] = [];
+    Object.keys(this.form.controls).forEach((key) => {
+      const control = this.form.get(key);
+      if (control && control.invalid) {
+        console.log(`[ExamEditor] Control "${key}" inválido:`, control.errors, 'valor:', control.value);
+        fields.push(key);
+      }
+    });
+    this.questions.controls.forEach((group, index) => {
+      Object.keys(group.controls).forEach((key) => {
+        const control = group.get(key);
+        if (control && control.invalid) {
+          const label = this.fieldLabel(key);
+          console.log(`[ExamEditor] questions[${index}].${key} inválido:`, control.errors, 'valor:', control.value);
+          fields.push(`Pregunta ${index + 1}: ${label}`);
+        }
+      });
+      const options = group.get('options') as FormArray<FormGroup>;
+      options?.controls.forEach((opt, optIndex) => {
+        Object.keys(opt.controls).forEach((key) => {
+          const control = opt.get(key);
+          if (control && control.invalid) {
+            console.log(`[ExamEditor] questions[${index}].options[${optIndex}].${key} inválido:`, control.errors, 'valor:', control.value);
+            fields.push(`Pregunta ${index + 1}, opción ${optIndex + 1}: ${this.fieldLabel(key)}`);
+          }
+        });
+      });
+    });
+    return fields;
+  }
+
+  private fieldLabel(key: string): string {
+    const labels: Record<string, string> = {
+      title: 'Título',
+      description: 'Descripción',
+      durationMinutes: 'Duración',
+      type: 'Tipo de pregunta',
+      statement: 'Enunciado',
+      points: 'Puntos',
+      text: 'Texto de opción',
+    };
+    return labels[key] ?? key;
   }
 }

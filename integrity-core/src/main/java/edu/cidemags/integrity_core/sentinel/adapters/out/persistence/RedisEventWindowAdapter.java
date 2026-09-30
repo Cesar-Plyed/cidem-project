@@ -2,6 +2,7 @@ package edu.cidemags.integrity_core.sentinel.adapters.out.persistence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.cidemags.integrity_core.sentinel.domain.EventType;
 import edu.cidemags.integrity_core.sentinel.domain.ExamSessionId;
 import edu.cidemags.integrity_core.sentinel.domain.StudentId;
@@ -19,12 +20,14 @@ import java.util.stream.Collectors;
 @Component
 public class RedisEventWindowAdapter implements EventWindowPort {
 
+    private static final Duration RETENTION_WINDOW = Duration.ofMinutes(5);
+
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public RedisEventWindowAdapter(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
+    public RedisEventWindowAdapter(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
+        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
     @Override
@@ -75,6 +78,4 @@ public class RedisEventWindowAdapter implements EventWindowPort {
             examSessionId.value(), studentId.value(), type.name()
         );
     }
-
-    private static final Duration RETENTION_WINDOW = Duration.ofMinutes(5);
 }
