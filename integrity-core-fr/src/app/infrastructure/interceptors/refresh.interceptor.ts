@@ -1,6 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { BehaviorSubject, catchError, filter, from, switchMap, take, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, from, switchMap, take, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthRepository } from '../../domain/ports/auth.repository';
 import { SessionService } from '../../application/session/session.service';
@@ -58,9 +58,11 @@ export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Ya hay un refresh en curso: esperar a que termine y reintentar con el token nuevo
       return refreshedToken$.pipe(
-        filter((token) => token !== null),
         take(1),
         switchMap((token) => {
+          if (!token) {
+            return throwError(() => error);
+          }
           const retryReq = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
           return next(retryReq);
         }),
@@ -72,5 +74,7 @@ export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
 function handleSessionExpired(sessionService: SessionService, router: Router, error: unknown) {
   sessionService.clearSession();
   router.navigate(['/login']);
+  // Unblock any waiting subscribers — they should not hang forever
+  refreshedToken$.next(null);
   return throwError(() => error);
 }

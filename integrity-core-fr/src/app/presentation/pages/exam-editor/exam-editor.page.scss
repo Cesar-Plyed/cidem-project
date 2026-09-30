@@ -32,3 +32,9 @@ ion-card {
   text-align: center;
   font-size: 14px;
 }
+
+.field-error {
+  margin: 4px 0 0 16px;
+  font-size: 12px;
+  color: var(--ion-color-danger);
+}

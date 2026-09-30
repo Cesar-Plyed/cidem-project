@@ -6,6 +6,7 @@ import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.entity.E
 import edu.cidemags.integrity_core.evaluator.infrastructure.persistence.port.EvaluationReviewJpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,7 +26,9 @@ public class EvaluationReviewRepositoryImpl implements EvaluationReviewRepositor
                 review.getAnswerId(),
                 review.getReviewerId(),
                 review.getScore(),
-                review.getFeedback());
+                review.getFeedback(),
+                review.getCreatedAt(),
+                review.getUpdatedAt());
         return toDomain(repository.save(entity));
     }
 
@@ -39,8 +42,18 @@ public class EvaluationReviewRepositoryImpl implements EvaluationReviewRepositor
         return repository.findByAnswerId(answerId).map(this::toDomain);
     }
 
+    @Override
+    public List<EvaluationReview> findByAnswerIds(List<UUID> answerIds) {
+        return repository.findByAnswerIdIn(answerIds).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public Optional<EvaluationReview> findByAnswerIdAndReviewerId(UUID answerId, UUID reviewerId) {
+        return repository.findByAnswerIdAndReviewerId(answerId, reviewerId).map(this::toDomain);
+    }
+
     private EvaluationReview toDomain(EvaluationReviewEntity entity) {
         return new EvaluationReview(entity.getId(), entity.getAnswerId(), entity.getReviewerId(),
-                entity.getScore(), entity.getFeedback());
+                entity.getScore(), entity.getFeedback(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

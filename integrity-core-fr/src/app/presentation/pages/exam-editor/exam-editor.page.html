@@ -13,14 +13,26 @@
   }
 
   @if (!loading()) {
-  <form [formGroup]="form" (ngSubmit)="save()">
+  <form [formGroup]="form" novalidate (ngSubmit)="save($event)">
     <ion-list lines="full">
       <ion-item>
         <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
       </ion-item>
+      @if (title.touched && title.invalid) {
+        <ion-text color="danger">
+          @if (title.errors?.['required']) { <p class="field-error">El título es obligatorio.</p> }
+        </ion-text>
+      }
+
       <ion-item>
         <ion-input label="Descripción" labelPlacement="floating" formControlName="description"></ion-input>
       </ion-item>
+      @if (description.touched && description.invalid) {
+        <ion-text color="danger">
+          @if (description.errors?.['required']) { <p class="field-error">La descripción es obligatoria.</p> }
+        </ion-text>
+      }
+
       <ion-item>
         <ion-input
           label="Duración (minutos)"
@@ -29,6 +41,12 @@
           formControlName="durationMinutes"
         ></ion-input>
       </ion-item>
+      @if (durationMinutes.touched && durationMinutes.invalid) {
+        <ion-text color="danger">
+          @if (durationMinutes.errors?.['required']) { <p class="field-error">La duración es obligatoria.</p> }
+          @if (durationMinutes.errors?.['min']) { <p class="field-error">Debe ser al menos 1 minuto.</p> }
+        </ion-text>
+      }
     </ion-list>
 
     <div formArrayName="questions">
@@ -58,14 +76,29 @@
               <ion-select-option [value]="QuestionType.OPEN">Respuesta abierta</ion-select-option>
             </ion-select>
           </ion-item>
+          @if (questionCtrl(i, 'type')?.touched && questionCtrl(i, 'type')?.invalid) {
+            <ion-text color="danger">
+              @if (questionCtrl(i, 'type')?.errors?.['required']) { <p class="field-error">Selecciona el tipo de pregunta.</p> }
+            </ion-text>
+          }
 
           <ion-item>
             <ion-input label="Enunciado" labelPlacement="floating" formControlName="statement"></ion-input>
           </ion-item>
+          @if (questionCtrl(i, 'statement')?.touched && questionCtrl(i, 'statement')?.invalid) {
+            <ion-text color="danger">
+              @if (questionCtrl(i, 'statement')?.errors?.['required']) { <p class="field-error">El enunciado es obligatorio.</p> }
+            </ion-text>
+          }
 
           <ion-item>
             <ion-input label="Puntos" labelPlacement="floating" type="number" formControlName="points"></ion-input>
           </ion-item>
+          @if (questionCtrl(i, 'points')?.touched && questionCtrl(i, 'points')?.invalid) {
+            <ion-text color="danger">
+              @if (questionCtrl(i, 'points')?.errors?.['required'] || questionCtrl(i, 'points')?.errors?.['min']) { <p class="field-error">Debe ser al menos 1.</p> }
+            </ion-text>
+          }
 
           @if (isMultipleChoice(i)) {
           <ion-radio-group formControlName="correctOptionId">
@@ -84,6 +117,11 @@
                   <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
                 </ion-button>
               </ion-item>
+              @if (optionTextTouched(i, j)) {
+                <ion-text color="danger">
+                  <p class="field-error">El texto de la opción es obligatorio.</p>
+                </ion-text>
+              }
               }
               <ion-button fill="outline" size="small" (click)="addOption(i)">
                 <ion-icon name="add-outline" slot="start"></ion-icon>
@@ -104,7 +142,7 @@
 
     @if (errorMessage()) { <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text> }
 
-    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="saving()">
+    <ion-button expand="block" type="button" class="ion-margin-top" [disabled]="saving()" (click)="save($event)">
       @if (saving()) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
       @if (!saving()) { <span>Guardar examen</span> }
       @if (saving()) { <span>Guardando...</span> }

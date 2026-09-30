@@ -4,8 +4,12 @@ import {
   BackendExamAccessCode,
   BackendExamAnswer,
   BackendExamAttempt,
+  BackendExamAverage,
+  BackendExamResult,
+  BackendOpenEndedReview,
 } from '../models/evaluator/evaluator.model';
 import { AttemptExam } from '../models/evaluator/attempt-exam.model';
+import { BackendEvaluationReview } from '../models/evaluator/evaluator.model';
 
 /**
  * Puerto para el backend REAL de evaluator (no confundir con
@@ -19,10 +23,11 @@ import { AttemptExam } from '../models/evaluator/attempt-exam.model';
  *   - unirse por código (crea el intento)
  *   - guardar una respuesta
  *   - entregar el intento
- *
- * NO incluye listar exámenes, obtener un examen por id, ni mandar
- * preguntas — porque el backend no tiene esos endpoints. Agregar métodos
- * aquí "por si acaso" haría creer que están conectados cuando no lo están.
+ *   - listar resultados de un examen
+ *   - promedio de un examen
+ *   - listar revisiones abiertas
+ *   - revisar/actualizar una respuesta abierta
+ *   - obtener el resultado de un intento
  */
 export abstract class EvaluatorRepository {
   abstract createExam(title: string, description: string | undefined, createdByUserId: string): Observable<BackendExam>;
@@ -49,4 +54,21 @@ export abstract class EvaluatorRepository {
   ): Observable<BackendExamAnswer>;
 
   abstract submitAttempt(attemptId: string): Observable<BackendExamAttempt>;
+
+  abstract getExamResults(examId: string): Observable<BackendExamResult[]>;
+
+  abstract getAttemptResult(attemptId: string): Observable<BackendExamResult>;
+
+  abstract getExamAverage(examId: string): Observable<BackendExamAverage>;
+
+  abstract listOpenEndedReviews(
+    examId: string,
+    onlyPending?: boolean,
+  ): Observable<BackendOpenEndedReview[]>;
+
+  abstract reviewOpenEndedAnswer(
+    answerId: string,
+    score: number,
+    feedback?: string,
+  ): Observable<BackendEvaluationReview>;
 }

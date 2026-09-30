@@ -35,19 +35,16 @@ class RedisEventWindowAdapterTest {
 
     @BeforeEach
     void setUp() {
-        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration(
-            redis.getHost(), redis.getMappedPort(6379)
-        );
-        LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory(redisConfig);
-        connectionFactory.afterPropertiesSet();
+    RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration(
+        redis.getHost(), redis.getMappedPort(6379)
+    );
+    LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory(redisConfig);
+    connectionFactory.afterPropertiesSet();
 
-        StringRedisTemplate redisTemplate = new StringRedisTemplate(connectionFactory);
-        redisTemplate.afterPropertiesSet();
+    StringRedisTemplate redisTemplate = new StringRedisTemplate(connectionFactory);
+    redisTemplate.afterPropertiesSet();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        adapter = new RedisEventWindowAdapter(redisTemplate, objectMapper);
+    adapter = new RedisEventWindowAdapter(redisTemplate);
     }
 
     @Test
