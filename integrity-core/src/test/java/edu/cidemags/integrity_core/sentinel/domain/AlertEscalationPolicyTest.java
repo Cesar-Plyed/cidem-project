@@ -15,9 +15,10 @@ class AlertEscalationPolicyTest {
     private final AlertEscalationPolicy policy = new AlertEscalationPolicy();
     private final ExamSessionId examSessionId = new ExamSessionId(UUID.randomUUID());
     private final StudentId studentId = new StudentId(UUID.randomUUID());
+    private final AttemptId attemptId = new AttemptId(UUID.randomUUID());
 
     private SuspiciousEvent event(EventType type, Instant occurredAt) {
-        return new SuspiciousEvent(UUID.randomUUID(), examSessionId, studentId, type, occurredAt);
+        return new SuspiciousEvent(UUID.randomUUID(), examSessionId, studentId, attemptId, type, occurredAt);
     }
 
     @Test
@@ -81,7 +82,6 @@ class AlertEscalationPolicyTest {
         assertThat(result).isEmpty();
     }
 
-
     @Test
     void shouldNotEscalateWhenFourthEventBreaksTheWindow() {
         Instant now = Instant.now();
@@ -90,31 +90,26 @@ class AlertEscalationPolicyTest {
             event(EventType.WINDOW_FOCUS_LOST, now.plus(40, ChronoUnit.SECONDS)),
             event(EventType.WINDOW_FOCUS_LOST, now.plus(80, ChronoUnit.SECONDS)),
             event(EventType.WINDOW_FOCUS_LOST, now.plus(200, ChronoUnit.SECONDS))
-    );
+        );
 
-    Optional<Alert> result = policy.evaluate(events);
+        Optional<Alert> result = policy.evaluate(events);
 
-    assertThat(result).isEmpty();
-}
-
-
+        assertThat(result).isEmpty();
+    }
 
     @Test
-void shouldEscalateUsingOnlyLastThreeEventsWhenMoreThanThreeOccur() {
-    Instant now = Instant.now();
-    List<SuspiciousEvent> events = List.of(
-        event(EventType.WINDOW_FOCUS_LOST, now),                              // fuera de la ventana, se ignora
-        event(EventType.WINDOW_FOCUS_LOST, now.plus(300, ChronoUnit.SECONDS)),
-        event(EventType.WINDOW_FOCUS_LOST, now.plus(330, ChronoUnit.SECONDS)),
-        event(EventType.WINDOW_FOCUS_LOST, now.plus(360, ChronoUnit.SECONDS))
-    );
+    void shouldEscalateUsingOnlyLastThreeEventsWhenMoreThanThreeOccur() {
+        Instant now = Instant.now();
+        List<SuspiciousEvent> events = List.of(
+            event(EventType.WINDOW_FOCUS_LOST, now),
+            event(EventType.WINDOW_FOCUS_LOST, now.plus(300, ChronoUnit.SECONDS)),
+            event(EventType.WINDOW_FOCUS_LOST, now.plus(330, ChronoUnit.SECONDS)),
+            event(EventType.WINDOW_FOCUS_LOST, now.plus(360, ChronoUnit.SECONDS))
+        );
 
-    Optional<Alert> result = policy.evaluate(events);
+        Optional<Alert> result = policy.evaluate(events);
 
-    assertThat(result).isPresent();
-    assertThat(result.get().sourceEventIds()).hasSize(3);
-}
-
-
-
+        assertThat(result).isPresent();
+        assertThat(result.get().sourceEventIds()).hasSize(3);
+    }
 }

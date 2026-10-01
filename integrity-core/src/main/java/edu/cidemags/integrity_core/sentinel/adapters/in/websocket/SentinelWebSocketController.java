@@ -29,6 +29,7 @@ public class SentinelWebSocketController {
         ReceiveSuspiciousEventCommand command = new ReceiveSuspiciousEventCommand(
             payload.examSessionId(),
             payload.studentId(),
+            payload.attemptId(),
             payload.type(),
             payload.occurredAt()
         );

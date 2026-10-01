@@ -4,3 +4,5 @@ import edu.cidemags.integrity_core.sentinel.domain.Alert;
 
 public record AlertGeneratedEvent(Alert alert) {
 } 
+
+//SentinelAlertEvent = AlertGeneratedEvent
