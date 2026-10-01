@@ -8,10 +8,12 @@ public record Alert(
     UUID id,
     ExamSessionId examSessionId,
     StudentId studentId,
+    AttemptId attemptId,
     AlertSeverity severity,
     String reason,
     List<UUID> sourceEventIds,
     Instant generatedAt
+   
 ) {
 
     public Alert {
@@ -35,6 +37,10 @@ public record Alert(
         }
         if (generatedAt == null) {
             throw new IllegalArgumentException("generatedAt es obligatorio");
+        }
+        if (attemptId == null) {
+            throw new IllegalArgumentException("attemptId es obligatorio");
+            
         }
     }
 }
