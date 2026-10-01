@@ -187,7 +187,7 @@ SafeguardService ──publica──▶ SafeguardDomainEvent.RiskEventRecorded  
   evento para las pruebas; la lógica de "actualiza estado del intento" es del Sprint 7.
 - **Campo `resultado`** (¿una sesión terminada fue bloqueo o no?): hoy se representa con
   `status` + `totalRiskScore`. Si se consulta directamente en SQL/BI, proponer
-  `V8__add_safeguard_result.sql` (CHECK sobre `status`); no se creó porque no había
+  `V9__add_safeguard_result.sql` (CHECK sobre `status`); no se creó porque no había
   requerimiento de lectura.
 - **`SessionStatusChanged` / `SessionClosed` no se reenvían** como `SafeguardBlockEvent`
   (solo los riesgos); si OVERSIGHT necesita el desenlace de la sesión, extender el puente.
@@ -205,7 +205,7 @@ SafeguardService ──publica──▶ SafeguardDomainEvent.RiskEventRecorded  
   `MICROPHONE_ANOMALY` y `SCREEN_SHARE_STOPPED` existen en `SafeguardEventType` pero no
   tienen caso en `SafeguardRiskPolicy` (lanzan `IllegalArgumentException` → 400) y el
   CHECK de `V7` tampoco los admite. O quitarlos del enum o añadirles severidad + migración
-  `V8__`; hoy la inconsistencia queda caracterizada en `SafeguardRiskPolicyTest`.
+  `V9__`; hoy la inconsistencia queda caracterizada en `SafeguardRiskPolicyTest`.
 - **Sin ownership por profesor en la config**: cualquiera con rol `PROFESOR` puede
   configurar cualquier examen (la regla aprobada solo define rol, no propiedad). Si se
   requiere, validar `exams.created_by_user_id` contra el usuario autenticado.
