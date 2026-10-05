@@ -70,3 +70,7 @@ integrity-core-fr/.env
 # 5. Infraestructura y Podman
 # ==========================================
 infra/ssh_keys/authorized_keys
+
+#AI docs
+AGENTS.md
+MEMORY.md
