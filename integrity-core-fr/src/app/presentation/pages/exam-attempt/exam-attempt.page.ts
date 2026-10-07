@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { concatMap, finalize, from, switchMap, toArray } from 'rxjs';
@@ -26,6 +26,7 @@ import { GetAttemptExamUseCase } from '../../../application/use-cases/evaluator/
 import { SubmitRemoteAnswerUseCase } from '../../../application/use-cases/evaluator/submit-remote-answer.use-case';
 import { SubmitRemoteAttemptUseCase } from '../../../application/use-cases/evaluator/submit-remote-attempt.use-case';
 import { AttemptExam, AttemptExamQuestion } from '../../../domain/models/evaluator/attempt-exam.model';
+import { SafeguardMonitorService } from '../../../application/safeguard/safeguard-monitor.service';
 
 /**
  * Vista que se abre al pulsar "Comenzar examen": carga el examen del intento del
@@ -56,12 +57,14 @@ import { AttemptExam, AttemptExamQuestion } from '../../../domain/models/evaluat
     IonBadge,
   ],
 })
-export class ExamAttemptPage implements OnInit {
+export class ExamAttemptPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly alertController = inject(AlertController);
   private readonly getAttemptExamUseCase = inject(GetAttemptExamUseCase);
   private readonly submitAnswerUseCase = inject(SubmitRemoteAnswerUseCase);
   private readonly submitAttemptUseCase = inject(SubmitRemoteAttemptUseCase);
+  /** Público: la plantilla muestra sus avisos y su estado. */
+  readonly safeguard = inject(SafeguardMonitorService);
 
   // Signals: sin zone.js, Angular solo refresca la vista cuando cambia un signal.
   readonly exam = signal<AttemptExam | null>(null);
@@ -97,6 +100,9 @@ export class ExamAttemptPage implements OnInit {
         this.exam.set(exam);
         this.submitted.set(exam.submitted);
         this.loading.set(false);
+        if (!exam.submitted) {
+          this.safeguard.start(exam.examId, exam.attemptId);
+        }
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error al cargar el examen', err.status, err.error);
@@ -104,6 +110,10 @@ export class ExamAttemptPage implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.safeguard.stop();
   }
 
   isSelected(questionId: string, optionId: string): boolean {
@@ -177,7 +187,10 @@ export class ExamAttemptPage implements OnInit {
         finalize(() => this.submitting.set(false)),
       )
       .subscribe({
-        next: () => this.submitted.set(true),
+        next: () => {
+          this.submitted.set(true);
+          this.safeguard.stop();
+        },
         error: (err: HttpErrorResponse) => {
           console.error('Error al enviar el examen', err.status, err.error);
           this.errorMessage.set(this.messageOf(err, 'No se pudo enviar el examen. Intenta de nuevo'));

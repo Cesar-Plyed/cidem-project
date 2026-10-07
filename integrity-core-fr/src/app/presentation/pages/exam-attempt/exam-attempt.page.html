@@ -5,6 +5,13 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
+  @if (safeguard.warning(); as warning) {
+    <div slot="fixed" class="safeguard-warning" role="alert">
+      <span>{{ warning.message }}</span>
+      <ion-button size="small" fill="outline" color="light" (click)="safeguard.dismissWarning()">Entendido</ion-button>
+    </div>
+  }
+
   @if (loading()) {
     <div class="loading">
       <ion-spinner name="crescent"></ion-spinner>
@@ -25,6 +32,15 @@
       <ion-badge color="medium">{{ current.questions.length }} preguntas</ion-badge>
       @if (!submitted()) {
         <ion-badge color="primary">Respondidas: {{ answeredCount() }} de {{ current.questions.length }}</ion-badge>
+      }
+      @if (safeguard.active()) {
+        <ion-badge color="success">Examen protegido</ion-badge>
+        @if (safeguard.warningCount() > 0) {
+          <ion-badge color="danger">Avisos: {{ safeguard.warningCount() }}</ion-badge>
+        }
+        @if (safeguard.connectionLost()) {
+          <ion-badge color="warning">Sin conexión con SafeGuard ({{ safeguard.pendingEvents() }} pendientes)</ion-badge>
+        }
       }
     </div>
 
