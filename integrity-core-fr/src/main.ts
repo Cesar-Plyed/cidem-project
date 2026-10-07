@@ -15,6 +15,10 @@ import { ExamRepository } from './app/domain/ports/exam.repository';
 import { ExamHttpRepository } from './app/infrastructure/http/exam-http.repository';
 import { EvaluatorRepository } from './app/domain/ports/evaluator.repository';
 import { EvaluatorHttpRepository } from './app/infrastructure/http/evaluator-http.repository';
+import { SafeguardRepository } from './app/domain/ports/safeguard.repository';
+import { SafeguardHttpRepository } from './app/infrastructure/http/safeguard-http.repository';
+import { SafeguardPlatform } from './app/domain/ports/safeguard-platform';
+import { WebSafeguardPlatform } from './app/infrastructure/platform/web-safeguard-platform';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -30,6 +34,9 @@ bootstrapApplication(AppComponent, {
     // Este SÍ pega contra el backend real — pero solo cubre las 5
     // operaciones que existen hoy (ver evaluator-demo.page.ts).
     { provide: EvaluatorRepository, useClass: EvaluatorHttpRepository },
+    { provide: SafeguardRepository, useClass: SafeguardHttpRepository },
+    // Plataforma donde corre SafeGuard. Para Tauri: sustituir por TauriSafeguardPlatform.
+    { provide: SafeguardPlatform, useClass: WebSafeguardPlatform },
     importProvidersFrom(IonicStorageModule.forRoot()),
   ],
 });
