@@ -1,0 +1,248 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/exams" (click)="goBack()"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Oversight - {{ examTitle() || 'Cargando...' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadData()" [disabled]="isLoading()" fill="clear">
+        @if (isLoading()) {
+        <ion-spinner name="dots" slot="icon-only"></ion-spinner>
+        } @else {
+        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+        }
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <!-- Header Info -->
+  @if (examTitle()) {
+  <div class="exam-header">
+    <ion-card>
+      <ion-card-content>
+        <div class="header-stats">
+          <div class="stat">
+            <ion-icon name="stats-chart" color="primary"></ion-icon>
+            <div>
+              <span class="stat-value">{{ summary().length }}</span>
+              <span class="stat-label">Total intentos</span>
+            </div>
+          </div>
+          <div class="stat">
+            <ion-icon name="person" color="success"></ion-icon>
+            <div>
+              <span class="stat-value">{{ summary().reduce((a, b) => a + b.activeAttempts, 0) }}</span>
+              <span class="stat-label">Activos</span>
+            </div>
+          </div>
+          <div class="stat">
+            <ion-icon name="checkmark-circle" color="medium"></ion-icon>
+            <div>
+              <span class="stat-value">{{ summary().reduce((a, b) => a + b.completedAttempts, 0) }}</span>
+              <span class="stat-label">Completados</span>
+            </div>
+          </div>
+          <div class="stat">
+            <ion-icon name="alert-circle" color="danger"></ion-icon>
+            <div>
+              <span class="stat-value">{{ summary().reduce((a, b) => a + b.highRiskCount, 0) }}</span>
+              <span class="stat-label">Alto riesgo</span>
+            </div>
+          </div>
+        </div>
+        @if (lastRefresh()) {
+        <div class="last-refresh">
+          Última actualización: {{ formatDateTime(lastRefresh()!.toISOString()) }}
+        </div>
+        }
+      </ion-card-content>
+    </ion-card>
+  </div>
+  }
+
+  <!-- Tabs -->
+  <ion-segment value="summary" (ionChange)="onTabChange($event)" color="primary">
+    <ion-segment-button value="summary">
+      <ion-icon name="stats-chart"></ion-icon>
+      <ion-label>Resumen</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="timeline">
+      <ion-icon name="time"></ion-icon>
+      <ion-label>Línea de tiempo</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="students">
+      <ion-icon name="people"></ion-icon>
+      <ion-label>Alumnos</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Tab Content -->
+  @switch (activeTab()) {
+    @case ('summary') {
+    <!-- Summary Tab -->
+    <div class="tab-content">
+      @for (s of summary(); track s.examId) {
+      <ion-card class="summary-card">
+        <ion-card-header>
+          <ion-card-title>{{ s.examTitle }}</ion-card-title>
+          <ion-card-subtitle>
+            <ion-badge [color]="s.highRiskCount > 0 ? 'danger' : s.mediumRiskCount > 0 ? 'warning' : 'success'">
+              Índice promedio: {{ s.averageIntegrityIndex }}/100
+            </ion-badge>
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="risk-breakdown">
+            <div class="risk-item" [class.high]="s.highRiskCount > 0">
+              <ion-icon name="shield-close" color="danger"></ion-icon>
+              <span>{{ s.highRiskCount }} Alto riesgo</span>
+            </div>
+            <div class="risk-item" [class.medium]="s.mediumRiskCount > 0">
+              <ion-icon name="shield-alert" color="warning"></ion-icon>
+              <span>{{ s.mediumRiskCount }} Riesgo medio</span>
+            </div>
+            <div class="risk-item" [class.low]="s.lowRiskCount > 0">
+              <ion-icon name="shield-checkmark" color="success"></ion-icon>
+              <span>{{ s.lowRiskCount }} Bajo riesgo</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+      }
+
+      @if (summary().length === 0 && !isLoading()) {
+      <div class="empty-state">
+        <ion-icon name="stats-chart"></ion-icon>
+        <p>No hay datos de resumen disponibles</p>
+      </div>
+      }
+    </div>
+    }
+
+    @case ('timeline') {
+    <!-- Timeline Tab -->
+    <div class="tab-content">
+      <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+        <ion-refresher-content pullingText="Arrastra para actualizar"></ion-refresher-content>
+      </ion-refresher>
+
+      <!-- Filters -->
+      <ion-card class="filters-card">
+        <ion-card-content>
+          <div class="filters-row">
+            <ion-searchbar
+              placeholder="Buscar eventos..."
+              (ionInput)="onSearch($event)"
+              [value]="searchTerm()"
+              animated
+              debounce="300"
+            ></ion-searchbar>
+            <ion-select
+              placeholder="Severidad"
+              [value]="filterSeverity()"
+              (ionChange)="onSeverityChange($event)"
+              interface="popover"
+            >
+              <ion-select-option value="all">Todas</ion-select-option>
+              <ion-select-option value="LOW">Baja</ion-select-option>
+              <ion-select-option value="MEDIUM">Media</ion-select-option>
+              <ion-select-option value="HIGH">Alta</ion-select-option>
+              <ion-select-option value="CRITICAL">Crítica</ion-select-option>
+            </ion-select>
+            <ion-select
+              placeholder="Origen"
+              [value]="filterSource()"
+              (ionChange)="onSourceChange($event)"
+              interface="popover"
+            >
+              <ion-select-option value="all">Todos</ion-select-option>
+              <ion-select-option value="SAFEGUARD">SafeGuard</ion-select-option>
+              <ion-select-option value="SENTINEL">Sentinel</ion-select-option>
+              <ion-select-option value="EVALUATOR">Evaluator</ion-select-option>
+              <ion-select-option value="SYSTEM">Sistema</ion-select-option>
+            </ion-select>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Timeline List -->
+      @if (filteredTimeline().length > 0) {
+      <ion-list lines="full">
+        @for (entry of filteredTimeline(); track entry.logId) {
+        <ion-item button detail="true" (click)="viewAttemptDetail(entry.attemptId)">
+          <div class="timeline-item" slot="start">
+            <ion-icon [name]="getSourceIcon(entry.source)" [color]="getSourceColor(entry.source)" size="large"></ion-icon>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <ion-badge [color]="getSeverityColor(entry.severity)" slot="end">{{ entry.severity }}</ion-badge>
+              <span class="student-name">{{ entry.studentName }}</span>
+            </div>
+            <div class="timeline-meta">
+              <span class="event-type">{{ entry.eventType }}</span>
+              <span class="source-badge">{{ logSourceConfig[entry.source].label }}</span>
+            </div>
+            <div class="timeline-message">{{ entry.message }}</div>
+            <div class="timeline-time">{{ formatDateTime(entry.occurredAt) }}</div>
+          </div>
+          <ion-icon name="chevron-forward" slot="end" color="medium"></ion-icon>
+        </ion-item>
+        }
+      </ion-list>
+      } @else if (!isLoading()) {
+      <div class="empty-state">
+        <ion-icon name="time"></ion-icon>
+        <p>No hay eventos en la línea de tiempo</p>
+      </div>
+      }
+    </div>
+    }
+
+    @case ('students') {
+    <!-- Students Tab -->
+    <div class="tab-content">
+      <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+        <ion-refresher-content pullingText="Arrastra para actualizar"></ion-refresher-content>
+      </ion-refresher>
+
+      @if (studentsWithRisk().length > 0) {
+      <ion-list lines="full">
+        @for (student of studentsWithRisk(); track student.attemptId) {
+        <ion-item button detail="true" (click)="viewAttemptDetail(student.attemptId)">
+          <div class="student-avatar" slot="start" [style.background-color]="student.riskConfig.color">
+            <ion-icon [name]="student.riskConfig.icon" color="white"></ion-icon>
+          </div>
+          <div class="student-info">
+            <div class="student-header">
+              <span class="student-name">{{ student.studentName }}</span>
+              <ion-badge [color]="getRiskColor(student.riskLevel)" slot="end">{{ student.riskConfig.label }}</ion-badge>
+            </div>
+            <div class="student-stats">
+              <span><ion-icon name="alert-circle" size="small"></ion-icon> {{ student.totalAlerts }} alertas</span>
+              <span><ion-icon name="lock-closed" size="small"></ion-icon> {{ student.totalBlocks }} bloqueos</span>
+              <span><ion-icon name="stats-chart" size="small"></ion-icon> Índice: {{ student.integrityIndex }}/100</span>
+            </div>
+          </div>
+          <ion-icon name="chevron-forward" slot="end" color="medium"></ion-icon>
+        </ion-item>
+        }
+      </ion-list>
+      } @else if (!isLoading()) {
+      <div class="empty-state">
+        <ion-icon name="people"></ion-icon>
+        <p>No hay alumnos en este examen</p>
+      </div>
+      }
+    </div>
+    }
+  }
+
+  @if (isLoading()) {
+  <div class="loading-overlay">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando...</p>
+  </div>
+  }
+</ion-content>

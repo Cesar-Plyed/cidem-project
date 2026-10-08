@@ -68,6 +68,15 @@
       >
         <ion-icon name="reader-outline" slot="icon-only"></ion-icon>
       </ion-button>
+      <ion-button
+        fill="clear"
+        slot="end"
+        aria-label="Ver oversight"
+        [routerLink]="['/exams', exam.id, 'oversight']"
+        (click)="onNavigate($event)"
+      >
+        <ion-icon name="stats-chart-outline" slot="icon-only"></ion-icon>
+      </ion-button>
       }
       <ion-button fill="clear" color="danger" slot="end" (click)="confirmDelete(exam)">
         <ion-icon name="trash-outline" slot="icon-only"></ion-icon>

@@ -9,6 +9,7 @@ logs/
 # IDEs y Editores
 .idea/
 .vscode/*
+.kilo/*
 !.vscode/settings.json
 !.vscode/extensions.json
 *.swp

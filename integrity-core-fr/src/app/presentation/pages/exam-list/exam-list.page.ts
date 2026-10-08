@@ -21,7 +21,7 @@ import {
   AlertController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline } from 'ionicons/icons';
+import { addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline, statsChartOutline } from 'ionicons/icons';
 import { ListExamsUseCase } from '../../../application/use-cases/exam/list-exams.use-case';
 import { DeleteExamUseCase } from '../../../application/use-cases/exam/delete-exam.use-case';
 import { GenerateAccessCodeUseCase } from '../../../application/use-cases/evaluator/generate-access-code.use-case';

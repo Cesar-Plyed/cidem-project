@@ -21,6 +21,8 @@
     "@angular/router": "^22.1.7",
     "@ionic/angular": "^9.0.0",
     "@ionic/storage-angular": "^4.0.0",
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/cli": "^2.12.1",
     "ionicons": "^8.1.0",
     "jwt-decode": "^4.0.0",
     "rxjs": "~7.8.0",
@@ -47,3 +49,4 @@
     "msgpackr-extract@3.0.4": true
   }
 }
+
