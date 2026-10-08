@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -29,6 +29,7 @@ import { SubmitExamAttemptUseCase } from '../../../application/use-cases/exam/su
 import { Exam } from '../../../domain/models/exam/exam.model';
 import { QuestionType } from '../../../domain/models/exam/question-type.enum';
 import { ExamAnswer } from '../../../domain/models/exam/exam-answer.model';
+import { SafeguardMonitorService } from '../../../application/safeguard/safeguard-monitor.service';
 
 @Component({
   selector: 'app-exam-take',
@@ -58,11 +59,13 @@ import { ExamAnswer } from '../../../domain/models/exam/exam-answer.model';
     IonBadge,
   ],
 })
-export class ExamTakePage implements OnInit {
+export class ExamTakePage implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder)
   private readonly route = inject(ActivatedRoute)
   private readonly getExamUseCase = inject(GetExamUseCase)
   private readonly submitExamAttemptUseCase = inject(SubmitExamAttemptUseCase)
+  /** Público: la plantilla muestra sus avisos y su estado. */
+  readonly safeguard = inject(SafeguardMonitorService)
 
   readonly QuestionType = QuestionType;
 
@@ -96,6 +99,8 @@ export class ExamTakePage implements OnInit {
         this.buildAnswerForm(exam); // el form debe existir antes de pintar el examen
         this.exam.set(exam);
         this.loading.set(false);
+        // Iniciar SafeGuard si el examen no está entregado
+        this.safeguard.start(exam.id, id);
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error al cargar el examen', err.status, err.error);
@@ -103,6 +108,10 @@ export class ExamTakePage implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.safeguard.stop();
   }
 
   private buildAnswerForm(exam: Exam): void {
@@ -139,6 +148,7 @@ export class ExamTakePage implements OnInit {
       next: () => {
         this.submitting.set(false);
         this.submitted.set(true);
+        this.safeguard.stop();
       },
       error: () => {
         this.submitting.set(false);
