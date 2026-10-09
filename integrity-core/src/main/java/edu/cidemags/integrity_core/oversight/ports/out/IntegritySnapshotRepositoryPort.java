@@ -13,5 +13,12 @@ public interface IntegritySnapshotRepositoryPort {
 
     Optional<IntegritySnapshot> findByAttemptId(AttemptId attemptId);
 
+    /**
+     * Lectura con bloqueo pesimista de la fila del snapshot: el read-modify-write
+     * del score debe serializarse por intento para no descartar penalizaciones
+     * concurrentes (mismo patrón que SafeguardService.loadOwnedForUpdate).
+     */
+    Optional<IntegritySnapshot> findByAttemptIdForUpdate(AttemptId attemptId);
+
     List<IntegritySnapshot> findByExamSessionId(ExamSessionId examSessionId);
 }

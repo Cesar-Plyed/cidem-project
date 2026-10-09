@@ -11,6 +11,7 @@ import edu.cidemags.integrity_core.sentinel.domain.AttemptId;
 import edu.cidemags.integrity_core.sentinel.domain.ExamSessionId;
 import edu.cidemags.integrity_core.sentinel.domain.StudentId;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,7 +33,10 @@ public class RecordLogEntryService implements RecordLogEntryUseCase {
         this.scoringPolicy = scoringPolicy;
     }
 
+    // Una sola transacción para log + snapshot: sin ella, un fallo entre los
+    // dos saves deja la línea de tiempo sin su actualización de puntaje.
     @Override
+    @Transactional
     public IntegritySnapshot record(RecordLogEntryCommand command) {
         ExamSessionId examSessionId = new ExamSessionId(command.examSessionId());
         StudentId studentId = new StudentId(command.studentId());
@@ -45,7 +49,9 @@ public class RecordLogEntryService implements RecordLogEntryUseCase {
         );
         logEntryRepository.save(logEntry);
 
-        IntegritySnapshot currentSnapshot = snapshotRepository.findByAttemptId(attemptId)
+        // Lock pesimista + transacción: serializa el read-modify-write del score
+        // por intento; sin esto, dos eventos concurrentes se pisaban entre sí.
+        IntegritySnapshot currentSnapshot = snapshotRepository.findByAttemptIdForUpdate(attemptId)
             .orElseGet(() -> scoringPolicy.initialize(examSessionId, studentId, attemptId));
 
         IntegritySnapshot updatedSnapshot = scoringPolicy.applyLogEntry(currentSnapshot, logEntry);

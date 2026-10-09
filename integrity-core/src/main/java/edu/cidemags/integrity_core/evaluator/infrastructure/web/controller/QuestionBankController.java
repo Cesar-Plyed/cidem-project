@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/evaluator/question-banks")
 public class QuestionBankController {
@@ -29,7 +31,7 @@ public class QuestionBankController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
-    public ResponseEntity<QuestionBank> create(@RequestBody CreateQuestionBankCommand command,
+    public ResponseEntity<QuestionBank> create(@Valid @RequestBody CreateQuestionBankCommand command,
             Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(createQuestionBankUseCase.execute(command,
                 (UUID) authentication.getPrincipal()));
@@ -50,7 +52,7 @@ public class QuestionBankController {
     @PostMapping("/{bankId}/questions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<QuestionBank> addQuestion(@PathVariable UUID bankId,
-            @RequestBody CreateQuestionCommand command, Authentication authentication) {
+            @Valid @RequestBody CreateQuestionCommand command, Authentication authentication) {
         managementUseCase.assertCanManage(bankId, (UUID) authentication.getPrincipal(),
                 isAdministrator(authentication));
         return ResponseEntity.ok(managementUseCase.addQuestion(bankId, command));
@@ -59,7 +61,7 @@ public class QuestionBankController {
     @PutMapping("/{bankId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<QuestionBank> update(@PathVariable UUID bankId,
-            @RequestBody UpdateQuestionBankCommand command, Authentication authentication) {
+            @Valid @RequestBody UpdateQuestionBankCommand command, Authentication authentication) {
         managementUseCase.assertCanManage(bankId, (UUID) authentication.getPrincipal(),
                 isAdministrator(authentication));
         return ResponseEntity.ok(managementUseCase.update(

@@ -49,7 +49,7 @@ class RecordLogEntryServiceTest {
 
     @Test
     void shouldInitializeSnapshotWhenNoneExistsYet() {
-        when(snapshotRepository.findByAttemptId(any())).thenReturn(Optional.empty());
+        when(snapshotRepository.findByAttemptIdForUpdate(any())).thenReturn(Optional.empty());
 
         IntegritySnapshot result = service.record(command(AlertSeverity.MEDIUM));
 
@@ -63,7 +63,7 @@ class RecordLogEntryServiceTest {
             UUID.randomUUID(), new ExamSessionId(examSessionId), new StudentId(studentId), new AttemptId(attemptId),
             70, RiskLevel.MEDIUM, Instant.now()
         );
-        when(snapshotRepository.findByAttemptId(any())).thenReturn(Optional.of(existing));
+        when(snapshotRepository.findByAttemptIdForUpdate(any())).thenReturn(Optional.of(existing));
 
         IntegritySnapshot result = service.record(command(AlertSeverity.HIGH));
 
@@ -90,7 +90,7 @@ class RecordLogEntryServiceTest {
 
     @Test
     void shouldSaveUpdatedSnapshot() {
-        when(snapshotRepository.findByAttemptId(any())).thenReturn(Optional.empty());
+        when(snapshotRepository.findByAttemptIdForUpdate(any())).thenReturn(Optional.empty());
 
         IntegritySnapshot result = service.record(command(AlertSeverity.LOW));
 

@@ -1,6 +1,5 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.exception;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -85,13 +84,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> fieldErrors = new HashMap<>();
+        // LinkedHashMap: conserva el orden de los campos en la respuesta.
+        Map<String, String> fieldErrors = new java.util.LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors()
-                .forEach(fieldError -> fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage()));
+                .forEach(fieldError -> fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage()));
 
         ErrorResponse body = ErrorResponse.ofValidation(
                 HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // Violaciones de restricciones unicas (p. ej. duplicados) -> 409 en vez de 500.
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Violacion de integridad de datos: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "La operacion entra en conflicto con datos existentes");
     }
 
     @ExceptionHandler(Exception.class)
@@ -107,7 +115,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleUnreadable(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleUnreadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        log.warn("Cuerpo ilegible: {}", cause != null ? cause.getMessage() : ex.getMessage());
         return build(HttpStatus.BAD_REQUEST, "El cuerpo de la petición no es válido");
     }
 

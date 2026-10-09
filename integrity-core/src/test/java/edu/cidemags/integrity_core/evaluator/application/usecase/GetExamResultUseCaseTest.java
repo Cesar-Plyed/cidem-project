@@ -14,6 +14,7 @@ import edu.cidemags.integrity_core.evaluator.domain.port.ExamAttemptRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamRepository;
 import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -86,7 +87,7 @@ class GetExamResultUseCaseTest {
                 mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
         // A random user who is neither student nor teacher tries to access
-        assertThrows(IllegalStateException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> useCase.execute(attemptId, UUID.randomUUID(), false));
     }
 
@@ -100,7 +101,7 @@ class GetExamResultUseCaseTest {
         GetExamResultUseCase useCase = new GetExamResultUseCase(mock(ExamAttemptRepository.class), exams,
                 mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> useCase.executeForExam(exam.getId(), UUID.randomUUID(), false));
     }
 

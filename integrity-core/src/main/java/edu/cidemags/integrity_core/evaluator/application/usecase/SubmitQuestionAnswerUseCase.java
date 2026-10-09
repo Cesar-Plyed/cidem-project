@@ -12,6 +12,7 @@ import edu.cidemags.integrity_core.evaluator.domain.port.ExamAnswerRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamAttemptRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -32,16 +33,19 @@ public class SubmitQuestionAnswerUseCase {
 
     @Transactional
     @CacheEvict(cacheNames = "exam-attempt-results", allEntries = true)
-    public ExamAnswer execute(SubmitQuestionAnswerCommand command) {
+    public ExamAnswer execute(SubmitQuestionAnswerCommand command, UUID requesterId) {
         if (command == null) {
             throw new IllegalArgumentException("El comando no puede ser nulo");
         }
-        if (command.attemptId() == null || command.questionId() == null) {
-            throw new IllegalArgumentException("El intento y la pregunta son obligatorios");
+        if (command.attemptId() == null || command.questionId() == null || requesterId == null) {
+            throw new IllegalArgumentException("El intento, la pregunta y el usuario son obligatorios");
         }
 
         ExamAttempt attempt = examAttemptRepository.findById(command.attemptId())
                 .orElseThrow(() -> new ExamNotFoundException(command.attemptId()));
+        if (!attempt.getStudentId().equals(requesterId)) {
+            throw new AccessDeniedException("No puedes responder el intento de otro estudiante");
+        }
 
         if (attempt.isSubmitted()) {
             throw new IllegalStateException("La entrega ya fue enviada");
