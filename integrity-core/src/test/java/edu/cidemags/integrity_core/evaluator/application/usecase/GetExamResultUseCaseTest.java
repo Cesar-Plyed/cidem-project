@@ -189,4 +189,48 @@ class GetExamResultUseCaseTest {
         assertEquals("Muy bien", result.questions().get(0).feedback());
         assertFalse(result.pendingReview());
     }
+
+    @Test
+    void blocksStudentFromReadingTheAnswerKeyBeforeSubmitting() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        ExamAttempt openAttempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, false);
+        Exam exam = new Exam(examId, "Exam", null, UUID.randomUUID(), OffsetDateTime.now(), List.of(),
+                ExamStatus.PUBLISHED);
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(openAttempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams,
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
+
+        // El resultado incluye isCorrect por opcion y el puntaje en vivo: si un alumno
+        // lo leyera antes de entregar, se regalaria la llave de respuestas.
+        assertThrows(IllegalStateException.class, () -> useCase.execute(attemptId, studentId, false));
+    }
+
+    @Test
+    void letsTeacherAndAdminWatchAnOpenAttemptButNotOtherStudents() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        ExamAttempt openAttempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, false);
+        Exam exam = new Exam(examId, "Exam", null, teacherId, OffsetDateTime.now(), List.of(),
+                ExamStatus.PUBLISHED);
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(openAttempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams,
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
+
+        // Quien escribio el examen (y el administrador) si puede ver el avance en vivo.
+        assertEquals(attemptId, useCase.execute(attemptId, teacherId, false).attemptId());
+        assertEquals(attemptId, useCase.execute(attemptId, UUID.randomUUID(), true).attemptId());
+        // Otro alumno sigue sin poder.
+        assertThrows(AccessDeniedException.class,
+                () -> useCase.execute(attemptId, UUID.randomUUID(), false));
+    }
 }

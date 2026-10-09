@@ -76,8 +76,8 @@ flowchart LR
     PAGES -.->|"⚠️ no WS client yet"| SENT
     NATIVE -.-> SG
 
-    EVAL & SAFE --> BUS --> SHARED
-    SHARED --> OVER
+    EVAL & SAFE & SENT --> BUS
+    SHARED --> EVAL
     BUS --> OVER
 
     AUTH & EVAL & SAFE & OVER --> PG
@@ -200,8 +200,9 @@ sequenceDiagram
         alt violación detectada
             FE->>SG: POST /api/safeguard/events
             SG->>SG: SafeguardRiskPolicy → puntos de riesgo
-            SG->>BUS: publica RiskEventRecorded → SafeguardBlockEvent
-            BUS->>OV: SafeguardBlockEventListener → log + índice
+            SG->>BUS: RiskEventRecorded → bridge → SafeguardBlockEvent
+            BUS->>EV: SafeguardBlockEventListener (evaluator, stub Sprint 7)
+            Note over EV,OV: hoy solo Sentinel alimenta el log de oversight
         end
         FE->>SG: POST /api/safeguard/sessions/{id}/heartbeat (cada heartbeatIntervalSeconds)
     end
@@ -211,7 +212,7 @@ sequenceDiagram
     S->>FE: entregar
     FE->>EV: POST /api/evaluator/attempts/{attemptId}/submit
     EV->>EV: ownership + examen abierto
-    EV->>BUS: ExamSessionFinishedEvent
+    Note over EV: evaluator NO publica eventos todavía<br/>(ExamSessionStarted/FinishedEvent es pendiente Sprint 7)
     FE->>SG: POST /api/safeguard/sessions/{id}/close
     FE->>EV: GET /api/evaluator/attempts/{attemptId}/result
 ```
@@ -251,7 +252,8 @@ flowchart TD
     EV --> POL --> LOCK
     THRESH -->|"sí"| FLAG["status FLAGGED / TERMINATED"]
     THRESH -->|"no"| OK["status ACTIVE"]
-    LOCK --> EVT --> BLK --> OV["Oversight listener<br/>log + índice de integridad"]
+    LOCK --> EVT --> BLK --> STUB["evaluator<br/>SafeguardBlockEventListener (stub)"]
+    Note over SENT,OV: el log de oversight solo se llena<br/>con AlertGeneratedEvent de sentinel
     CLOSE --> LOCK
 ```
 
@@ -326,11 +328,10 @@ sequenceDiagram
     FE->>API: GET /api/oversight/attempts/{attemptId}/integrity
     API-->>FE: IntegritySnapshot (tarjeta inline)
 
-    Note over BUS,L: eventos en el mismo proceso
-    SAFE->>BUS: SafeguardBlockEvent
-    SENT->>BUS: SentinelAlertEvent (interno)
-    EVAL->>BUS: EvaluatorStateEvent / ExamSessionStarted(Finished)Event
-    BUS->>L: listeners de oversight → INSERT log + actualiza snapshot
+    Note over BUS,L: eventos en el mismo proceso (misma JVM)
+    SENT->>BUS: AlertGeneratedEvent (sentinel.application.event)
+    BUS->>L: AlertGeneratedEventListener → RecordLogEntryUseCase<br/>INSERT log + snapshot (índice de integridad)
+    Note over SAFE,EVAL: SafeGuard y evaluator NO alimentan oversight todavía:<br/>SafeGuardBlockEvent lo consume el stub de evaluator y<br/>evaluator no publica eventos (ver ToDo.md Sprint 7)
 ```
 
 **Integrity index** (`IntegrityScoringPolicy`): base 100, penalizaciones por evento; snapshot
@@ -379,35 +380,34 @@ All events share standard fields:
 
 | Event | Published by | Consumed by | Contract |
 |-------|--------------|-------------|----------|
-| `SafeguardBlockEvent` | `safeguard` bridge | `oversight` listener (registered), `evaluator` listener (empty, Sprint 7) | **`shared.events`** ✅ |
-| `RiskEventRecorded` | `safeguard` (internal) | safeguard bridge → `SafeguardBlockEvent` | internal |
-| `SentinelAlertEvent` | `sentinel` (intended) | `oversight` listener | ⚠️ naming not unified |
-| `EvaluatorStateEvent` | `evaluator` (answer submit) | `oversight` listener | internal |
-| `ExamSessionStartedEvent` / `ExamSessionFinishedEvent` | `evaluator` (join / submit) | `oversight` listener | internal |
+| `SafeguardBlockEvent` | `safeguard` bridge | `evaluator` `SafeguardBlockEventListener` — **stub**, only keeps the last event (Sprint 7) | **`shared.events`** ✅ |
+| `SafeguardDomainEvent.SessionStarted` / `SessionStatusChanged` / `SessionClosed` | `safeguard` | nobody (only `RiskEventRecorded` is consumed, by the bridge) | internal |
+| `RiskEventRecorded` | `safeguard` | safeguard bridge → publishes `SafeguardBlockEvent` | internal |
+| `AlertGeneratedEvent` | `sentinel` (`application.event`) | `oversight` `AlertGeneratedEventListener` → log + integrity snapshot | ⚠️ module leak (oversight imports sentinel) |
+| `EvaluatorStateEvent` / `ExamSessionStartedEvent` / `ExamSessionFinishedEvent` | — | — | ⚠️ **do not exist yet** (ToDo Sprint 1/7); evaluator publishes no events |
 
 ```mermaid
 flowchart LR
     subgraph publish["Publicadores"]
-        SAFE["safeguard<br/>SafeguardBlockEventBridge"]
-        SENT["sentinel"]
-        EVAL["evaluator<br/>join / answer / submit"]
+        SAFE["safeguard<br/>SafeguardService + bridge"]
+        SENT["sentinel<br/>ReceiveSuspiciousEventService"]
     end
     BUS["Spring ApplicationEventPublisher<br/>(in-process, misma JVM)"]
     subgraph consume["Consumidores"]
-        OV1["oversight<br/>SafeguardBlockEventListener"]
+        BRIDGE["safeguard<br/>SafeguardBlockEventBridge<br/>(RiskEventRecorded → SafeguardBlockEvent)"]
+        EV1["evaluator<br/>SafeguardBlockEventListener (stub)"]
         OV2["oversight<br/>AlertGeneratedEventListener"]
-        OV3["oversight<br/>EvaluatorStateEventListener"]
-        EV1["evaluator<br/>SafeguardBlockEventListener (vacío)"]
     end
     SAFE --> BUS
     SENT --> BUS
-    EVAL --> BUS
-    BUS --> OV1 & OV2 & OV3 & EV1
+    BUS --> BRIDGE --> BUS
+    BUS --> EV1 & OV2
 ```
 
 ⚠️ Design debt: listeners run **inside** the publisher's transaction (should be
-`@TransactionalEventListener(AFTER_COMMIT)`), and only `SafeguardBlockEvent` uses the shared
-contract package. See `ToDo.md` § *Pendientes de auditoría*.
+`@TransactionalEventListener(AFTER_COMMIT)`), `SafeguardBlockEvent` is the only contract in the
+shared package (and only a stub consumes it), while the one event that actually drives a feature
+(`AlertGeneratedEvent` → oversight) crosses module boundaries through sentinel's application layer. See `ToDo.md` § *Pendientes de auditoría*.
 
 ---
 
@@ -456,8 +456,8 @@ sequenceDiagram
         alt restricción violada
             FR->>BE: POST /api/safeguard/events
             BE->>DB: safeguard_event
-            BE->>BE: SafeguardRiskPolicy + SafeguardBlockEvent
-            BE->>DB: oversight_log_entries · oversight_integrity_snapshots
+            BE->>BE: SafeguardRiskPolicy → SafeguardBlockEvent (stub de evaluator)
+            Note over BE: el log de oversight solo se llena con alertas de Sentinel
         end
         FR->>BE: POST /attempts/{id}/answers
         BE->>DB: exam_answers · exam_answer_selected_options
@@ -525,7 +525,8 @@ flowchart LR
 
     EVAL --> PG[("PostgreSQL")]
     SG --> PG
-    SG -->|"SafeguardBlockEvent"| OV
+    EV["evaluator<br/>(escucha SafeguardBlockEvent)"]
+    SG -->|"SafeguardBlockEvent (stub)"| EV
     SENT["sentinel"] --> PG
     SENT -->|"ventana 5 min"| R[("Redis")]
     OV --> PG

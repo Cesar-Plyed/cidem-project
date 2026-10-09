@@ -56,11 +56,18 @@ public class GetExamResultUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("El intento no existe"));
         Exam exam = examRepository.findById(attempt.getExamId())
                 .orElseThrow(() -> new ExamNotFoundException(attempt.getExamId()));
+        boolean ownsAttempt = attempt.getStudentId().equals(requesterId);
+        boolean ownsExam = exam.getCreatedByUserId().equals(requesterId);
         if (!administrator) {
-            boolean isStudent = attempt.getStudentId().equals(requesterId);
-            boolean isTeacher = exam.getCreatedByUserId().equals(requesterId);
-            if (!isStudent && !isTeacher) {
+            if (!ownsAttempt && !ownsExam) {
                 throw new AccessDeniedException("No puedes consultar el resultado de este intento");
+            }
+            // El resultado incluye la llave de respuestas (isCorrect por opción) y el
+            // puntaje calculado; un alumno no debe poder leerlo mientras el intento
+            // sigue abierto (se haría trampa respondiendo). Profesor dueño del examen
+            // y administrador sí pueden ver el avance en vivo.
+            if (ownsAttempt && !ownsExam && !attempt.isSubmitted()) {
+                throw new IllegalStateException("El intento aún no ha sido entregado");
             }
         }
         return calculate(attempt, exam);
