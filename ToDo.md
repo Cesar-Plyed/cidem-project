@@ -534,3 +534,7 @@ Cuatro revisiones (seguridad, calidad, backend, frontend) con los agentes de `.o
 - **`/exams/:id/take` es un callejón sin salida**: `ExamHttpRepository.submitAttempt` siempre lanza error y pasa `examId` como `attemptId`; la ruta que realmente toma exámenes es `exam-attempt`. Falta decidir la ruta canónica antes de borrarla.
 - **SCSS todavía duplicado entre páginas**: `.dashboard-card*` se movió a `global.scss`, pero conviene revisar el resto clase por clase antes de mover (riesgo de romper el budget de 4 KB por página).
 - **`console.error` en callbacks de error**: se dejaron a propósito para diagnóstico de red; si se quiere producción sin logs, condicionarlos por entorno.
+
+### Producto / legal
+
+- **Faltan política de privacidad, aviso legal y consentimiento informado**: la plataforma graba cámara/micrófono, captura pantalla y monitorea pestañas de estudiantes, y el repo no tiene ningún documento de ese tipo. Se evaluó el MCP `legal-docs-mcp` como atajo y **se descartó** (paquete discontinuado en npm, sin repo fuente, plantillas mercantiles francesas sin relación con proctoring — ver `docs/evaluacion-legal-docs-mcp.md`). Recomendación: redactarlos directamente en español (qué se captura, finalidad, retención, derechos ARCO) y registrar la aceptación con timestamp al iniciar el intento.
