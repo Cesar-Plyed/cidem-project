@@ -40,7 +40,11 @@
               @for (result of results(); track result.attemptId) {
               <tr [routerLink]="['/attempts', result.attemptId, 'result']" (click)="onNavigate($event)">
                 <td>
-                  <span class="fw-semibold d-block">{{ result.studentFirstName }} {{ result.studentLastName }}</span>
+                  <button type="button" class="btn btn-link p-0 text-reset"
+                    [attr.aria-label]="'Ver resultado de ' + result.studentFirstName + ' ' + result.studentLastName"
+                    [routerLink]="['/attempts', result.attemptId, 'result']" (click)="$event.stopPropagation()">
+                    <span class="fw-semibold d-block">{{ result.studentFirstName }} {{ result.studentLastName }}</span>
+                  </button>
                   <span class="text-secondary small d-block">{{ result.studentEmail }}</span>
                   @if (result.studentPhone) {
                   <span class="text-secondary small d-block">{{ result.studentPhone }}</span>

@@ -58,7 +58,7 @@
               <label class="form-label" for="reg-country">País</label>
               <select id="reg-country" class="form-select" formControlName="countryId">
                 <option value="" disabled>Selecciona un país</option>
-                @for (country of countries; track country.id) {
+                @for (country of countries(); track country.id) {
                 <option [value]="country.id">{{ country.name }}</option>
                 }
               </select>
@@ -93,15 +93,15 @@
           </div>
           }
 
-          @if (errorMessage) {
-          <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+          @if (errorMessage()) {
+          <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
           }
-          @if (successMessage) {
-          <div class="alert alert-success" role="alert">{{ successMessage }}</div>
+          @if (successMessage()) {
+          <div class="alert alert-success" role="alert">{{ successMessage() }}</div>
           }
 
-          <button class="btn btn-primary btn-lg w-100 mt-2" type="submit" [disabled]="loading">
-            @if (loading) {
+          <button class="btn btn-primary btn-lg w-100 mt-2" type="submit" [disabled]="loading()">
+            @if (loading()) {
             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
             Creando cuenta...
             } @else {

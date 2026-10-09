@@ -132,6 +132,18 @@ a {
   padding: 1.25rem;
 }
 
+/* Tarjetas de dashboard/hint: estaban solo en home.page.scss (scoped), así
+   que en exam-list y evaluator-demo la clase no aplicaba. */
+.dashboard-card {
+  padding: 4px;
+}
+
+.dashboard-card__hint {
+  margin-bottom: 16px;
+  color: #4a5768;
+  font-size: 15px;
+}
+
 /* --- Formularios ---------------------------------------------------------- */
 
 .form-label {
@@ -160,6 +172,14 @@ a {
 
 .form-text {
   color: #4a5768;
+}
+
+/* --- Contraste AA --------------------------------------------------------- */
+/* Auditoría H2: .text-secondary de Bootstrap toma $secondary (teal #2d8b8b),
+   que da 3.79:1 sobre el fondo cream — insuficiente para texto normal (4.5:1).
+   Se reutiliza el mismo gris azulado de .form-text: 6.9:1 sobre #f1faee. */
+.text-secondary {
+  color: #4a5768 !important;
 }
 
 /* --- Errores de campo ----------------------------------------------------- */

@@ -55,7 +55,9 @@ ion-toolbar {
 .role-badge {
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--ion-color-secondary);
+  // Auditoría H3: blanco sobre teal #2d8b8b da 4.06:1 (falla AA en 12px).
+  // Teal-ink #1f6f6f: 5.9:1 sobre texto blanco.
+  background: var(--ocean-teal-ink);
   color: var(--ion-color-primary-contrast);
   font-size: 12px;
   font-weight: 600;

@@ -2,29 +2,3 @@
 .students-row {
   cursor: pointer;
 }
-
-/* Detalle del intento: HTML inyectado en el alert de Ionic (fuera del template). */
-.oversight-detail-alert {
-  --width: 90%;
-  --max-width: 400px;
-}
-
-.detail-content {
-  font-size: 0.875rem;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--ion-border-color);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-row strong {
-  color: var(--ion-color-dark);
-}

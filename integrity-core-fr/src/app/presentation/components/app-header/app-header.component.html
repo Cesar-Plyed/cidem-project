@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-buttons slot="start">
       @if (backHref()) {
-      <ion-back-button [defaultHref]="backHref()"></ion-back-button>
+      <ion-back-button [defaultHref]="backHref()" text="Atrás"></ion-back-button>
       } @else {
       <a class="brand" routerLink="/home" aria-label="Ir al panel principal">
         <span class="brand__mark" aria-hidden="true">I</span>

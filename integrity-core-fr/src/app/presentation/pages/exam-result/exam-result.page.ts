@@ -2,7 +2,6 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
 import { GetAttemptResultUseCase } from '../../../application/use-cases/evaluator/get-attempt-result.use-case';
 import { BackendExamResult, BackendQuestionResult } from '../../../domain/models/evaluator/evaluator.model';
 import { AppHeaderComponent } from '../../components/app-header/app-header.component';
@@ -12,7 +11,6 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
   templateUrl: 'exam-result.page.html',
   styleUrls: ['exam-result.page.scss'],
   imports: [
-    CommonModule,
     RouterLink,
     // Shell de la página: cabecera con título, botón atrás y cierre de sesión.
     AppHeaderComponent,

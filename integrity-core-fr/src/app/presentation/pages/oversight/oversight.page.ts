@@ -3,12 +3,9 @@ import { CommonModule } from '@angular/common';
 import {
   IonContent,
   IonIcon,
-  // IonBadge se usa en el HTML que inyecta showAttemptDetail (alert de Ionic),
-  // así que debe seguir importado aunque el template ya no lo use.
-  IonBadge,
   IonRefresher,
   IonRefresherContent,
-  AlertController,
+  RefresherCustomEvent,
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -49,9 +46,6 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
     CommonModule,
     IonContent,
     IonIcon,
-    // IonBadge se usa en el HTML que inyecta showAttemptDetail (alert de Ionic),
-    // así que debe seguir importado aunque el template ya no lo use.
-    IonBadge,
     IonRefresher,
     IonRefresherContent,
     AppHeaderComponent,
@@ -63,7 +57,6 @@ export class OversightPage implements OnInit, OnDestroy {
   private readonly getExamSummary = inject(GetExamSummaryUseCase);
   private readonly getExamTimeline = inject(GetExamTimelineUseCase);
   private readonly getAttemptIntegrity = inject(GetAttemptIntegrityUseCase);
-  private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
 
   // State
@@ -251,79 +244,51 @@ export class OversightPage implements OnInit, OnDestroy {
     return of(void 0);
   }
 
-  onRefresh(event: any) {
+  onRefresh(event: RefresherCustomEvent): void {
     this.loadData();
     setTimeout(() => event.target.complete(), 1000);
   }
 
-  onTabChange(event: any) {
-    this.activeTab.set(event.detail.value);
+  // Los manejadores reciben el valor directo: la plantilla usa elementos HTML
+  // nativos, no componentes Ionic (antes se construían eventos sintéticos
+  // `{ detail: { value } }` para imitar la API de Ionic).
+  setTab(tab: 'summary' | 'timeline' | 'students'): void {
+    this.activeTab.set(tab);
   }
 
-  onSearch(event: any) {
-    this.searchTerm.set(event.detail.value ?? '');
+  onSearch(value: string): void {
+    this.searchTerm.set(value ?? '');
   }
 
-  onSeverityChange(event: any) {
-    this.filterSeverity.set(event.detail.value);
+  onSeverityChange(value: string): void {
+    this.filterSeverity.set(value);
   }
 
-  onSourceChange(event: any) {
-    this.filterSource.set(event.detail.value);
+  onSourceChange(value: string): void {
+    this.filterSource.set(value);
   }
 
-  async viewAttemptDetail(attemptId: string) {
-    this.isLoading.set(true);
+  /**
+   * Detalle de integridad de un intento. El snapshot del backend no incluye el
+   * nombre del alumno, así que se toma de la fila que se clicó.
+   */
+  viewAttemptDetail(attemptId: string, studentName: string): void {
     this.getAttemptIntegrity.execute(attemptId).subscribe({
       next: (snapshot: IntegritySnapshot | null) => {
-        this.selectedAttempt.set(snapshot);
-        this.isLoading.set(false);
-        this.showAttemptDetail(snapshot);
+        this.selectedAttempt.set(snapshot ? { ...snapshot, studentName } : null);
       },
       error: (err: unknown) => {
         console.error('Error loading attempt integrity:', err);
-        this.isLoading.set(false);
         this.showToast('Error al cargar detalles del intento', 'danger');
       },
     });
   }
 
-  private async showAttemptDetail(snapshot: IntegritySnapshot | null) {
-    if (!snapshot) return;
-
-    const alert = await this.alertCtrl.create({
-      header: `Detalles de integridad - ${snapshot.studentName}`,
-      message: `
-        <div class="detail-content">
-          <div class="detail-row">
-            <strong>Índice de integridad:</strong>
-            <ion-badge color="${this.getRiskColor(snapshot.riskLevel)}">${snapshot.integrityIndex}/100</ion-badge>
-          </div>
-          <div class="detail-row">
-            <strong>Nivel de riesgo:</strong>
-            <ion-badge color="${this.getRiskColor(snapshot.riskLevel)}">${RiskLevelConfig[snapshot.riskLevel].label}</ion-badge>
-          </div>
-          <div class="detail-row">
-            <strong>Total alertas:</strong> ${snapshot.totalAlerts}
-          </div>
-          <div class="detail-row">
-            <strong>Total bloqueos:</strong> ${snapshot.totalBlocks}
-          </div>
-          <div class="detail-row">
-            <strong>Último evento:</strong> ${snapshot.lastEventAt ? new Date(snapshot.lastEventAt).toLocaleString() : 'N/A'}
-          </div>
-          <div class="detail-row">
-            <strong>Actualizado:</strong> ${new Date(snapshot.updatedAt).toLocaleString()}
-          </div>
-        </div>
-      `,
-      buttons: ['Cerrar'],
-      cssClass: 'oversight-detail-alert',
-    });
-    await alert.present();
+  closeAttemptDetail(): void {
+    this.selectedAttempt.set(null);
   }
 
-  getRiskColor(riskLevel: RiskLevel): 'success' | 'warning' | 'danger' | 'medium' {
+  getRiskColor(riskLevel: RiskLevel): 'success' | 'warning' | 'danger' | 'secondary' {
     switch (riskLevel) {
       case 'GREEN':
         return 'success';
@@ -332,7 +297,7 @@ export class OversightPage implements OnInit, OnDestroy {
       case 'RED':
         return 'danger';
       default:
-        return 'medium';
+        return 'secondary';
     }
   }
 
@@ -361,6 +326,11 @@ export class OversightPage implements OnInit, OnDestroy {
   // Expose LogSourceConfig for template access
   get logSourceConfig() {
     return LogSourceConfig;
+  }
+
+  // Expose RiskLevelConfig for template access
+  get riskLevelConfig() {
+    return RiskLevelConfig;
   }
 
   formatTime(dateString: string): string {

@@ -1,5 +1,4 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import {
   FormArray,
   FormBuilder,
@@ -36,7 +35,6 @@ interface QuestionFormValue {
   templateUrl: 'exam-editor.page.html',
   styleUrls: ['exam-editor.page.scss'],
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     IonContent,
     IonIcon,
@@ -88,10 +86,6 @@ export class ExamEditorPage implements OnInit {
 
   questionCtrl(index: number, name: string) {
     return this.questions.at(index)?.get(name);
-  }
-
-  questionOptions(index: number): FormArray<FormGroup> {
-    return this.optionsOf(index);
   }
 
   optionTextTouched(questionIndex: number, optionIndex: number): boolean {
@@ -239,7 +233,6 @@ export class ExamEditorPage implements OnInit {
       const message = invalidFields.length > 0
         ? `Revisa los siguientes campos: ${invalidFields.join(', ')}.`
         : 'Revisa los campos marcados.';
-      console.log('[ExamEditor] Campos inválidos:', invalidFields);
       this.errorMessage.set(
         this.questions.length === 0
           ? 'Agrega al menos una pregunta.'
@@ -263,7 +256,7 @@ export class ExamEditorPage implements OnInit {
     this.errorMessage.set(null);
 
     const raw = this.form.getRawValue();
-    const questionValues = raw.questions as unknown as QuestionFormValue[];
+    const questionValues = raw.questions as QuestionFormValue[];
 
     const examPayload = {
       title: raw.title!,
@@ -309,7 +302,6 @@ export class ExamEditorPage implements OnInit {
     Object.keys(this.form.controls).forEach((key) => {
       const control = this.form.get(key);
       if (control && control.invalid) {
-        console.log(`[ExamEditor] Control "${key}" inválido:`, control.errors, 'valor:', control.value);
         fields.push(key);
       }
     });
@@ -318,7 +310,6 @@ export class ExamEditorPage implements OnInit {
         const control = group.get(key);
         if (control && control.invalid) {
           const label = this.fieldLabel(key);
-          console.log(`[ExamEditor] questions[${index}].${key} inválido:`, control.errors, 'valor:', control.value);
           fields.push(`Pregunta ${index + 1}: ${label}`);
         }
       });
@@ -327,7 +318,6 @@ export class ExamEditorPage implements OnInit {
         Object.keys(opt.controls).forEach((key) => {
           const control = opt.get(key);
           if (control && control.invalid) {
-            console.log(`[ExamEditor] questions[${index}].options[${optIndex}].${key} inválido:`, control.errors, 'valor:', control.value);
             fields.push(`Pregunta ${index + 1}, opción ${optIndex + 1}: ${this.fieldLabel(key)}`);
           }
         });
