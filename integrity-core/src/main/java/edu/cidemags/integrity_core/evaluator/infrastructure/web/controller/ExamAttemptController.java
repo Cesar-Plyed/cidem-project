@@ -24,6 +24,7 @@ import edu.cidemags.integrity_core.evaluator.application.usecase.SubmitQuestionA
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAnswer;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAttempt;
 import edu.cidemags.integrity_core.evaluator.infrastructure.web.dto.JoinExamByCodeRequest;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/evaluator")
@@ -48,7 +49,7 @@ public class ExamAttemptController {
     }
 
     @PostMapping("/attempts/join")
-    public ResponseEntity<ExamAttempt> joinExam(@RequestBody JoinExamByAccessCodeCommand command,
+    public ResponseEntity<ExamAttempt> joinExam(@Valid @RequestBody JoinExamByAccessCodeCommand command,
             Authentication authentication) {
         UUID studentId = (UUID) authentication.getPrincipal();
         return ResponseEntity.ok(joinExamByAccessCodeUseCase.execute(
@@ -56,7 +57,7 @@ public class ExamAttemptController {
     }
 
     @PostMapping("/attempts/join-by-code")
-    public ResponseEntity<ExamAttempt> joinExamByCode(@RequestBody JoinExamByCodeRequest request,
+    public ResponseEntity<ExamAttempt> joinExamByCode(@Valid @RequestBody JoinExamByCodeRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(joinExamByAccessCodeUseCase.executeByCode(
                 request.code(), (UUID) authentication.getPrincipal()));
@@ -69,19 +70,22 @@ public class ExamAttemptController {
     }
 
     @PostMapping("/attempts/{attemptId}/submit")
-    public ResponseEntity<ExamAttempt> submitExam(@PathVariable UUID attemptId) {
-        return ResponseEntity.ok(submitExamAttemptUseCase.execute(new SubmitExamAttemptCommand(attemptId)));
+    public ResponseEntity<ExamAttempt> submitExam(@PathVariable UUID attemptId,
+            Authentication authentication) {
+        UUID studentId = (UUID) authentication.getPrincipal();
+        return ResponseEntity.ok(submitExamAttemptUseCase.execute(new SubmitExamAttemptCommand(attemptId), studentId));
     }
 
     @PostMapping("/attempts/{attemptId}/answers")
     public ResponseEntity<ExamAnswer> submitAnswer(@PathVariable UUID attemptId,
-            @RequestBody SubmitQuestionAnswerCommand command) {
+            @Valid @RequestBody SubmitQuestionAnswerCommand command, Authentication authentication) {
+        UUID studentId = (UUID) authentication.getPrincipal();
         SubmitQuestionAnswerCommand fixedCommand = new SubmitQuestionAnswerCommand(
                 attemptId,
                 command.questionId(),
                 command.selectedOptionIds(),
                 command.openTextAnswer());
-        return ResponseEntity.ok(submitQuestionAnswerUseCase.execute(fixedCommand));
+        return ResponseEntity.ok(submitQuestionAnswerUseCase.execute(fixedCommand, studentId));
     }
 
     @GetMapping("/attempts/{attemptId}/result")

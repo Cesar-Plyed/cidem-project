@@ -30,6 +30,12 @@ public class JpaIntegritySnapshotRepositoryAdapter implements IntegritySnapshotR
     }
 
     @Override
+    public Optional<IntegritySnapshot> findByAttemptIdForUpdate(AttemptId attemptId) {
+        return jpaRepository.findByAttemptIdForUpdate(attemptId.value())
+            .map(IntegritySnapshotMapper::toDomain);
+    }
+
+    @Override
     public List<IntegritySnapshot> findByExamSessionId(ExamSessionId examSessionId) {
         return jpaRepository.findByExamSessionId(examSessionId.value()).stream()
             .map(IntegritySnapshotMapper::toDomain)

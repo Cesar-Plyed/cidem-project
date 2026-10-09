@@ -6,6 +6,7 @@ import edu.cidemags.integrity_core.evaluator.application.dto.ReviewOpenEndedAnsw
 import edu.cidemags.integrity_core.evaluator.application.usecase.ListOpenEndedReviewsUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.ReviewOpenEndedAnswerUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
+import edu.cidemags.integrity_core.evaluator.infrastructure.web.dto.CreateReviewRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/evaluator")
@@ -34,18 +37,19 @@ public class EvaluationReviewController {
 
     @PostMapping("/reviews/open-ended")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
-    public ResponseEntity<EvaluationReview> reviewOpenEndedAnswer(@RequestBody ReviewOpenEndedAnswerCommand command,
+    public ResponseEntity<EvaluationReview> reviewOpenEndedAnswer(
+            @Valid @RequestBody CreateReviewRequest request,
             Authentication authentication) {
         UUID reviewerId = (UUID) authentication.getPrincipal();
         boolean administrator = isAdministrator(authentication);
         return ResponseEntity.ok(reviewOpenEndedAnswerUseCase.execute(new ReviewOpenEndedAnswerCommand(
-                command.answerId(), reviewerId, command.score(), command.feedback(), administrator)));
+                request.answerId(), reviewerId, request.score(), request.feedback(), administrator)));
     }
 
     @PutMapping("/reviews/open-ended/{answerId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<EvaluationReview> reviseOpenEndedAnswer(@PathVariable UUID answerId,
-            @RequestBody ReviewOpenEndedAnswerRequest request, Authentication authentication) {
+            @Valid @RequestBody ReviewOpenEndedAnswerRequest request, Authentication authentication) {
         UUID reviewerId = (UUID) authentication.getPrincipal();
         boolean administrator = isAdministrator(authentication);
         return ResponseEntity.ok(reviewOpenEndedAnswerUseCase.execute(new ReviewOpenEndedAnswerCommand(

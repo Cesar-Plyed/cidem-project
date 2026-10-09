@@ -17,6 +17,7 @@ import edu.cidemags.integrity_core.evaluator.domain.port.ExamRepository;
 import edu.cidemags.integrity_core.auth.domain.model.Phone;
 import edu.cidemags.integrity_core.auth.domain.model.User;
 import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 
@@ -59,7 +60,7 @@ public class GetExamResultUseCase {
             boolean isStudent = attempt.getStudentId().equals(requesterId);
             boolean isTeacher = exam.getCreatedByUserId().equals(requesterId);
             if (!isStudent && !isTeacher) {
-                throw new IllegalStateException("No puedes consultar el resultado de este intento");
+                throw new AccessDeniedException("No puedes consultar el resultado de este intento");
             }
         }
         return calculate(attempt, exam);
@@ -72,7 +73,7 @@ public class GetExamResultUseCase {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ExamNotFoundException(examId));
         if (!administrator && !exam.getCreatedByUserId().equals(requesterId)) {
-            throw new IllegalStateException("No puedes consultar resultados de otro profesor");
+            throw new AccessDeniedException("No puedes consultar resultados de otro profesor");
         }
         return attemptRepository.findByExamId(examId).stream()
                 .map(attempt -> calculate(attempt, exam))

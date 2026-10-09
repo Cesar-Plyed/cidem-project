@@ -15,6 +15,9 @@ public record ErrorResponse(
     }
 
     public static ErrorResponse ofValidation(int status, String error, Map<String, String> fieldErrors) {
-        return new ErrorResponse(OffsetDateTime.now(), status, error, "Error de validacion", fieldErrors);
+        String message = fieldErrors == null || fieldErrors.isEmpty()
+                ? "Error de validacion"
+                : String.join("; ", fieldErrors.values().stream().distinct().toList());
+        return new ErrorResponse(OffsetDateTime.now(), status, error, message, fieldErrors);
     }
 }
