@@ -2,27 +2,14 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonButton,
-  IonText,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { CreateRemoteExamUseCase } from '../../../application/use-cases/evaluator/create-remote-exam.use-case';
 import { GenerateAccessCodeUseCase } from '../../../application/use-cases/evaluator/generate-access-code.use-case';
 import { JoinRemoteExamUseCase } from '../../../application/use-cases/evaluator/join-remote-exam.use-case';
 import { SubmitRemoteAnswerUseCase } from '../../../application/use-cases/evaluator/submit-remote-answer.use-case';
 import { SubmitRemoteAttemptUseCase } from '../../../application/use-cases/evaluator/submit-remote-attempt.use-case';
 import { SessionService } from '../../../application/session/session.service';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 /**
  * Página de VERIFICACIÓN, no de producto. Ejercita las 5 operaciones que
@@ -41,19 +28,8 @@ import { SessionService } from '../../../application/session/session.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonButton,
-    IonText,
+    AppHeaderComponent,
   ],
 })
 export class EvaluatorDemoPage {

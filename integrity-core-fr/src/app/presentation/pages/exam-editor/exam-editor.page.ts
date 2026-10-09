@@ -10,25 +10,8 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
   IonContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonButton,
   IonIcon,
-  IonText,
-  IonSpinner,
-  IonRadioGroup,
-  IonRadio,
-  IonCard,
-  IonCardContent,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { addOutline, trashOutline } from 'ionicons/icons';
@@ -37,6 +20,7 @@ import { CreateExamUseCase } from '../../../application/use-cases/exam/create-ex
 import { UpdateExamUseCase } from '../../../application/use-cases/exam/update-exam.use-case';
 import { QuestionType } from '../../../domain/models/exam/question-type.enum';
 import { Exam } from '../../../domain/models/exam/exam.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 interface QuestionFormValue {
   id: string;
@@ -54,25 +38,9 @@ interface QuestionFormValue {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
     IonContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
-    IonButton,
     IonIcon,
-    IonText,
-    IonSpinner,
-    IonRadioGroup,
-    IonRadio,
-    IonCard,
-    IonCardContent,
+    AppHeaderComponent,
   ],
 })
 export class ExamEditorPage implements OnInit {

@@ -3,23 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonButton,
-  IonIcon,
-  IonFab,
-  IonFabButton,
-  IonSpinner,
-  IonText,
-  IonBadge,
-  AlertController,
-} from '@ionic/angular';
+import { IonContent, IonIcon, AlertController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline, statsChartOutline } from 'ionicons/icons';
 import { ListExamsUseCase } from '../../../application/use-cases/exam/list-exams.use-case';
@@ -28,6 +12,7 @@ import { GenerateAccessCodeUseCase } from '../../../application/use-cases/evalua
 import { PublishRemoteExamUseCase } from '../../../application/use-cases/evaluator/publish-remote-exam.use-case';
 import { BackendExamAccessCode } from '../../../domain/models/evaluator/evaluator.model';
 import { Exam } from '../../../domain/models/exam/exam.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 /** Minutos de vigencia del código de acceso (el backend usa 20 si no se envía). */
 const CODE_TTL_MINUTES = 60;
@@ -39,20 +24,9 @@ const CODE_TTL_MINUTES = 60;
   imports: [
     CommonModule,
     RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
     IonContent,
-    IonList,
-    IonItem,
-    IonLabel,
-    IonButton,
     IonIcon,
-    IonFab,
-    IonFabButton,
-    IonSpinner,
-    IonText,
-    IonBadge,
+    AppHeaderComponent,
   ],
 })
 export class ExamListPage implements OnInit {
@@ -75,7 +49,7 @@ export class ExamListPage implements OnInit {
 
   constructor(
   ) {
-    addIcons({ addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline });
+    addIcons({ addOutline, copyOutline, createOutline, keyOutline, trashOutline, eyeOutline, readerOutline, statsChartOutline });
   }
 
   ngOnInit(): void {
@@ -111,6 +85,15 @@ export class ExamListPage implements OnInit {
       case 'PUBLISHED': return 'success';
       case 'CLOSED': return 'medium';
       default: return 'warning';
+    }
+  }
+
+  /** Clase Bootstrap del badge de estado (traduce los colores Ionic de statusColor). */
+  statusBadgeClass(exam: Exam): string {
+    switch (this.statusColor(exam)) {
+      case 'success': return 'text-bg-success';
+      case 'warning': return 'text-bg-warning';
+      default: return 'text-bg-secondary';
     }
   }
 

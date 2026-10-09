@@ -2,31 +2,13 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { concatMap, finalize, from, switchMap, toArray } from 'rxjs';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonRadioGroup,
-  IonRadio,
-  IonCheckbox,
-  IonItem,
-  IonTextarea,
-  IonButton,
-  IonText,
-  IonSpinner,
-  IonBadge,
-  AlertController,
-} from '@ionic/angular';
+import { AlertController, IonContent } from '@ionic/angular';
 import { GetAttemptExamUseCase } from '../../../application/use-cases/evaluator/get-attempt-exam.use-case';
 import { SubmitRemoteAnswerUseCase } from '../../../application/use-cases/evaluator/submit-remote-answer.use-case';
 import { SubmitRemoteAttemptUseCase } from '../../../application/use-cases/evaluator/submit-remote-attempt.use-case';
 import { AttemptExam, AttemptExamQuestion } from '../../../domain/models/evaluator/attempt-exam.model';
 import { SafeguardMonitorService } from '../../../application/safeguard/safeguard-monitor.service';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 /**
  * Vista que se abre al pulsar "Comenzar examen": carga el examen del intento del
@@ -38,23 +20,9 @@ import { SafeguardMonitorService } from '../../../application/safeguard/safeguar
   styleUrls: ['exam-attempt.page.scss'],
   imports: [
     RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
+    // Shell de la página: cabecera con título y cierre de sesión.
+    AppHeaderComponent,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonRadioGroup,
-    IonRadio,
-    IonCheckbox,
-    IonItem,
-    IonTextarea,
-    IonButton,
-    IonText,
-    IonSpinner,
-    IonBadge,
   ],
 })
 export class ExamAttemptPage implements OnInit, OnDestroy {

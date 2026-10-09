@@ -3,20 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonButton,
-  IonText,
-  IonSpinner,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { RegisterUseCase } from '../../../application/use-cases/register.use-case';
 import { ListCountriesUseCase } from '../../../application/use-cases/list-countries.use-case';
 import { Country } from '../../../domain/models/country.model';
@@ -27,23 +14,7 @@ import { ApiError } from '../../../domain/models/api-error.model';
   selector: 'app-register',
   templateUrl: 'register.page.html',
   styleUrls: ['register.page.scss'],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
-    IonButton,
-    IonText,
-    IonSpinner,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, IonContent],
 })
 export class RegisterPage implements OnInit {
   private readonly fb = inject(FormBuilder)

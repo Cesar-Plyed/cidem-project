@@ -17,6 +17,8 @@ import { EvaluatorRepository } from './app/domain/ports/evaluator.repository';
 import { EvaluatorHttpRepository } from './app/infrastructure/http/evaluator-http.repository';
 import { SafeguardRepository } from './app/domain/ports/safeguard.repository';
 import { SafeguardHttpRepository } from './app/infrastructure/http/safeguard-http.repository';
+import { OversightRepository } from './app/domain/ports/oversight.repository';
+import { OversightHttpRepository } from './app/infrastructure/http/oversight-http.repository';
 import { SafeguardPlatform } from './app/domain/ports/safeguard-platform';
 import { WebSafeguardPlatform } from './app/infrastructure/platform/web-safeguard-platform';
 
@@ -35,6 +37,9 @@ bootstrapApplication(AppComponent, {
     // operaciones que existen hoy (ver evaluator-demo.page.ts).
     { provide: EvaluatorRepository, useClass: EvaluatorHttpRepository },
     { provide: SafeguardRepository, useClass: SafeguardHttpRepository },
+    // Oversight: los use-cases inyectan la clase abstracta; sin este provider
+    // la página /exams/:id/oversight revienta con NG0201 en runtime.
+    { provide: OversightRepository, useClass: OversightHttpRepository },
     // Plataforma donde corre SafeGuard. Para Tauri: sustituir por TauriSafeguardPlatform.
     { provide: SafeguardPlatform, useClass: WebSafeguardPlatform },
     importProvidersFrom(IonicStorageModule.forRoot()),

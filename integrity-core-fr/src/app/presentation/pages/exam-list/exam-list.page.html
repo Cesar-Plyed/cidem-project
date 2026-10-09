@@ -1,98 +1,109 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Mis exámenes</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header title="Mis exámenes" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
-    <div class="loading"><ion-spinner name="crescent"></ion-spinner></div>
-  }
-
-  @if (errorMessage()) {
-    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
-  }
-
-  @if (!loading()) {
-  <ion-list>
-    @for (exam of exams(); track exam.id) {
-    <ion-item>
-      <ion-label>
-        <h2>{{ exam.title }} <ion-badge [color]="statusColor(exam)">{{ statusLabel(exam) }}</ion-badge></h2>
-        <p>{{ exam.description }}</p>
-        <p>{{ exam.questions.length }} preguntas · {{ exam.durationMinutes }} min</p>
-        @if (codes()[exam.id]; as active) {
-        <p class="access-code">
-          Código: <strong>{{ active.code }}</strong>
-          <span class="expires">· vence {{ active.expiresAt | date: 'shortTime' }}</span>
-        </p>
-        }
-      </ion-label>
-      <ion-button
-        fill="clear"
-        slot="end"
-        aria-label="Generar código de acceso"
-        [disabled]="generatingId() === exam.id"
-        (click)="requestCode(exam)"
-      >
-        @if (generatingId() === exam.id) {
-        <ion-spinner name="dots" slot="icon-only"></ion-spinner>
-        } @else {
-        <ion-icon name="key-outline" slot="icon-only"></ion-icon>
-        }
-      </ion-button>
-      @if (codes()[exam.id]) {
-      <ion-button fill="clear" slot="end" aria-label="Copiar código" (click)="copyCode(exam.id)">
-        <ion-icon name="copy-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-      }
-      <ion-button fill="clear" slot="end" [routerLink]="['/exams', exam.id, 'edit']" (click)="onNavigate($event)">
-        <ion-icon name="create-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-      @if (exam.status === 'PUBLISHED' || exam.status === 'CLOSED') {
-      <ion-button
-        fill="clear"
-        slot="end"
-        aria-label="Ver resultados"
-        [routerLink]="['/exams', exam.id, 'results']"
-        (click)="onNavigate($event)"
-      >
-        <ion-icon name="eye-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-      <ion-button
-        fill="clear"
-        slot="end"
-        aria-label="Revisar respuestas abiertas"
-        [routerLink]="['/exams', exam.id, 'reviews']"
-        (click)="onNavigate($event)"
-      >
-        <ion-icon name="reader-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-      <ion-button
-        fill="clear"
-        slot="end"
-        aria-label="Ver oversight"
-        [routerLink]="['/exams', exam.id, 'oversight']"
-        (click)="onNavigate($event)"
-      >
-        <ion-icon name="stats-chart-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-      }
-      <ion-button fill="clear" color="danger" slot="end" (click)="confirmDelete(exam)">
-        <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-    </ion-item>
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando tus exámenes...</span>
+    </div>
     }
+
+    @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (!loading()) {
+    <header class="page-heading d-flex flex-wrap justify-content-between align-items-end gap-2">
+      <div>
+        <p class="eyebrow">Gestión académica</p>
+        <h2>Mis exámenes</h2>
+        <p>Crea, publica y da seguimiento a tus evaluaciones.</p>
+      </div>
+      <a class="btn btn-primary text-nowrap" routerLink="/exams/new">
+        <ion-icon name="add-outline" class="me-1" aria-hidden="true"></ion-icon>
+        Nuevo examen
+      </a>
+    </header>
 
     @if (exams().length === 0) {
-      <ion-item><ion-label class="ion-text-center">Aún no tienes exámenes. Crea el primero.</ion-label></ion-item>
-    }
-  </ion-list>
-  }
+    <section class="card">
+      <div class="card-body text-center py-5">
+        <p class="dashboard-card__hint">Aún no tienes exámenes. Crea el primero.</p>
+        <a class="btn btn-primary" routerLink="/exams/new">
+          <ion-icon name="add-outline" class="me-1" aria-hidden="true"></ion-icon>
+          Crear examen
+        </a>
+      </div>
+    </section>
+    } @else {
+    <div class="row g-3">
+      @for (exam of exams(); track exam.id) {
+      <div class="col-12 col-md-6 col-xl-4">
+        <section class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <h3 class="mb-0">{{ exam.title }}</h3>
+            <span class="badge rounded-pill text-nowrap" [ngClass]="statusBadgeClass(exam)">{{ statusLabel(exam) }}</span>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <p class="dashboard-card__hint">{{ exam.description }}</p>
+            <p class="exam-meta">{{ exam.questions.length }} preguntas · {{ exam.durationMinutes }} min</p>
 
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button routerLink="/exams/new">
-      <ion-icon name="add-outline"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
+            @if (codes()[exam.id]; as active) {
+            <div class="access-code input-group mb-3">
+              <span class="input-group-text">Código</span>
+              <code class="form-control">{{ active.code }}</code>
+              <span class="input-group-text">vence {{ active.expiresAt | date: 'shortTime' }}</span>
+            </div>
+            @if (copiedId() === exam.id) {
+            <p class="mb-2"><span class="badge text-bg-success">Código copiado</span></p>
+            }
+            }
+
+            <div class="d-flex flex-wrap gap-2 mt-auto pt-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Generar código de acceso"
+                [disabled]="generatingId() === exam.id" (click)="requestCode(exam)">
+                @if (generatingId() === exam.id) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                } @else {
+                <ion-icon name="key-outline" aria-hidden="true"></ion-icon>
+                }
+              </button>
+              @if (codes()[exam.id]) {
+              <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Copiar código"
+                (click)="copyCode(exam.id)">
+                <ion-icon name="copy-outline" aria-hidden="true"></ion-icon>
+              </button>
+              }
+              <a class="btn btn-sm btn-outline-secondary" aria-label="Editar examen"
+                [routerLink]="['/exams', exam.id, 'edit']" (click)="onNavigate($event)">
+                <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+              </a>
+              @if (exam.status === 'PUBLISHED' || exam.status === 'CLOSED') {
+              <a class="btn btn-sm btn-outline-secondary" aria-label="Ver resultados"
+                [routerLink]="['/exams', exam.id, 'results']" (click)="onNavigate($event)">
+                <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+              </a>
+              <a class="btn btn-sm btn-outline-secondary" aria-label="Revisar respuestas abiertas"
+                [routerLink]="['/exams', exam.id, 'reviews']" (click)="onNavigate($event)">
+                <ion-icon name="reader-outline" aria-hidden="true"></ion-icon>
+              </a>
+              <a class="btn btn-sm btn-outline-secondary" aria-label="Ver oversight"
+                [routerLink]="['/exams', exam.id, 'oversight']" (click)="onNavigate($event)">
+                <ion-icon name="stats-chart-outline" aria-hidden="true"></ion-icon>
+              </a>
+              }
+              <button type="button" class="btn btn-sm btn-outline-danger" aria-label="Eliminar examen"
+                (click)="confirmDelete(exam)">
+                <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+      }
+    </div>
+    }
+    }
+  </div>
 </ion-content>

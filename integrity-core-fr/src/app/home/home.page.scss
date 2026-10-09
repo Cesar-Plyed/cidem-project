@@ -1,40 +1,24 @@
-.dashboard-loading {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  justify-content: center;
-  min-height: 60vh;
-  text-align: center;
+.dashboard-card {
+  padding: 4px;
 }
 
-.dashboard-heading {
-  margin: 1rem auto 1.5rem;
-  max-width: 900px;
+.dashboard-card__hint {
+  margin-bottom: 16px;
+  color: #4a5768;
+  font-size: 15px;
 }
 
-.eyebrow {
-  color: var(--ion-color-primary);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.user-list__name {
+  display: block;
+  font-weight: 600;
 }
 
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 6vw, 3.5rem);
+.user-list__meta {
+  display: block;
+  color: #4a5768;
+  font-size: 13px;
 }
 
-.dashboard-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  margin: 0 auto;
-  max-width: 900px;
-}
-
-ion-card {
-  margin: 0 auto 1rem;
-  max-width: 900px;
+.loading--compact {
+  padding: 16px 0;
 }

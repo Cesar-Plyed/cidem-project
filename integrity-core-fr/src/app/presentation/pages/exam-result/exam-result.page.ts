@@ -1,28 +1,11 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonText,
-  IonSpinner,
-  IonBadge,
-  IonList,
-  IonItem,
-  IonLabel,
-} from '@ionic/angular';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { IonContent } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { GetAttemptResultUseCase } from '../../../application/use-cases/evaluator/get-attempt-result.use-case';
 import { BackendExamResult, BackendQuestionResult } from '../../../domain/models/evaluator/evaluator.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 @Component({
   selector: 'app-exam-result',
@@ -30,23 +13,10 @@ import { BackendExamResult, BackendQuestionResult } from '../../../domain/models
   styleUrls: ['exam-result.page.scss'],
   imports: [
     CommonModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
+    RouterLink,
+    // Shell de la página: cabecera con título, botón atrás y cierre de sesión.
+    AppHeaderComponent,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonButton,
-    IonText,
-    IonSpinner,
-    IonBadge,
-    IonList,
-    IonItem,
-    IonLabel,
   ],
 })
 export class ExamResultPage implements OnInit {

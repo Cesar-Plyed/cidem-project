@@ -3,33 +3,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonRadioGroup,
-  IonRadio,
-  IonItem,
-  IonLabel,
-  IonTextarea,
-  IonButton,
-  IonText,
-  IonSpinner,
-  IonBadge,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { GetExamUseCase } from '../../../application/use-cases/exam/get-exam.use-case';
 import { SubmitExamAttemptUseCase } from '../../../application/use-cases/exam/submit-exam-attempt.use-case';
 import { Exam } from '../../../domain/models/exam/exam.model';
 import { QuestionType } from '../../../domain/models/exam/question-type.enum';
 import { ExamAnswer } from '../../../domain/models/exam/exam-answer.model';
 import { SafeguardMonitorService } from '../../../application/safeguard/safeguard-monitor.service';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 @Component({
   selector: 'app-exam-take',
@@ -38,25 +19,9 @@ import { SafeguardMonitorService } from '../../../application/safeguard/safeguar
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
+    // Shell de la página: cabecera con título, botón atrás y cierre de sesión.
+    AppHeaderComponent,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonRadioGroup,
-    IonRadio,
-    IonItem,
-    IonLabel,
-    IonTextarea,
-    IonButton,
-    IonText,
-    IonSpinner,
-    IonBadge,
   ],
 })
 export class ExamTakePage implements OnInit, OnDestroy {
