@@ -1,52 +1,72 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/exams"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Resultados del examen</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header title="Resultados del examen" backHref="/exams" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    <header class="page-heading">
+      <p class="eyebrow">Evaluación</p>
+      <h2>Resultados del examen</h2>
+      <p>Puntaje y estado de cada alumno en este examen.</p>
+    </header>
+
+    @if (loading()) {
     <div class="loading">
-      <ion-spinner name="crescent"></ion-spinner>
-      <p>Cargando resultados...</p>
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando resultados...</span>
     </div>
-  }
+    }
 
-  @if (!loading() && errorMessage()) {
-    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
-  }
+    @if (!loading() && errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
 
-  @if (!loading() && results().length === 0) {
-    <ion-text color="medium">
-      <p>Aún no hay resultados para este examen.</p>
-    </ion-text>
-  }
+    @if (!loading() && results().length === 0) {
+    <p class="text-secondary">Aún no hay resultados para este examen.</p>
+    }
 
-  @if (!loading() && results().length > 0) {
-    <ion-list>
-      @for (result of results(); track result.attemptId) {
-        <ion-item [routerLink]="['/attempts', result.attemptId, 'result']" detail (click)="onNavigate($event)">
-          <ion-label>
-            <h2>{{ result.studentFirstName }} {{ result.studentLastName }}</h2>
-            <p>{{ result.studentEmail }}</p>
-            @if (result.studentPhone) {
-              <p>{{ result.studentPhone }}</p>
-            }
-          </ion-label>
-          <div slot="end" class="score-column">
-            <ion-badge [color]="scoreColor(result.score, result.maxScore)" style="font-size: 1.2rem">
-              {{ result.score }} / {{ result.maxScore }}
-            </ion-badge>
-            <p class="percentage">{{ scorePercentage(result.score, result.maxScore) }}%</p>
-            @if (result.pendingReview) {
-              <ion-badge color="warning" class="review-badge">Pendiente</ion-badge>
-            }
-          </div>
-        </ion-item>
-      }
-    </ion-list>
-  }
+    @if (!loading() && results().length > 0) {
+    <section class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 results-table">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Alumno</th>
+                <th scope="col">Puntaje</th>
+                <th scope="col">Porcentaje</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (result of results(); track result.attemptId) {
+              <tr [routerLink]="['/attempts', result.attemptId, 'result']" (click)="onNavigate($event)">
+                <td>
+                  <span class="fw-semibold d-block">{{ result.studentFirstName }} {{ result.studentLastName }}</span>
+                  <span class="text-secondary small d-block">{{ result.studentEmail }}</span>
+                  @if (result.studentPhone) {
+                  <span class="text-secondary small d-block">{{ result.studentPhone }}</span>
+                  }
+                </td>
+                <td class="text-nowrap">
+                  <span class="badge rounded-pill"
+                    [ngClass]="scoreColor(result.score, result.maxScore) === 'medium' ? 'text-bg-secondary' : 'text-bg-' + scoreColor(result.score, result.maxScore)">
+                    {{ result.score }} / {{ result.maxScore }}
+                  </span>
+                </td>
+                <td class="text-nowrap">{{ scorePercentage(result.score, result.maxScore) }}%</td>
+                <td class="text-nowrap">
+                  @if (result.pendingReview) {
+                  <span class="badge rounded-pill text-bg-warning">Pendiente</span>
+                  } @else {
+                  <span class="badge rounded-pill text-bg-success">Calificado</span>
+                  }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    }
+  </div>
 </ion-content>

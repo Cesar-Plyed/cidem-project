@@ -3,18 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonButton,
-  IonText,
-  IonSpinner,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { LoginUseCase } from '../../../application/use-cases/login.use-case';
 import { ApiError } from '../../../domain/models/api-error.model';
 
@@ -22,21 +11,7 @@ import { ApiError } from '../../../domain/models/api-error.model';
   selector: 'app-login',
   templateUrl: 'login.page.html',
   styleUrls: ['login.page.scss'],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonButton,
-    IonText,
-    IonSpinner,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, IonContent],
 })
 export class LoginPage {
   private readonly fb = inject(FormBuilder)
@@ -50,10 +25,6 @@ export class LoginPage {
 
   loading = false;
   errorMessage: string | null = null;
-
-  constructor(
-
-  ) {}
 
   submit(): void {
     if (this.form.invalid) {

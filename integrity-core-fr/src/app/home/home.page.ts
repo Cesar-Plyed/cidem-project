@@ -1,24 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonSpinner,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonInput,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonText,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Role } from '../domain/models/role.enum';
@@ -26,33 +9,13 @@ import { SessionService } from '../application/session/session.service';
 import { JoinRemoteExamUseCase } from '../application/use-cases/evaluator/join-remote-exam.use-case';
 import { ListUsersUseCase } from '../application/use-cases/list-users.use-case';
 import { DirectoryUser } from '../domain/models/user-directory.model';
-import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { AppHeaderComponent } from '../presentation/components/app-header/app-header.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [
-    CommonModule,
-    RouterLink,
-    ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonSpinner,
-    IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonButton,
-    IonInput,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonText,
-  ],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, IonContent, AppHeaderComponent],
 })
 export class HomePage implements OnInit {
 
@@ -60,7 +23,6 @@ export class HomePage implements OnInit {
   private readonly sessionService = inject(SessionService);
   private readonly joinRemoteExamUseCase = inject(JoinRemoteExamUseCase);
   private readonly listUsersUseCase = inject(ListUsersUseCase);
-  private readonly logoutUseCase = inject(LogoutUseCase);
   private readonly router = inject(Router);
 
 
@@ -131,10 +93,5 @@ export class HomePage implements OnInit {
         );
       },
     });
-  }
-
-  async logout(): Promise<void> {
-    await this.logoutUseCase.execute();
-    await this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 }

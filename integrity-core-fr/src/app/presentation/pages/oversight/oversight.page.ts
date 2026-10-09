@@ -2,30 +2,12 @@ import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import {
   IonContent,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
-  IonButton,
   IonIcon,
+  // IonBadge se usa en el HTML que inyecta showAttemptDetail (alert de Ionic),
+  // así que debe seguir importado aunque el template ya no lo use.
   IonBadge,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonSegment,
-  IonSegmentButton,
-  IonSpinner,
   IonRefresher,
   IonRefresherContent,
-  IonSearchbar,
-  IonSelect,
-  IonSelectOption,
   AlertController,
   ToastController,
 } from '@ionic/angular';
@@ -56,6 +38,7 @@ import { GetExamSummaryUseCase } from '../../../application/use-cases/oversight/
 import { GetExamTimelineUseCase } from '../../../application/use-cases/oversight/get-exam-timeline.use-case';
 import { GetAttemptIntegrityUseCase } from '../../../application/use-cases/oversight/get-attempt-integrity.use-case';
 import { ExamSummary, LogEntry, IntegritySnapshot, RiskLevel, RiskLevelConfig, SeverityConfig, LogSourceConfig } from '../../../domain/models/oversight/oversight.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 @Component({
   selector: 'app-oversight',
@@ -65,30 +48,13 @@ import { ExamSummary, LogEntry, IntegritySnapshot, RiskLevel, RiskLevelConfig, S
   imports: [
     CommonModule,
     IonContent,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
-    IonButton,
     IonIcon,
+    // IonBadge se usa en el HTML que inyecta showAttemptDetail (alert de Ionic),
+    // así que debe seguir importado aunque el template ya no lo use.
     IonBadge,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardSubtitle,
-    IonCardContent,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonSegment,
-    IonSegmentButton,
-    IonSpinner,
     IonRefresher,
     IonRefresherContent,
-    IonSearchbar,
-    IonSelect,
-    IonSelectOption,
+    AppHeaderComponent,
   ],
 })
 export class OversightPage implements OnInit, OnDestroy {

@@ -1,152 +1,177 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/exams"></ion-back-button>
-    </ion-buttons>
-    <ion-title>{{ examId ? 'Editar examen' : 'Nuevo examen' }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header [title]="examId ? 'Editar examen' : 'Nuevo examen'" backHref="/exams" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
-    <div class="loading"><ion-spinner name="crescent"></ion-spinner></div>
-  }
-
-  @if (!loading()) {
-  <form [formGroup]="form" novalidate (ngSubmit)="save($event)">
-    <ion-list lines="full">
-      <ion-item>
-        <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
-      </ion-item>
-      @if (title.touched && title.invalid) {
-        <ion-text color="danger">
-          @if (title.errors?.['required']) { <p class="field-error">El título es obligatorio.</p> }
-        </ion-text>
-      }
-
-      <ion-item>
-        <ion-input label="Descripción" labelPlacement="floating" formControlName="description"></ion-input>
-      </ion-item>
-      @if (description.touched && description.invalid) {
-        <ion-text color="danger">
-          @if (description.errors?.['required']) { <p class="field-error">La descripción es obligatoria.</p> }
-        </ion-text>
-      }
-
-      <ion-item>
-        <ion-input
-          label="Duración (minutos)"
-          labelPlacement="floating"
-          type="number"
-          formControlName="durationMinutes"
-        ></ion-input>
-      </ion-item>
-      @if (durationMinutes.touched && durationMinutes.invalid) {
-        <ion-text color="danger">
-          @if (durationMinutes.errors?.['required']) { <p class="field-error">La duración es obligatoria.</p> }
-          @if (durationMinutes.errors?.['min']) { <p class="field-error">Debe ser al menos 1 minuto.</p> }
-        </ion-text>
-      }
-    </ion-list>
-
-    <div formArrayName="questions">
-      @for (questionGroup of questions.controls; track questionGroup.value.id; let i = $index) {
-      <ion-card [formGroupName]="i">
-        <ion-card-content>
-          <div class="question-header">
-            <h3>Pregunta {{ i + 1 }}</h3>
-            <ion-button
-              fill="clear"
-              color="danger"
-              (click)="removeQuestion(i)"
-              [disabled]="questions.length === 1"
-            >
-              <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-            </ion-button>
-          </div>
-
-          <ion-item>
-            <ion-select
-              label="Tipo de pregunta"
-              labelPlacement="floating"
-              formControlName="type"
-              (ionChange)="onTypeChange(i)"
-            >
-              <ion-select-option [value]="QuestionType.MULTIPLE_CHOICE">Opción múltiple</ion-select-option>
-              <ion-select-option [value]="QuestionType.OPEN">Respuesta abierta</ion-select-option>
-            </ion-select>
-          </ion-item>
-          @if (questionCtrl(i, 'type')?.touched && questionCtrl(i, 'type')?.invalid) {
-            <ion-text color="danger">
-              @if (questionCtrl(i, 'type')?.errors?.['required']) { <p class="field-error">Selecciona el tipo de pregunta.</p> }
-            </ion-text>
-          }
-
-          <ion-item>
-            <ion-input label="Enunciado" labelPlacement="floating" formControlName="statement"></ion-input>
-          </ion-item>
-          @if (questionCtrl(i, 'statement')?.touched && questionCtrl(i, 'statement')?.invalid) {
-            <ion-text color="danger">
-              @if (questionCtrl(i, 'statement')?.errors?.['required']) { <p class="field-error">El enunciado es obligatorio.</p> }
-            </ion-text>
-          }
-
-          <ion-item>
-            <ion-input label="Puntos" labelPlacement="floating" type="number" formControlName="points"></ion-input>
-          </ion-item>
-          @if (questionCtrl(i, 'points')?.touched && questionCtrl(i, 'points')?.invalid) {
-            <ion-text color="danger">
-              @if (questionCtrl(i, 'points')?.errors?.['required'] || questionCtrl(i, 'points')?.errors?.['min']) { <p class="field-error">Debe ser al menos 1.</p> }
-            </ion-text>
-          }
-
-          @if (isMultipleChoice(i)) {
-          <ion-radio-group formControlName="correctOptionId">
-            <div formArrayName="options" class="options">
-              @for (optionGroup of optionsOf(i).controls; track optionGroup.value.id; let j = $index) {
-              <ion-item [formGroupName]="j" lines="none">
-                <ion-radio [value]="optionGroup.value.id" slot="start"></ion-radio>
-                <ion-input formControlName="text" placeholder="Texto de la opción"></ion-input>
-                <ion-button
-                  fill="clear"
-                  color="danger"
-                  slot="end"
-                  (click)="removeOption(i, j)"
-                  [disabled]="optionsOf(i).length <= 2"
-                >
-                  <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-                </ion-button>
-              </ion-item>
-              @if (optionTextTouched(i, j)) {
-                <ion-text color="danger">
-                  <p class="field-error">El texto de la opción es obligatorio.</p>
-                </ion-text>
-              }
-              }
-              <ion-button fill="outline" size="small" (click)="addOption(i)">
-                <ion-icon name="add-outline" slot="start"></ion-icon>
-                Agregar opción
-              </ion-button>
-            </div>
-          </ion-radio-group>
-          }
-        </ion-card-content>
-      </ion-card>
-      }
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando el examen...</span>
     </div>
+    }
 
-    <ion-button expand="block" fill="outline" (click)="addQuestion()">
-      <ion-icon name="add-outline" slot="start"></ion-icon>
-      Agregar pregunta
-    </ion-button>
+    @if (!loading()) {
+    <header class="page-heading">
+      <p class="eyebrow">Editor de exámenes</p>
+      <h2>{{ examId ? 'Editar examen' : 'Nuevo examen' }}</h2>
+      <p>Define los datos de la evaluación y estructura sus preguntas.</p>
+    </header>
 
-    @if (errorMessage()) { <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text> }
+    <form [formGroup]="form" novalidate (ngSubmit)="save($event)">
+      <!-- Datos generales del examen -->
+      <section class="card mb-3">
+        <div class="card-body">
+          <h3>Datos del examen</h3>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="exam-title">Título</label>
+              <input class="form-control" id="exam-title" type="text" formControlName="title" />
+              @if (title.touched && title.invalid) {
+              @if (title.errors?.['required']) {
+              <span class="field-error">El título es obligatorio.</span>
+              }
+              }
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="exam-description">Descripción</label>
+              <input class="form-control" id="exam-description" type="text" formControlName="description" />
+              @if (description.touched && description.invalid) {
+              @if (description.errors?.['required']) {
+              <span class="field-error">La descripción es obligatoria.</span>
+              }
+              }
+            </div>
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label" for="exam-duration">Duración (minutos)</label>
+              <input class="form-control" id="exam-duration" type="number" formControlName="durationMinutes" />
+              @if (durationMinutes.touched && durationMinutes.invalid) {
+              @if (durationMinutes.errors?.['required']) {
+              <span class="field-error">La duración es obligatoria.</span>
+              }
+              @if (durationMinutes.errors?.['min']) {
+              <span class="field-error">Debe ser al menos 1 minuto.</span>
+              }
+              }
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <ion-button expand="block" type="button" class="ion-margin-top" [disabled]="saving()" (click)="save($event)">
-      @if (saving()) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
-      @if (!saving()) { <span>Guardar examen</span> }
-      @if (saving()) { <span>Guardando...</span> }
-    </ion-button>
-  </form>
-  }
+      <!-- Preguntas -->
+      <div formArrayName="questions" class="d-grid gap-3">
+        @for (questionGroup of questions.controls; track questionGroup.value.id; let i = $index) {
+        <section class="card" [formGroupName]="i">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h3 class="mb-0">Pregunta {{ i + 1 }}</h3>
+              @if (isMultipleChoice(i)) {
+              <span class="badge rounded-pill text-bg-secondary">Opción múltiple</span>
+              } @else {
+              <span class="badge rounded-pill text-bg-secondary">Respuesta abierta</span>
+              }
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeQuestion(i)"
+              [disabled]="questions.length === 1" aria-label="Eliminar pregunta {{ i + 1 }}">
+              <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="question-type-{{ i }}">Tipo de pregunta</label>
+                <select class="form-select" id="question-type-{{ i }}" formControlName="type"
+                  (change)="onTypeChange(i)">
+                  <option [value]="QuestionType.MULTIPLE_CHOICE">Opción múltiple</option>
+                  <option [value]="QuestionType.OPEN">Respuesta abierta</option>
+                </select>
+                @if (questionCtrl(i, 'type')?.touched && questionCtrl(i, 'type')?.invalid) {
+                @if (questionCtrl(i, 'type')?.errors?.['required']) {
+                <span class="field-error">Selecciona el tipo de pregunta.</span>
+                }
+                }
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="question-statement-{{ i }}">Enunciado</label>
+                <input class="form-control" id="question-statement-{{ i }}" type="text" formControlName="statement" />
+                @if (questionCtrl(i, 'statement')?.touched && questionCtrl(i, 'statement')?.invalid) {
+                @if (questionCtrl(i, 'statement')?.errors?.['required']) {
+                <span class="field-error">El enunciado es obligatorio.</span>
+                }
+                }
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label" for="question-points-{{ i }}">Puntos</label>
+                <input class="form-control" id="question-points-{{ i }}" type="number" formControlName="points" />
+                @if (questionCtrl(i, 'points')?.touched && questionCtrl(i, 'points')?.invalid) {
+                @if (questionCtrl(i, 'points')?.errors?.['required'] || questionCtrl(i, 'points')?.errors?.['min']) {
+                <span class="field-error">Debe ser al menos 1.</span>
+                }
+                }
+              </div>
+            </div>
+
+            @if (isMultipleChoice(i)) {
+            <fieldset class="options mt-3 mb-0">
+              <legend class="form-label">Respuesta correcta</legend>
+              <div formArrayName="options" class="d-grid gap-2">
+                @for (optionGroup of optionsOf(i).controls; track optionGroup.value.id; let j = $index) {
+                <div class="option-row">
+                  <!-- El radio apunta al control del grupo de preguntas (correctOptionId),
+                       no al grupo de la opción: por eso se usa [formControl] con $any()
+                       (questionCtrl devuelve AbstractControl|null y strictTemplates exige FormControl). -->
+                  <div class="form-check m-0">
+                    <input class="form-check-input" type="radio" id="option-correct-{{ i }}-{{ j }}"
+                      [attr.name]="'correct-option-' + i"
+                      [formControl]="$any(questionCtrl(i, 'correctOptionId'))" [value]="optionGroup.value.id" />
+                    <label class="visually-hidden" for="option-correct-{{ i }}-{{ j }}">
+                      Marcar la opción {{ j + 1 }} como correcta
+                    </label>
+                  </div>
+                  <div class="flex-grow-1" [formGroupName]="j">
+                    <label class="visually-hidden" for="option-text-{{ i }}-{{ j }}">Texto de la opción {{ j + 1 }}</label>
+                    <input class="form-control form-control-sm" id="option-text-{{ i }}-{{ j }}"
+                      formControlName="text" placeholder="Texto de la opción" />
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeOption(i, j)"
+                    [disabled]="optionsOf(i).length <= 2" aria-label="Eliminar opción {{ j + 1 }}">
+                    <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                  </button>
+                </div>
+                @if (optionTextTouched(i, j)) {
+                <span class="field-error">El texto de la opción es obligatorio.</span>
+                }
+                }
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-2" (click)="addOption(i)">
+                <ion-icon name="add-outline" class="me-1" aria-hidden="true"></ion-icon>
+                Agregar opción
+              </button>
+            </fieldset>
+            }
+          </div>
+        </section>
+        }
+      </div>
+
+      <div class="d-grid gap-3 mt-3">
+        <button type="button" class="btn btn-outline-secondary" (click)="addQuestion()">
+          <ion-icon name="add-outline" class="me-1" aria-hidden="true"></ion-icon>
+          Agregar pregunta
+        </button>
+
+        @if (errorMessage()) {
+        <div class="alert alert-danger mb-0" role="alert">{{ errorMessage() }}</div>
+        }
+
+        <button type="button" class="btn btn-primary btn-lg" [disabled]="saving()" (click)="save($event)">
+          @if (saving()) {
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Guardando...
+          } @else {
+          Guardar examen
+          }
+        </button>
+      </div>
+    </form>
+    }
+  </div>
 </ion-content>
