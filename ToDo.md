@@ -511,3 +511,26 @@ En ese escenario, no intentaría completar simultáneamente:
 - Reportes avanzados.
 
 El alcance mínimo realista para cerrar en dos meses es: **EVALUATOR funcional + Sentinel persistente + SafeGuard básico + Oversight con WebSockets + eventos internos + Docker + pruebas de integración + despliegue en una VM**.
+
+## Pendientes de auditoría (Fase 2 — 2026-10-09)
+
+Cuatro revisiones (seguridad, calidad, backend, frontend) con los agentes de `.opencode/agents/`. Todo lo crítico/corregible de esfuerzo razonable se arregló en esta fase; esto queda **documentado como pendiente a propósito**:
+
+### Backend
+
+- **N+1 en `GetExamResultUseCase`** (alto): por cada resultado se resuelven intento/examen/usuario/respuestas de forma individual. Requiere fetch-join o proyección SQL; no se tocó para no arriesgar la calificación en caliente.
+- **Límites de módulo** (alto): `oversight` importa dominio/aplicación de `sentinel` (`AlertSeverity`, `AttemptId`, `AlertGeneratedEvent`, …) y los contratos entre módulos no pasan todos por `shared.events`. Unificar nombres de eventos implica cambiar publicadores y listeners en varios módulos a la vez.
+- **El dominio depende de Spring** (alto): `BCryptPasswordHasher`, `IntegrityScoringPolicy`, `SafeguardRiskPolicy` y `AlertEscalationPolicy` son beans de Spring dentro de `domain`. Moverlos a adapters obliga a replantear la creación de los use-cases.
+- **`@TransactionalEventListener(AFTER_COMMIT)`**: los listeners entre módulos corren dentro de la transacción del publicador; si el consumidor falla, revierte datos de otro módulo. Debe migrarse a `AFTER_COMMIT` con manejo de errores propio.
+- **Sentinel vive solo en memoria** (`InMemory*Repository`): no hay migración Flyway para alertas/eventos, así que los datos no sobreviven reinicios. Falta `V11__create_sentinel_*` + adapters JPA.
+- **`WebSocketConfig.setAllowedOriginPatterns("*")`** (`/ws/sentinel`): acepta cualquier origen; debe limitarse a `CORS_ALLOWED_ORIGINS` (el propio comentario del código lo pide).
+- **Payloads de Sentinel sin atar a la sesión**: `attemptId`/`studentId` llegan en el mensaje y no se contrastan con el principal del JWT, así que un alumno podría registrar eventos de otro intento.
+- **Refresh tokens en texto plano**: el valor crudo (`UUID.randomUUID()`) se guarda en `refresh_tokens`; además el frontend lo guarda en `localStorage`. Ideal: hash en BD + cookie `HttpOnly` + rotación.
+- **`metadata` de SafeGuard es `String`** y devuelve 500 con entrada no-JSON (ya anotado en `safeguard/README.md` §8); los 4 tipos de enum sin regla de riesgo quedan igual.
+- **`trust-proxy-header` apagado por defecto** en el rate limit: correcto hasta que haya un proxy de confianza; mientras, `X-Forwarded-For` se ignora a propósito.
+
+### Frontend
+
+- **`/exams/:id/take` es un callejón sin salida**: `ExamHttpRepository.submitAttempt` siempre lanza error y pasa `examId` como `attemptId`; la ruta que realmente toma exámenes es `exam-attempt`. Falta decidir la ruta canónica antes de borrarla.
+- **SCSS todavía duplicado entre páginas**: `.dashboard-card*` se movió a `global.scss`, pero conviene revisar el resto clase por clase antes de mover (riesgo de romper el budget de 4 KB por página).
+- **`console.error` en callbacks de error**: se dejaron a propósito para diagnóstico de red; si se quiere producción sin logs, condicionarlos por entorno.

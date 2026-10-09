@@ -10,11 +10,15 @@ Ionic solo como shell (`ion-content`).
 2. `src/theme/ionic.scss` — CSS base de Ionic
 3. `src/theme/bootstrap.scss` — Bootstrap 5 compilado con la paleta
 4. `src/theme/variables.scss` — tokens `--ion-color-*` / `--ocean-*`
-5. `src/global.scss` — capa final: clases compartidas (`.page`, `.card`, `.btn`,
-   `.form-*`, `.field-error`, `.loading`, `.auth__*`, `.page-heading`)
+5. `src/global.scss` — capa final: clases compartidas (`.page`, `.page-narrow`,
+   `.card`, `.dashboard-card(__hint)`, `.btn`, `.form-*`, `.field-error`,
+   `.loading`, `.auth__*`, `.page-heading` y `.text-secondary`)
 
 **Regla:** estilos compartidos van en `global.scss`; el SCSS de la página solo
 agrega lo propio de esa página y debe mantenerse < 2 KB (budget: error a 4 KB).
+Si una clase se usa en más de una página, no puede vivir en el SCSS de una
+página (el scoped CSS no aplica fuera): por eso `.dashboard-card__hint` subió a
+`global.scss`.
 
 ## Patrón de página
 
@@ -55,6 +59,9 @@ agrega lo propio de esa página y debe mantenerse < 2 KB (budget: error a 4 KB).
   sigue siendo Ionic (`IonContent`); todo lo demás suele ser HTML nativo + Bootstrap.
 - Agregar `AppHeaderComponent` a `imports`.
 - **No tocar la lógica** (use-cases, signals, formularios): solo presentación.
+- Estado visible (loading, mensajes, listas) = `signal` + `.set()` en los
+  callbacks: la app es *zoneless*, mutar un campo plano dentro de `subscribe()`
+  no repinta la vista.
 - Comentarios en el TS en español (convención del repo); identifiers en inglés.
 
 ## Accesibilidad
@@ -64,9 +71,20 @@ agrega lo propio de esa página y debe mantenerse < 2 KB (budget: error a 4 KB).
 - Todo control con `<label for>`; iconos con `aria-label`; botones de icono con
   `aria-label` descriptivo en español.
 - Estados de carga con `role="status"`.
+- Pestañas: `ul.nav-pills[role=tablist]` + `button[role=tab][aria-selected]`
+  con `id` y paneles `div[role=tabpanel][aria-labelledby]` (patrón en
+  `oversight.page.html`).
+- Filas de tabla accionables: nunca `tabindex`/`keydown` en `<tr>`; pon un
+  `<button class="btn btn-link p-0 text-reset" aria-label="Ver …">` en la celda
+  del nombre y deja `(click)` en la fila solo como atajo de ratón con
+  `$event.stopPropagation()` en el botón.
 
 ## Colores (ya resueltos en tokens; no re-declarar)
 
 - Navy `#1a2332` = acción principal/fondo toolbar; teal `#2d8b8b` = acento;
   seafoam `#a8dadc` = superficie suave; cream `#f1faee` = fondo.
 - Texto secundario: `#4a5768`; enlaces: `--ocean-teal-ink` (`#1f6f6f`).
+- `.text-secondary` se fuerza a `#4a5768` en `global.scss`: el teal de
+  `$secondary` daba 3.79:1 sobre cream (falla AA) y con el override da 6.9:1.
+- `role-badge` (app-header) usa fondo `--ocean-teal-ink`: blanco sobre teal
+  daba 4.06:1 en 12 px; teal-ink da 5.9:1.
