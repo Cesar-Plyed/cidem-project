@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -11,7 +10,7 @@ import { ApiError } from '../../../domain/models/api-error.model';
   selector: 'app-login',
   templateUrl: 'login.page.html',
   styleUrls: ['login.page.scss'],
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, IonContent],
+  imports: [ReactiveFormsModule, RouterLink, IonContent],
 })
 export class LoginPage {
   private readonly fb = inject(FormBuilder)
@@ -23,8 +22,10 @@ export class LoginPage {
     password: ['', Validators.required],
   });
 
-  loading = false;
-  errorMessage: string | null = null;
+  // Señales: la app es zoneless, así que mutar campos planos dentro de
+  // subscribe() no repinta la vista (el error de HTTP nunca se mostraba).
+  readonly loading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
 
   submit(): void {
     if (this.form.invalid) {
@@ -32,21 +33,21 @@ export class LoginPage {
       return;
     }
 
-    this.loading = true;
-    this.errorMessage = null;
+    this.loading.set(true);
+    this.errorMessage.set(null);
 
     const { email, password } = this.form.getRawValue();
 
     this.loginUseCase.execute({ email: email!, password: password! }).subscribe({
       next: () => {
-        this.loading = false;
+        this.loading.set(false);
         this.router.navigate(['/home']);
       },
       error: (err: HttpErrorResponse) => {
-        this.loading = false;
+        this.loading.set(false);
         const body = err.error as ApiError | undefined;
         // 401 -> "Correo o contraseña inválidos" (mensaje genérico del backend, no lo cambies)
-        this.errorMessage = body?.message ?? 'Ocurrió un error. Intenta de nuevo.';
+        this.errorMessage.set(body?.message ?? 'Ocurrió un error. Intenta de nuevo.');
       },
     });
   }

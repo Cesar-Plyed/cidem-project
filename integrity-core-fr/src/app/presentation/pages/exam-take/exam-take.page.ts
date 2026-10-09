@@ -1,6 +1,5 @@
 import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { IonContent } from '@ionic/angular';
@@ -17,7 +16,6 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
   templateUrl: 'exam-take.page.html',
   styleUrls: ['exam-take.page.scss'],
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     // Shell de la página: cabecera con título, botón atrás y cierre de sesión.
     AppHeaderComponent,

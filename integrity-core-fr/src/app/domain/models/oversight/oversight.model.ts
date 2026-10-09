@@ -12,16 +12,18 @@ export interface LogEntry {
   receivedAt: string;
 }
 
+/**
+ * Espejo de `IntegritySnapshotResponse` del backend (oversight). El backend
+ * devuelve `score` + `riskLevel` (LOW/MEDIUM/HIGH/CRITICAL) y `lastUpdatedAt`;
+ * `studentName` lo completa la página con el nombre de la fila que se clicó,
+ * porque el snapshot no lo incluye.
+ */
 export interface IntegritySnapshot {
   attemptId: string;
-  examId: string;
   studentId: string;
-  studentName: string;
+  studentName?: string;
   integrityIndex: number;
   riskLevel: RiskLevel;
-  totalAlerts: number;
-  totalBlocks: number;
-  lastEventAt: string | null;
   updatedAt: string;
 }
 

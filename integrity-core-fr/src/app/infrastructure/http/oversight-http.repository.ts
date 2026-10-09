@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { OversightRepository } from '../../domain/ports/oversight.repository';
-import { LogEntry, IntegritySnapshot, ExamSummary } from '../../domain/models/oversight/oversight.model';
+import { LogEntry, IntegritySnapshot, ExamSummary, RiskLevel } from '../../domain/models/oversight/oversight.model';
 
 interface BackendLogEntryResponse {
   logId: string;
@@ -19,18 +19,26 @@ interface BackendLogEntryResponse {
   receivedAt: string;
 }
 
+/** Contrato real de GET /api/oversight/attempts/{attemptId}/integrity. */
 interface BackendIntegritySnapshotResponse {
-  attemptId: string;
-  examId: string;
   studentId: string;
-  studentName: string;
-  integrityIndex: number;
-  riskLevel: string;
-  totalAlerts: number;
-  totalBlocks: number;
-  lastEventAt: string | null;
-  updatedAt: string;
+  attemptId: string;
+  score: number;
+  /** RiskLevel del dominio del backend, distinto al modelo de la vista. */
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  lastUpdatedAt: string;
 }
+
+/** LOW/MEDIUM/HIGH/CRITICAL → GREEN/YELLOW/RED (modelo de la vista). */
+const RISK_LEVEL_FROM_BACKEND: Record<
+  BackendIntegritySnapshotResponse['riskLevel'],
+  RiskLevel
+> = {
+  LOW: 'GREEN',
+  MEDIUM: 'YELLOW',
+  HIGH: 'RED',
+  CRITICAL: 'RED',
+};
 
 interface BackendExamSummaryResponse {
   examId: string;
@@ -99,15 +107,10 @@ function mapLogEntry(raw: BackendLogEntryResponse): LogEntry {
 function mapIntegritySnapshot(raw: BackendIntegritySnapshotResponse): IntegritySnapshot {
   return {
     attemptId: raw.attemptId,
-    examId: raw.examId,
     studentId: raw.studentId,
-    studentName: raw.studentName,
-    integrityIndex: raw.integrityIndex,
-    riskLevel: raw.riskLevel as IntegritySnapshot['riskLevel'],
-    totalAlerts: raw.totalAlerts,
-    totalBlocks: raw.totalBlocks,
-    lastEventAt: raw.lastEventAt,
-    updatedAt: raw.updatedAt,
+    integrityIndex: raw.score,
+    riskLevel: RISK_LEVEL_FROM_BACKEND[raw.riskLevel] ?? 'RED',
+    updatedAt: raw.lastUpdatedAt,
   };
 }
 

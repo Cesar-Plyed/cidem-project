@@ -1,10 +1,10 @@
-<app-header title="Verificación: backend evaluator" />
+<app-header title="Verificación: backend del evaluador" />
 
 <ion-content [fullscreen]="true">
   <div class="page ion-padding">
     <header class="page-heading">
       <p class="eyebrow">Herramienta de diagnóstico</p>
-      <h2>Verificación: backend evaluator</h2>
+      <h2>Verificación: backend del evaluador</h2>
       <p>
         Pantalla de prueba, no de producto. Ejercita paso a paso las 5 operaciones reales que
         expone el backend hoy. Cada tarjeta precarga el id que devuelve el paso anterior.
@@ -32,11 +32,11 @@
             </div>
             <button class="btn btn-primary mt-3" type="submit">Crear examen</button>
           </form>
-          @if (createExamError) {
-          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ createExamError }}</div>
+          @if (createExamError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ createExamError() }}</div>
           }
-          @if (createExamResult) {
-          <pre class="diag-output">{{ createExamResult | json }}</pre>
+          @if (createExamResult()) {
+          <pre class="diag-output">{{ createExamResult() | json }}</pre>
           }
         </div>
       </section>
@@ -51,11 +51,11 @@
           <form [formGroup]="accessCodeForm" (ngSubmit)="generateAccessCode()">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label" for="demo-exam-id">Exam ID</label>
+                <label class="form-label" for="demo-exam-id">ID del examen</label>
                 <input class="form-control" id="demo-exam-id" type="text" formControlName="examId" />
               </div>
               <div class="col-6 col-md-3">
-                <label class="form-label" for="demo-expires">Expira en (min)</label>
+                <label class="form-label" for="demo-expires">Caduca en (min)</label>
                 <input class="form-control" id="demo-expires" type="number" formControlName="expiresInMinutes" />
               </div>
               <div class="col-6 col-md-3">
@@ -65,11 +65,11 @@
             </div>
             <button class="btn btn-primary mt-3" type="submit">Generar código</button>
           </form>
-          @if (accessCodeError) {
-          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ accessCodeError }}</div>
+          @if (accessCodeError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ accessCodeError() }}</div>
           }
-          @if (accessCodeResult) {
-          <pre class="diag-output">{{ accessCodeResult | json }}</pre>
+          @if (accessCodeResult()) {
+          <pre class="diag-output">{{ accessCodeResult() | json }}</pre>
           }
         </div>
       </section>
@@ -84,7 +84,7 @@
           <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
             <div class="row g-3">
               <div class="col-12 col-md-4">
-                <label class="form-label" for="demo-join-exam-id">Exam ID</label>
+                <label class="form-label" for="demo-join-exam-id">ID del examen</label>
                 <input class="form-control" id="demo-join-exam-id" type="text" formControlName="examId" />
               </div>
               <div class="col-6 col-md-4">
@@ -92,17 +92,17 @@
                 <input class="form-control" id="demo-join-code" type="text" formControlName="code" />
               </div>
               <div class="col-6 col-md-4">
-                <label class="form-label" for="demo-student-id">Student ID</label>
+                <label class="form-label" for="demo-student-id">ID del alumno</label>
                 <input class="form-control" id="demo-student-id" type="text" formControlName="studentId" />
               </div>
             </div>
             <button class="btn btn-primary mt-3" type="submit">Unirse</button>
           </form>
-          @if (joinError) {
-          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ joinError }}</div>
+          @if (joinError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ joinError() }}</div>
           }
-          @if (joinResult) {
-          <pre class="diag-output">{{ joinResult | json }}</pre>
+          @if (joinResult()) {
+          <pre class="diag-output">{{ joinResult() | json }}</pre>
           }
         </div>
       </section>
@@ -122,15 +122,15 @@
           <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label" for="demo-attempt-id">Attempt ID</label>
+                <label class="form-label" for="demo-attempt-id">ID del intento</label>
                 <input class="form-control" id="demo-attempt-id" type="text" formControlName="attemptId" />
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label" for="demo-question-id">Question ID</label>
+                <label class="form-label" for="demo-question-id">ID de la pregunta</label>
                 <input class="form-control" id="demo-question-id" type="text" formControlName="questionId" />
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label" for="demo-option-ids">Option IDs (separados por coma)</label>
+                <label class="form-label" for="demo-option-ids">IDs de opciones (separados por coma)</label>
                 <input class="form-control" id="demo-option-ids" type="text" formControlName="selectedOptionIds" />
               </div>
               <div class="col-12 col-md-6">
@@ -140,11 +140,11 @@
             </div>
             <button class="btn btn-primary mt-3" type="submit">Enviar respuesta</button>
           </form>
-          @if (answerError) {
-          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ answerError }}</div>
+          @if (answerError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ answerError() }}</div>
           }
-          @if (answerResult) {
-          <pre class="diag-output">{{ answerResult | json }}</pre>
+          @if (answerResult()) {
+          <pre class="diag-output">{{ answerResult() | json }}</pre>
           }
         </div>
       </section>
@@ -159,17 +159,17 @@
           <form [formGroup]="submitForm" (ngSubmit)="submitAttempt()">
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label" for="demo-submit-attempt-id">Attempt ID</label>
+                <label class="form-label" for="demo-submit-attempt-id">ID del intento</label>
                 <input class="form-control" id="demo-submit-attempt-id" type="text" formControlName="attemptId" />
               </div>
             </div>
             <button class="btn btn-primary mt-3" type="submit">Entregar</button>
           </form>
-          @if (submitError) {
-          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ submitError }}</div>
+          @if (submitError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ submitError() }}</div>
           }
-          @if (submitResult) {
-          <pre class="diag-output">{{ submitResult | json }}</pre>
+          @if (submitResult()) {
+          <pre class="diag-output">{{ submitResult() | json }}</pre>
           }
         </div>
       </section>

@@ -1,4 +1,4 @@
-<app-header [title]="'Oversight - ' + (examTitle() || 'Cargando...')" backHref="/exams" />
+<app-header [title]="'Supervisión - ' + (examTitle() || 'Cargando...')" backHref="/exams" />
 
 <ion-content [fullscreen]="true">
   <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
@@ -74,24 +74,63 @@
     }
 
     <!-- Pestañas -->
-    <ul class="nav nav-pills mb-3">
-      <li class="nav-item">
-        <button type="button" class="nav-link" [class.active]="activeTab() === 'summary'"
-          (click)="onTabChange({ detail: { value: 'summary' } })">Resumen</button>
+    <ul class="nav nav-pills mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button type="button" id="oversight-tab-summary" class="nav-link" role="tab" [attr.aria-selected]="activeTab() === 'summary'"
+          [attr.aria-controls]="'oversight-panel-summary'" [class.active]="activeTab() === 'summary'"
+          (click)="setTab('summary')">Resumen</button>
       </li>
-      <li class="nav-item">
-        <button type="button" class="nav-link" [class.active]="activeTab() === 'timeline'"
-          (click)="onTabChange({ detail: { value: 'timeline' } })">Línea de tiempo</button>
+      <li class="nav-item" role="presentation">
+        <button type="button" id="oversight-tab-timeline" class="nav-link" role="tab" [attr.aria-selected]="activeTab() === 'timeline'"
+          [attr.aria-controls]="'oversight-panel-timeline'" [class.active]="activeTab() === 'timeline'"
+          (click)="setTab('timeline')">Línea de tiempo</button>
       </li>
-      <li class="nav-item">
-        <button type="button" class="nav-link" [class.active]="activeTab() === 'students'"
-          (click)="onTabChange({ detail: { value: 'students' } })">Alumnos</button>
+      <li class="nav-item" role="presentation">
+        <button type="button" id="oversight-tab-students" class="nav-link" role="tab" [attr.aria-selected]="activeTab() === 'students'"
+          [attr.aria-controls]="'oversight-panel-students'" [class.active]="activeTab() === 'students'"
+          (click)="setTab('students')">Alumnos</button>
       </li>
     </ul>
+
+    <!-- Detalle de integridad del intento seleccionado (antes: alert de Ionic con HTML crudo) -->
+    @if (selectedAttempt(); as attempt) {
+    <section class="card mb-3" aria-live="polite">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+          <div>
+            <p class="eyebrow mb-1">Detalle de integridad</p>
+            <h3 class="mb-0">{{ attempt.studentName || 'Intento ' + attempt.attemptId.slice(0, 8) }}</h3>
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeAttemptDetail()">
+            Cerrar detalle
+          </button>
+        </div>
+        <!-- Solo campos que el backend realmente devuelve en el snapshot
+             (score + riskLevel + lastUpdatedAt); los contadores de alertas y
+             bloqueos se calculan en la pestaña "Alumnos" desde la línea de tiempo. -->
+        <div class="row g-3">
+          <div class="col-6 col-md-4 col-xl-3">
+            <span class="d-block text-uppercase text-secondary small mb-1">Índice de integridad</span>
+            <span class="d-block fs-5 fw-bold">{{ attempt.integrityIndex }}/100</span>
+          </div>
+          <div class="col-6 col-md-4 col-xl-3">
+            <span class="d-block text-uppercase text-secondary small mb-1">Nivel de riesgo</span>
+            <span class="badge rounded-pill text-nowrap"
+              [ngClass]="'text-bg-' + getRiskColor(attempt.riskLevel)">{{ riskLevelConfig[attempt.riskLevel].label }}</span>
+          </div>
+          <div class="col-6 col-md-4 col-xl-3">
+            <span class="d-block text-uppercase text-secondary small mb-1">Actualizado</span>
+            <span class="d-block">{{ formatDateTime(attempt.updatedAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    }
 
     @switch (activeTab()) {
     @case ('summary') {
     <!-- Resumen -->
+    <div id="oversight-panel-summary" role="tabpanel" [attr.aria-labelledby]="'oversight-tab-summary'">
     @if (summary().length > 0) {
     <div class="row g-3">
       @for (s of summary(); track s.examId) {
@@ -122,22 +161,24 @@
     @if (summary().length === 0 && !isLoading()) {
     <p class="text-secondary text-center py-4 mb-0">No hay datos de resumen disponibles</p>
     }
+    </div>
     }
 
     @case ('timeline') {
     <!-- Línea de tiempo -->
+    <div id="oversight-panel-timeline" role="tabpanel" aria-labelledby="oversight-tab-timeline">
     <section class="card mb-3">
       <div class="card-body">
         <div class="row g-3 align-items-end">
           <div class="col-12 col-md">
             <label class="form-label" for="timeline-search">Buscar eventos</label>
             <input id="timeline-search" class="form-control" type="search" placeholder="Buscar eventos..."
-              [value]="searchTerm()" (input)="onSearch({ detail: { value: $any($event.target).value } })" />
+              [value]="searchTerm()" (input)="onSearch($any($event.target).value)" />
           </div>
           <div class="col-12 col-md-4 col-xl-3">
             <label class="form-label" for="timeline-severity">Severidad</label>
             <select id="timeline-severity" class="form-select"
-              (change)="onSeverityChange({ detail: { value: $any($event.target).value } })">
+              (change)="onSeverityChange($any($event.target).value)">
               <option value="all" [selected]="filterSeverity() === 'all'">Todas</option>
               <option value="LOW" [selected]="filterSeverity() === 'LOW'">Baja</option>
               <option value="MEDIUM" [selected]="filterSeverity() === 'MEDIUM'">Media</option>
@@ -148,7 +189,7 @@
           <div class="col-12 col-md-4 col-xl-3">
             <label class="form-label" for="timeline-source">Origen</label>
             <select id="timeline-source" class="form-select"
-              (change)="onSourceChange({ detail: { value: $any($event.target).value } })">
+              (change)="onSourceChange($any($event.target).value)">
               <option value="all" [selected]="filterSource() === 'all'">Todos</option>
               <option value="SAFEGUARD" [selected]="filterSource() === 'SAFEGUARD'">SafeGuard</option>
               <option value="SENTINEL" [selected]="filterSource() === 'SENTINEL'">Sentinel</option>
@@ -177,13 +218,18 @@
             </thead>
             <tbody>
               @for (entry of filteredTimeline(); track entry.logId) {
-              <tr class="timeline-row" tabindex="0" (click)="viewAttemptDetail(entry.attemptId)"
-                (keydown.enter)="viewAttemptDetail(entry.attemptId)">
+              <tr class="timeline-row" (click)="viewAttemptDetail(entry.attemptId, entry.studentName)">
                 <td>
                   <span class="badge rounded-pill text-nowrap"
                     [ngClass]="'text-bg-' + getSeverityColor(entry.severity)">{{ entry.severity }}</span>
                 </td>
-                <td class="fw-semibold text-nowrap">{{ entry.studentName }}</td>
+                <td class="fw-semibold text-nowrap">
+                  <button type="button" class="btn btn-link p-0 text-reset"
+                    [attr.aria-label]="'Ver detalle de integridad de ' + entry.studentName"
+                    (click)="$event.stopPropagation(); viewAttemptDetail(entry.attemptId, entry.studentName)">
+                    {{ entry.studentName }}
+                  </button>
+                </td>
                 <td class="text-capitalize text-nowrap">{{ entry.eventType }}</td>
                 <td class="text-nowrap">
                   <ion-icon [name]="getSourceIcon(entry.source)" [color]="getSourceColor(entry.source)"
@@ -202,10 +248,12 @@
     } @else if (!isLoading()) {
     <p class="text-secondary text-center py-4 mb-0">No hay eventos en la línea de tiempo</p>
     }
+    </div>
     }
 
     @case ('students') {
     <!-- Alumnos -->
+    <div id="oversight-panel-students" role="tabpanel" aria-labelledby="oversight-tab-students">
     @if (studentsWithRisk().length > 0) {
     <section class="card">
       <div class="card-body p-0">
@@ -222,11 +270,16 @@
             </thead>
             <tbody>
               @for (student of studentsWithRisk(); track student.attemptId) {
-              <tr class="students-row" tabindex="0" [class.table-danger]="student.riskLevel === 'RED'"
+              <tr class="students-row" [class.table-danger]="student.riskLevel === 'RED'"
                 [class.table-warning]="student.riskLevel === 'YELLOW'" [class.table-success]="student.riskLevel === 'GREEN'"
-                (click)="viewAttemptDetail(student.attemptId)"
-                (keydown.enter)="viewAttemptDetail(student.attemptId)">
-                <td class="fw-semibold text-nowrap">{{ student.studentName }}</td>
+                (click)="viewAttemptDetail(student.attemptId, student.studentName)">
+                <td class="fw-semibold text-nowrap">
+                  <button type="button" class="btn btn-link p-0 text-reset"
+                    [attr.aria-label]="'Ver detalle de integridad de ' + student.studentName"
+                    (click)="$event.stopPropagation(); viewAttemptDetail(student.attemptId, student.studentName)">
+                    {{ student.studentName }}
+                  </button>
+                </td>
                 <td>
                   <span class="badge rounded-pill text-nowrap"
                     [ngClass]="'text-bg-' + getRiskColor(student.riskLevel)">{{ student.riskConfig.label }}</span>
@@ -244,6 +297,7 @@
     } @else if (!isLoading()) {
     <p class="text-secondary text-center py-4 mb-0">No hay alumnos en este examen</p>
     }
+    </div>
     }
     }
   </div>

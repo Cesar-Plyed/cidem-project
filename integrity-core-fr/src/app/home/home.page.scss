@@ -1,12 +1,5 @@
-.dashboard-card {
-  padding: 4px;
-}
-
-.dashboard-card__hint {
-  margin-bottom: 16px;
-  color: #4a5768;
-  font-size: 15px;
-}
+/* .dashboard-card y .dashboard-card__hint viven ahora en src/global.scss
+   (clases compartidas: también las usan exam-list y evaluator-demo). */
 
 .user-list__name {
   display: block;
