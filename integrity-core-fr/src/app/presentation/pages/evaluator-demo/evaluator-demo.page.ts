@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -32,7 +32,7 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
     AppHeaderComponent,
   ],
 })
-export class EvaluatorDemoPage {
+export class EvaluatorDemoPage implements OnInit {
     private readonly fb = inject(FormBuilder)
     private readonly sessionService = inject(SessionService)
     private readonly createRemoteExamUseCase = inject(CreateRemoteExamUseCase)
@@ -83,8 +83,10 @@ export class EvaluatorDemoPage {
   readonly submitResult = signal<unknown>(null);
   readonly submitError = signal<string | null>(null);
 
-  constructor() {
-    this.sessionService.getUserId().then((id) => {
+  // El id de sesión solo se puede leer al iniciar; el callback escribe en
+  // signals (la app es zoneless, un campo plano no repintaría la vista).
+  ngOnInit(): void {
+    void this.sessionService.getUserId().then((id) => {
       this.currentUserId.set(id);
       if (id) {
         this.joinForm.patchValue({ studentId: id });
