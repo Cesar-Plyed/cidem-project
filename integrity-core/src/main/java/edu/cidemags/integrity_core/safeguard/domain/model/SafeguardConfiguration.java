@@ -20,6 +20,7 @@ public class SafeguardConfiguration {
     private int riskThreshold = 100;
     private boolean autoTerminateOnThreshold = false;
 
+    /** Requerido por JPA/Hibernate: necesita un constructor sin argumentos. */
     public SafeguardConfiguration() {
     }
 
