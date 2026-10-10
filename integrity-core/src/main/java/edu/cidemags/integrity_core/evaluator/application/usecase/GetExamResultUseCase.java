@@ -149,42 +149,59 @@ public class GetExamResultUseCase {
             if (answer != null && question.getType() == QuestionType.OPEN_ENDED) {
                 var review = reviewRepository.findByAnswerId(answer.getId());
                 questionPending = review.isEmpty();
-                questionScore = review.map(value -> value.getScore()).orElse(0);
+                questionScore = review.map(EvaluationReview::getScore).orElse(0);
                 feedback = review.map(EvaluationReview::getFeedback).orElse(null);
             } else if (answer != null) {
-                Set<UUID> selected = new HashSet<>(answer.getSelectedOptionIds());
-                Set<UUID> correct = question.getOptions().stream()
-                        .filter(edu.cidemags.integrity_core.evaluator.domain.model.QuestionOption::isCorrect)
-                        .map(edu.cidemags.integrity_core.evaluator.domain.model.QuestionOption::getId)
-                        .collect(java.util.stream.Collectors.toSet());
-                questionScore = selected.equals(correct) ? 1 : 0;
+                questionScore = isCorrectlyAnswered(question, answer) ? 1 : 0;
             }
             score += questionScore;
             pendingReview = pendingReview || questionPending;
-            List<ExamResultResponse.QuestionResult.OptionDetail> optionDetails = question.getOptions().stream()
-                    .map(opt -> new ExamResultResponse.QuestionResult.OptionDetail(
-                            opt.getId(), opt.getText(), opt.isCorrect()))
-                    .toList();
-            List<UUID> selectedIds = answer != null ? answer.getSelectedOptionIds() : List.of();
-            String openText = answer != null ? answer.getOpenTextAnswer() : null;
-            details.add(new ExamResultResponse.QuestionResult(question.getId(), question.getPrompt(),
-                    question.getType(), selectedIds, openText, optionDetails,
-                    answer != null, questionScore, questionPending, feedback));
+            details.add(toQuestionResult(question, answer, questionScore, questionPending, feedback));
         }
 
-        User student = userRepository.findById(attempt.getStudentId()).orElse(null);
-        String studentEmail = student != null ? student.getEmail() : null;
-        String studentFirstName = student != null ? student.getFirstNames() : null;
-        String studentLastName = student != null ? student.getLastNames() : null;
-        String studentPhone = student != null ? student.getPhones().stream()
+        StudentContact contact = resolveStudent(attempt.getStudentId());
+        return new ExamResultResponse(attempt.getId(), exam.getId(), attempt.getStudentId(),
+                contact.email(), contact.firstName(), contact.lastName(), contact.phone(),
+                score, exam.getQuestions().size(), pendingReview, details);
+    }
+
+    /** Puntúa una opción múltiple: solo suma si el conjunto seleccionado es exactamente el correcto. */
+    private boolean isCorrectlyAnswered(Question question, ExamAnswer answer) {
+        Set<UUID> selected = new HashSet<>(answer.getSelectedOptionIds());
+        Set<UUID> correct = question.getOptions().stream()
+                .filter(edu.cidemags.integrity_core.evaluator.domain.model.QuestionOption::isCorrect)
+                .map(edu.cidemags.integrity_core.evaluator.domain.model.QuestionOption::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        return selected.equals(correct);
+    }
+
+    private ExamResultResponse.QuestionResult toQuestionResult(Question question, ExamAnswer answer,
+            int questionScore, boolean questionPending, String feedback) {
+        List<ExamResultResponse.QuestionResult.OptionDetail> optionDetails = question.getOptions().stream()
+                .map(opt -> new ExamResultResponse.QuestionResult.OptionDetail(
+                        opt.getId(), opt.getText(), opt.isCorrect()))
+                .toList();
+        List<UUID> selectedIds = answer != null ? answer.getSelectedOptionIds() : List.of();
+        String openText = answer != null ? answer.getOpenTextAnswer() : null;
+        return new ExamResultResponse.QuestionResult(question.getId(), question.getPrompt(),
+                question.getType(), selectedIds, openText, optionDetails,
+                answer != null, questionScore, questionPending, feedback);
+    }
+
+    /** Datos de contacto del alumno; el intento puede pertenecer a un usuario ya borrado. */
+    private StudentContact resolveStudent(UUID studentId) {
+        User student = userRepository.findById(studentId).orElse(null);
+        if (student == null) {
+            return new StudentContact(null, null, null, null);
+        }
+        String phone = student.getPhones().stream()
                 .filter(Phone::isPrimary)
                 .findFirst()
                 .map(Phone::getNumber)
-                .orElse(student.getPhones().isEmpty() ? null : student.getPhones().get(0).getNumber())
-                : null;
+                .orElse(student.getPhones().isEmpty() ? null : student.getPhones().get(0).getNumber());
+        return new StudentContact(student.getEmail(), student.getFirstNames(), student.getLastNames(), phone);
+    }
 
-        return new ExamResultResponse(attempt.getId(), exam.getId(), attempt.getStudentId(),
-                studentEmail, studentFirstName, studentLastName, studentPhone,
-                score, exam.getQuestions().size(), pendingReview, details);
+    private record StudentContact(String email, String firstName, String lastName, String phone) {
     }
 }
