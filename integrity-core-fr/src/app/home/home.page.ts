@@ -42,7 +42,13 @@ export class HomePage implements OnInit {
     code: ['', Validators.required],
   });
 
-  async ngOnInit(): Promise<void> {
+  // ngOnInit debe devolver void: la sesión se lee en un método aparte y el
+  // resultado se escribe en signals (la app es zoneless).
+  ngOnInit(): void {
+    void this.loadSession();
+  }
+
+  private async loadSession(): Promise<void> {
     const { role, userId } = await this.sessionService.getSession();
     this.role.set(role);
     this.userId.set(userId);

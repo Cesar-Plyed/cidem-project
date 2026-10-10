@@ -41,7 +41,12 @@ export class AppHeaderComponent implements OnInit {
 
   readonly roleLabel = signal<string | null>(null);
 
-  async ngOnInit(): Promise<void> {
+  // ngOnInit debe devolver void: la sesión se consulta en un método aparte.
+  ngOnInit(): void {
+    void this.loadRoleLabel();
+  }
+
+  private async loadRoleLabel(): Promise<void> {
     const { role } = await this.sessionService.getSession();
     this.roleLabel.set(role ? ROLE_LABELS[role] : null);
   }

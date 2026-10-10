@@ -394,7 +394,12 @@ function statusOf(err: unknown): number | null {
   return typeof status === 'number' ? status : null;
 }
 
-/** crypto.randomUUID solo existe en contextos seguros (https/localhost); con http por IP hay que reemplazarlo. */
+/**
+ * crypto.randomUUID solo existe en contextos seguros (https/localhost); con http
+ * por IP hay que reemplazarlo. El id solo correlaciona eventos del monitor
+ * (no firma ni autentica nada), así que el respaldo con Math.random() es
+ * aceptable donde no hay crypto: NOSONAR S2245
+ */
 function newEventId(): string {
   const cryptoApi = globalThis.crypto as Crypto | undefined;
   if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID();
@@ -403,7 +408,7 @@ function newEventId(): string {
   if (cryptoApi?.getRandomValues) {
     cryptoApi.getRandomValues(bytes);
   } else {
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256); // NOSONAR S2245
   }
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
