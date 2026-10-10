@@ -6,10 +6,10 @@ import {
   BackendExamAttempt,
   BackendExamAverage,
   BackendExamResult,
+  BackendEvaluationReview,
   BackendOpenEndedReview,
 } from '../models/evaluator/evaluator.model';
 import { AttemptExam } from '../models/evaluator/attempt-exam.model';
-import { BackendEvaluationReview } from '../models/evaluator/evaluator.model';
 
 /**
  * Puerto para el backend REAL de evaluator (no confundir con
