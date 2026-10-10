@@ -37,7 +37,7 @@ public class SafeguardBlockEventBridge {
                 event.sessionId(),
                 event.studentId(),
                 event.occurredAt(),
-                SafeguardBlockEvent.SOURCE,
+                SafeguardBlockEvent.SOURCE_SAFEGUARD,
                 Map.of(
                         "eventType", event.eventType().name(),
                         "severity", event.severity(),

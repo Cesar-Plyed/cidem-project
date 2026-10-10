@@ -24,5 +24,5 @@ public record SafeguardBlockEvent(
         Map<String, Object> payload) {
 
     /** Valor estándar de {@code source} cuando el evento lo emite SafeGuard. */
-    public static final String SOURCE = "safeguard";
+    public static final String SOURCE_SAFEGUARD = "safeguard";
 }
