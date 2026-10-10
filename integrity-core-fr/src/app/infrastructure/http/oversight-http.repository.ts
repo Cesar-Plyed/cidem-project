@@ -3,23 +3,19 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { OversightRepository } from '../../domain/ports/oversight.repository';
-import { LogEntry, IntegritySnapshot, ExamSummary, RiskLevel } from '../../domain/models/oversight/oversight.model';
+import { LogEntry, IntegritySnapshot, RiskLevel } from '../../domain/models/oversight/oversight.model';
 
+/** Contrato real de `LogEntryResponse`. */
 interface BackendLogEntryResponse {
-  logId: string;
-  examId: string;
-  attemptId: string;
   studentId: string;
-  studentName: string;
-  source: string;
-  eventType: string;
-  severity: string;
-  message: string;
+  attemptId: string;
+  source: 'SENTINEL' | 'SAFEGUARD' | 'EVALUATOR';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  description: string;
   occurredAt: string;
-  receivedAt: string;
 }
 
-/** Contrato real de GET /api/oversight/attempts/{attemptId}/integrity. */
+/** Contrato real de `IntegritySnapshotResponse` (summary e integrity). */
 interface BackendIntegritySnapshotResponse {
   studentId: string;
   attemptId: string;
@@ -40,35 +36,26 @@ const RISK_LEVEL_FROM_BACKEND: Record<
   CRITICAL: 'RED',
 };
 
-interface BackendExamSummaryResponse {
-  examId: string;
-  examTitle: string;
-  totalAttempts: number;
-  activeAttempts: number;
-  completedAttempts: number;
-  averageIntegrityIndex: number;
-  highRiskCount: number;
-  mediumRiskCount: number;
-  lowRiskCount: number;
-}
-
 /**
  * Adaptador contra el módulo Oversight real del backend.
  *
- * Contrato backend: /api/oversight
- * - GET /exams/{examId}/summary
- * - GET /exams/{examId}/timeline
- * - GET /attempts/{attemptId}/integrity
+ * Contrato backend:
+ * - GET /api/oversight/exams/{examId}/summary  → IntegritySnapshotResponse[]
+ * - GET /api/oversight/exams/{examId}/timeline → LogEntryResponse[]
+ * - GET /api/oversight/attempts/{attemptId}/integrity → IntegritySnapshotResponse
+ *
+ * Oversight no resuelve nombres de alumno: la página los une con los
+ * resultados del examen (evaluator, staff-only).
  */
 @Injectable({ providedIn: 'root' })
 export class OversightHttpRepository extends OversightRepository {
   private readonly baseUrl = `${environment.apiUrl}/api/oversight`;
   private readonly http = inject(HttpClient);
 
-  getExamSummary(examId: string): Observable<ExamSummary[]> {
+  getExamSnapshots(examId: string): Observable<IntegritySnapshot[]> {
     return this.http
-      .get<BackendExamSummaryResponse[]>(`${this.baseUrl}/exams/${examId}/summary`)
-      .pipe(map((items) => items.map((raw) => mapExamSummary(raw))));
+      .get<BackendIntegritySnapshotResponse[]>(`${this.baseUrl}/exams/${examId}/summary`)
+      .pipe(map((items) => items.map((raw) => mapIntegritySnapshot(raw))));
   }
 
   getExamTimeline(examId: string): Observable<LogEntry[]> {
@@ -78,29 +65,22 @@ export class OversightHttpRepository extends OversightRepository {
   }
 
   getAttemptIntegrity(attemptId: string): Observable<IntegritySnapshot | null> {
+    // Si el intento no existe el backend devuelve 404 y el interceptor HTTP
+    // se encarga del error.
     return this.http
       .get<BackendIntegritySnapshotResponse>(`${this.baseUrl}/attempts/${attemptId}/integrity`)
-      .pipe(
-        map((raw) => mapIntegritySnapshot(raw)),
-        // Si el intento no existe, el backend devuelve 404
-        // El interceptor HTTP ya maneja los errores, pero por si acaso
-      );
+      .pipe(map((raw) => mapIntegritySnapshot(raw)));
   }
 }
 
 function mapLogEntry(raw: BackendLogEntryResponse): LogEntry {
   return {
-    logId: raw.logId,
-    examId: raw.examId,
     attemptId: raw.attemptId,
     studentId: raw.studentId,
-    studentName: raw.studentName,
-    source: raw.source as LogEntry['source'],
-    eventType: raw.eventType,
-    severity: raw.severity as LogEntry['severity'],
-    message: raw.message,
+    source: raw.source,
+    severity: raw.severity,
+    message: raw.description,
     occurredAt: raw.occurredAt,
-    receivedAt: raw.receivedAt,
   };
 }
 
@@ -111,19 +91,5 @@ function mapIntegritySnapshot(raw: BackendIntegritySnapshotResponse): IntegrityS
     integrityIndex: raw.score,
     riskLevel: RISK_LEVEL_FROM_BACKEND[raw.riskLevel] ?? 'RED',
     updatedAt: raw.lastUpdatedAt,
-  };
-}
-
-function mapExamSummary(raw: BackendExamSummaryResponse): ExamSummary {
-  return {
-    examId: raw.examId,
-    examTitle: raw.examTitle,
-    totalAttempts: raw.totalAttempts,
-    activeAttempts: raw.activeAttempts,
-    completedAttempts: raw.completedAttempts,
-    averageIntegrityIndex: raw.averageIntegrityIndex,
-    highRiskCount: raw.highRiskCount,
-    mediumRiskCount: raw.mediumRiskCount,
-    lowRiskCount: raw.lowRiskCount,
   };
 }

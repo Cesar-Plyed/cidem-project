@@ -1,15 +1,16 @@
+/**
+ * Espejo de `LogEntryResponse` del backend (oversight). El backend no envía
+ * `logId`, `examId`, `eventType` ni `receivedAt`: `studentName` lo completa la
+ * página con los resultados del examen (endpoint staff-only de evaluator).
+ */
 export interface LogEntry {
-  logId: string;
-  examId: string;
   attemptId: string;
   studentId: string;
-  studentName: string;
+  studentName?: string;
   source: LogSource;
-  eventType: string;
   severity: Severity;
   message: string;
   occurredAt: string;
-  receivedAt: string;
 }
 
 /**
@@ -27,20 +28,28 @@ export interface IntegritySnapshot {
   updatedAt: string;
 }
 
-export interface ExamSummary {
+/**
+ * Resumen de integridad del examen, armado en la página con los snapshots de
+ * GET /exams/{examId}/summary (los conteos de intentos vienen del promedio de
+ * evaluator, porque oversight no los expone).
+ */
+export interface ExamIntegritySummary {
   examId: string;
   examTitle: string;
   totalAttempts: number;
-  activeAttempts: number;
-  completedAttempts: number;
+  gradedAttempts: number;
+  pendingReviewCount: number;
   averageIntegrityIndex: number;
   highRiskCount: number;
   mediumRiskCount: number;
   lowRiskCount: number;
 }
 
-export type LogSource = 'SAFEGUARD' | 'SENTINEL' | 'EVALUATOR' | 'SYSTEM';
-export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+// Sentinels solo genera severidades LOW/MEDIUM/HIGH y el log solo registra
+// orígenes SENTINEL/SAFEGUARD/EVALUATOR (CHECK constraints en V9), así que no
+// existen CRITICAL ni SYSTEM.
+export type LogSource = 'SAFEGUARD' | 'SENTINEL' | 'EVALUATOR';
+export type Severity = 'LOW' | 'MEDIUM' | 'HIGH';
 export type RiskLevel = 'GREEN' | 'YELLOW' | 'RED';
 
 export const RiskLevelConfig: Record<RiskLevel, { label: string; color: string; icon: string }> = {
@@ -53,12 +62,10 @@ export const SeverityConfig: Record<Severity, { label: string; color: string }> 
   LOW: { label: 'Bajo', color: 'success' },
   MEDIUM: { label: 'Medio', color: 'warning' },
   HIGH: { label: 'Alto', color: 'danger' },
-  CRITICAL: { label: 'Crítico', color: 'dark' },
 };
 
 export const LogSourceConfig: Record<LogSource, { label: string; icon: string }> = {
   SAFEGUARD: { label: 'SafeGuard', icon: 'lock-closed' },
   SENTINEL: { label: 'Sentinel', icon: 'warning' },
   EVALUATOR: { label: 'Evaluator', icon: 'document-text' },
-  SYSTEM: { label: 'Sistema', icon: 'cog' },
 };

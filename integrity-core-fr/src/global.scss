@@ -182,6 +182,24 @@ a {
   color: #4a5768 !important;
 }
 
+/* Auditoría de contraste (SonarQube/UX): .btn-outline-secondary pinta el
+   texto con $secondary (teal #2d8b8b) = 3.80:1 sobre cream — no llega a 4.5:1.
+   Con teal-ink (#1f6f6f) el texto queda en 5.9:1 y el hover en blanco sobre
+   teal-ink, también 5.9:1. Bootstrap no usa !important en estas reglas y
+   global.scss va después en el orden de estilos, así que basta con declarar. */
+.btn-outline-secondary {
+  color: var(--ocean-teal-ink);
+
+  &:hover,
+  &:focus-visible,
+  &:active,
+  &.show {
+    color: #fff;
+    background: var(--ocean-teal-ink);
+    border-color: var(--ocean-teal-ink);
+  }
+}
+
 /* --- Errores de campo ----------------------------------------------------- */
 
 .field-error {
