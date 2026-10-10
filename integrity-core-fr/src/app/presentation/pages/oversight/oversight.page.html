@@ -25,29 +25,29 @@
     </header>
 
     <!-- Panel de métricas -->
-    @if (examTitle()) {
+    @if (stats(); as s) {
     <div class="row g-3 mb-2">
       <div class="col-6 col-xl-3">
         <div class="card h-100">
           <div class="card-body py-3">
             <span class="d-block text-uppercase text-secondary small mb-1">Total intentos</span>
-            <span class="d-block fs-2 fw-bold">{{ summary().length }}</span>
+            <span class="d-block fs-2 fw-bold">{{ s.totalAttempts }}</span>
           </div>
         </div>
       </div>
       <div class="col-6 col-xl-3">
         <div class="card h-100">
           <div class="card-body py-3">
-            <span class="d-block text-uppercase text-secondary small mb-1">Activos</span>
-            <span class="d-block fs-2 fw-bold">{{ summary().reduce((a, b) => a + b.activeAttempts, 0) }}</span>
+            <span class="d-block text-uppercase text-secondary small mb-1">Entregados</span>
+            <span class="d-block fs-2 fw-bold">{{ s.gradedAttempts }}</span>
           </div>
         </div>
       </div>
       <div class="col-6 col-xl-3">
         <div class="card h-100">
           <div class="card-body py-3">
-            <span class="d-block text-uppercase text-secondary small mb-1">Completados</span>
-            <span class="d-block fs-2 fw-bold">{{ summary().reduce((a, b) => a + b.completedAttempts, 0) }}</span>
+            <span class="d-block text-uppercase text-secondary small mb-1">Pendientes de revisión</span>
+            <span class="d-block fs-2 fw-bold">{{ s.pendingReviewCount }}</span>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@
         <div class="card h-100">
           <div class="card-body py-3">
             <span class="d-block text-uppercase text-secondary small mb-1">Alto riesgo</span>
-            <span class="d-block fs-2 fw-bold text-danger">{{ summary().reduce((a, b) => a + b.highRiskCount, 0) }}</span>
+            <span class="d-block fs-2 fw-bold text-danger">{{ s.highRiskCount }}</span>
           </div>
         </div>
       </div>
@@ -129,11 +129,10 @@
 
     @switch (activeTab()) {
     @case ('summary') {
-    <!-- Resumen -->
+    <!-- Resumen: un solo examen (la ruta ya viene con el examId) -->
     <div id="oversight-panel-summary" role="tabpanel" [attr.aria-labelledby]="'oversight-tab-summary'">
-    @if (summary().length > 0) {
+    @if (stats(); as s) {
     <div class="row g-3">
-      @for (s of summary(); track s.examId) {
       <div class="col-12 col-lg-6">
         <section class="card h-100">
           <div class="card-body">
@@ -155,10 +154,8 @@
           </div>
         </section>
       </div>
-      }
     </div>
-    }
-    @if (summary().length === 0 && !isLoading()) {
+    } @else if (!isLoading()) {
     <p class="text-secondary text-center py-4 mb-0">No hay datos de resumen disponibles</p>
     }
     </div>
@@ -183,7 +180,6 @@
               <option value="LOW" [selected]="filterSeverity() === 'LOW'">Baja</option>
               <option value="MEDIUM" [selected]="filterSeverity() === 'MEDIUM'">Media</option>
               <option value="HIGH" [selected]="filterSeverity() === 'HIGH'">Alta</option>
-              <option value="CRITICAL" [selected]="filterSeverity() === 'CRITICAL'">Crítica</option>
             </select>
           </div>
           <div class="col-12 col-md-4 col-xl-3">
@@ -194,7 +190,6 @@
               <option value="SAFEGUARD" [selected]="filterSource() === 'SAFEGUARD'">SafeGuard</option>
               <option value="SENTINEL" [selected]="filterSource() === 'SENTINEL'">Sentinel</option>
               <option value="EVALUATOR" [selected]="filterSource() === 'EVALUATOR'">Evaluator</option>
-              <option value="SYSTEM" [selected]="filterSource() === 'SYSTEM'">Sistema</option>
             </select>
           </div>
         </div>
@@ -210,14 +205,13 @@
               <tr>
                 <th scope="col">Severidad</th>
                 <th scope="col">Alumno</th>
-                <th scope="col">Evento</th>
                 <th scope="col">Origen</th>
                 <th scope="col">Mensaje</th>
                 <th scope="col">Fecha</th>
               </tr>
             </thead>
             <tbody>
-              @for (entry of filteredTimeline(); track entry.logId) {
+              @for (entry of filteredTimeline(); track entry.attemptId + entry.occurredAt) {
               <tr class="timeline-row" (click)="viewAttemptDetail(entry.attemptId, entry.studentName)">
                 <td>
                   <span class="badge rounded-pill text-nowrap"
@@ -230,7 +224,6 @@
                     {{ entry.studentName }}
                   </button>
                 </td>
-                <td class="text-capitalize text-nowrap">{{ entry.eventType }}</td>
                 <td class="text-nowrap">
                   <ion-icon [name]="getSourceIcon(entry.source)" [color]="getSourceColor(entry.source)"
                     aria-hidden="true"></ion-icon>
