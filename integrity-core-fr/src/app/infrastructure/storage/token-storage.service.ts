@@ -21,7 +21,10 @@ export class TokenStorageService {
    * instanciar sin coste hasta que alguien guarda o lee un token).
    */
   private get ready(): Promise<void> {
-    return (this.readyPromise ??= this.init());
+    if (this.readyPromise === null) {
+      this.readyPromise = this.init();
+    }
+    return this.readyPromise;
   }
 
   private async init(): Promise<void> {

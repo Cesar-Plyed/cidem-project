@@ -1,8 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular';
 import { BackendExamResult } from '../../../domain/models/evaluator/evaluator.model';
 import { GetExamResultsUseCase } from '../../../application/use-cases/evaluator/get-exam-results.use-case';
