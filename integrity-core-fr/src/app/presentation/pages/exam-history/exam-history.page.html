@@ -1,0 +1,68 @@
+<app-header title="Historial de exámenes" backHref="/home" />
+
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    <header class="page-heading">
+      <p class="eyebrow">Evaluación</p>
+      <h2>Historial de exámenes</h2>
+      <p>Consulta tus exámenes entregados y sus resultados.</p>
+    </header>
+
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando historial...</span>
+    </div>
+    }
+
+    @if (!loading() && errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (!loading() && !errorMessage() && entries().length === 0) {
+    <p class="text-secondary">Aún no has entregado ningún examen.</p>
+    }
+
+    @if (!loading() && entries().length > 0) {
+    <section class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Examen</th>
+                <th scope="col">Entregado</th>
+                <th scope="col">Resultado</th>
+                <th scope="col"><span class="visually-hidden">Acción</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of entries(); track entry.attemptId) {
+              <tr>
+                <td class="fw-semibold">{{ entry.examTitle }}</td>
+                <td>{{ entry.submittedAt | date:'medium' }}</td>
+                <td>
+                  @if (entry.integrityFailed) {
+                  <span class="badge rounded-pill text-bg-danger">Reprobado por integridad</span>
+                  } @else if (entry.pendingReview) {
+                  <span class="badge rounded-pill text-bg-warning">En revisión</span>
+                  } @else {
+                  <span>{{ entry.score }} / {{ entry.maxScore }}</span>
+                  }
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary"
+                    [routerLink]="['/attempts', entry.attemptId, 'result']">
+                    Ver resultado
+                  </a>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    }
+  </div>
+</ion-content>

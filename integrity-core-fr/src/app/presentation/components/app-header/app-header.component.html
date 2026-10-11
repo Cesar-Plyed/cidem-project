@@ -1,0 +1,25 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      @if (backHref()) {
+      <ion-back-button [defaultHref]="backHref()" text="Atrás"></ion-back-button>
+      } @else {
+      <a class="brand" routerLink="/home" aria-label="Ir al panel principal">
+        <span class="brand__mark" aria-hidden="true">I</span>
+        <span class="brand__name">Integrity</span>
+      </a>
+      }
+    </ion-buttons>
+
+    <h1 class="page-title">{{ title() }}</h1>
+
+    <ion-buttons slot="end">
+      @if (roleLabel(); as label) {
+      <span class="role-badge">{{ label }}</span>
+      }
+      <ion-button fill="clear" aria-label="Cerrar sesión" (click)="logout()">
+        Cerrar sesión
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>

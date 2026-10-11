@@ -33,6 +33,7 @@ import edu.cidemags.integrity_core.evaluator.application.usecase.GenerateExamAcc
 import edu.cidemags.integrity_core.evaluator.application.usecase.GetExamResultUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/evaluator/exams")
@@ -61,29 +62,37 @@ public class ExamController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
-    public ResponseEntity<Exam> createExam(@RequestBody CreateExamCommand command, Authentication authentication) {
+    public ResponseEntity<Exam> createExam(@Valid @RequestBody CreateExamCommand command,
+            Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED).body(createExamUseCase.execute(
-            new CreateExamCommand(command.title(), command.description(), userId, command.questions())));
+            new CreateExamCommand(command.title(), command.description(), userId, command.questions(),
+                    command.durationMinutes())));
     }
 
+    // Staff-only: la serialización incluye Question.correctAnswerText y
+    // QuestionOption.isCorrect (clave de respuestas). Los alumnos usan el
+    // endpoint saneado /attempts/{attemptId}/exam, que no expone respuestas.
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<List<Exam>> listExams() {
         return ResponseEntity.ok(examManagementUseCase.list());
     }
 
     @GetMapping("/{examId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> getExam(@PathVariable UUID examId) {
         return ResponseEntity.ok(examManagementUseCase.get(examId));
     }
 
     @PutMapping("/{examId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
-    public ResponseEntity<Exam> updateExam(@PathVariable UUID examId, @RequestBody UpdateExamCommand command,
+    public ResponseEntity<Exam> updateExam(@PathVariable UUID examId, @Valid @RequestBody UpdateExamCommand command,
             Authentication authentication) {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(examManagementUseCase.update(
-                new UpdateExamCommand(examId, command.title(), command.description())));
+                new UpdateExamCommand(examId, command.title(), command.description(), command.questions(),
+                        command.durationMinutes())));
     }
 
     @DeleteMapping("/{examId}")
@@ -111,7 +120,7 @@ public class ExamController {
     @PostMapping("/{examId}/questions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
     public ResponseEntity<Exam> addQuestion(@PathVariable UUID examId,
-            @RequestBody CreateQuestionCommand command, Authentication authentication) {
+            @Valid @RequestBody CreateQuestionCommand command, Authentication authentication) {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(questionManagementUseCase.add(examId, command));
     }
@@ -149,7 +158,7 @@ public class ExamController {
         UUID requesterId = (UUID) authentication.getPrincipal();
         boolean administrator = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMINISTRATIVO"));
-        return ResponseEntity.ok(getExamResultUseCase.executeForExam(examId, requesterId, administrator));
+        return ResponseEntity.ok(getExamResultUseCase.executeLatestForExam(examId, requesterId, administrator));
     }
 
     @GetMapping("/{examId}/results/page")

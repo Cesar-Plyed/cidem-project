@@ -49,7 +49,7 @@ class SafeguardBlockEventFlowTest {
             assertEquals(sessionId, received.examSessionId(), "examSessionId = sesión de SafeGuard");
             assertEquals(studentId, received.studentId());
             assertEquals(occurredAt, received.occurredAt());
-            assertEquals(SafeguardBlockEvent.SOURCE, received.source());
+            assertEquals(SafeguardBlockEvent.SOURCE_SAFEGUARD, received.source());
             assertEquals("safeguard", received.source());
             assertEquals("TAB_SWITCH", received.payload().get("eventType"));
             assertEquals(2, received.payload().get("severity"));

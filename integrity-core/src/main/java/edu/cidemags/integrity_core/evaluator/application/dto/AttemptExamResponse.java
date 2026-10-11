@@ -11,7 +11,8 @@ import edu.cidemags.integrity_core.evaluator.domain.model.QuestionType;
  * que opciones son correctas ni el texto de respuesta esperado.
  */
 public record AttemptExamResponse(UUID attemptId, UUID examId, String title, String description,
-        OffsetDateTime startedAt, boolean submitted, List<QuestionView> questions, List<AnswerView> answers) {
+        OffsetDateTime startedAt, int durationMinutes, boolean submitted, boolean integrityFailed,
+        List<QuestionView> questions, List<AnswerView> answers) {
 
     public record QuestionView(UUID id, String prompt, QuestionType type, List<OptionView> options) {
     }

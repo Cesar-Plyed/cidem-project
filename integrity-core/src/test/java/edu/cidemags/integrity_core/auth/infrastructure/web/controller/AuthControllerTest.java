@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -110,6 +111,22 @@ class AuthControllerTest {
                                 .andExpect(jsonPath("$.status").value(409))
                                 .andExpect(jsonPath("$.message")
                                                 .value(containsStringIgnoringCase("armando.campos@gmail.com")));
+        }
+
+        @Test
+        void register_should_return_409_on_data_integrity_violation() throws Exception {
+                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@gmail.com",
+                                "arroz123",
+                                UUID.randomUUID(), null, Role.ALUMNO, null);
+
+                when(registerUserUseCase.execute(any()))
+                                .thenThrow(new DataIntegrityViolationException(
+                                                "duplicate key value violates unique constraint"));
+
+                mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.status").value(409));
         }
 
         @Test

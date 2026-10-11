@@ -27,7 +27,8 @@ public class ExamAttemptRepositoryImpl implements ExamAttemptRepository {
                 examAttempt.getStudentId(),
                 examAttempt.getStartedAt(),
                 examAttempt.getSubmittedAt(),
-                examAttempt.isSubmitted());
+                examAttempt.isSubmitted(),
+                examAttempt.isIntegrityFailed());
         return toDomain(repository.save(entity));
     }
 
@@ -46,6 +47,11 @@ public class ExamAttemptRepositoryImpl implements ExamAttemptRepository {
         return repository.findByExamId(examId).stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public boolean existsByExamId(UUID examId) {
+        return repository.existsByExamId(examId);
+    }
+
     private ExamAttempt toDomain(ExamAttemptEntity entity) {
         return new ExamAttempt(
                 entity.getId(),
@@ -53,6 +59,7 @@ public class ExamAttemptRepositoryImpl implements ExamAttemptRepository {
                 entity.getStudentId(),
                 entity.getStartedAt(),
                 entity.getSubmittedAt(),
-                entity.isSubmitted());
+                entity.isSubmitted(),
+                entity.isIntegrityFailed());
     }
 }

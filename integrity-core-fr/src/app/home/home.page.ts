@@ -1,24 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonSpinner,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonInput,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonText,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Role } from '../domain/models/role.enum';
@@ -26,41 +9,21 @@ import { SessionService } from '../application/session/session.service';
 import { JoinRemoteExamUseCase } from '../application/use-cases/evaluator/join-remote-exam.use-case';
 import { ListUsersUseCase } from '../application/use-cases/list-users.use-case';
 import { DirectoryUser } from '../domain/models/user-directory.model';
-import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { AppHeaderComponent } from '../presentation/components/app-header/app-header.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [
-    CommonModule,
-    RouterLink,
-    ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonSpinner,
-    IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonButton,
-    IonInput,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonText,
-  ],
+  imports: [RouterLink, ReactiveFormsModule, IonContent, AppHeaderComponent],
 })
 export class HomePage implements OnInit {
 
   private readonly fb = inject(FormBuilder);
+  private readonly doc = inject(DOCUMENT);
   private readonly sessionService = inject(SessionService);
   private readonly joinRemoteExamUseCase = inject(JoinRemoteExamUseCase);
   private readonly listUsersUseCase = inject(ListUsersUseCase);
-  private readonly logoutUseCase = inject(LogoutUseCase);
   private readonly router = inject(Router);
 
 
@@ -80,7 +43,13 @@ export class HomePage implements OnInit {
     code: ['', Validators.required],
   });
 
-  async ngOnInit(): Promise<void> {
+  // ngOnInit debe devolver void: la sesión se lee en un método aparte y el
+  // resultado se escribe en signals (la app es zoneless).
+  ngOnInit(): void {
+    void this.loadSession();
+  }
+
+  private async loadSession(): Promise<void> {
     const { role, userId } = await this.sessionService.getSession();
     this.role.set(role);
     this.userId.set(userId);
@@ -116,9 +85,31 @@ export class HomePage implements OnInit {
 
     this.errorMessage.set(null);
     this.joining.set(true);
-    // Los códigos se guardan en mayúsculas: se normaliza lo que escribe el alumno.
     const code = this.joinForm.getRawValue().code!.trim().toUpperCase();
 
+    let fullscreenRequest: Promise<void>;
+    try {
+      fullscreenRequest = this.doc.fullscreenElement
+        ? Promise.resolve()
+        : this.doc.documentElement.requestFullscreen();
+    } catch (err) {
+      this.joining.set(false);
+      this.errorMessage.set('No se pudo activar la pantalla completa. Actívala para comenzar el examen.');
+      console.error('No se pudo solicitar pantalla completa', err);
+      return;
+    }
+
+    void fullscreenRequest.then(
+      () => this.startExam(code),
+      (err: unknown) => {
+        this.joining.set(false);
+        this.errorMessage.set('Debes permitir la pantalla completa para comenzar el examen.');
+        console.warn('El alumno no pudo activar pantalla completa', err);
+      },
+    );
+  }
+
+  private startExam(code: string): void {
     this.joinRemoteExamUseCase.executeByCode(code).subscribe({
       next: (attempt) => {
         // Se mantiene "joining" hasta que la navegación termina, para no aceptar otro clic en medio.
@@ -131,10 +122,5 @@ export class HomePage implements OnInit {
         );
       },
     });
-  }
-
-  async logout(): Promise<void> {
-    await this.logoutUseCase.execute();
-    await this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 }

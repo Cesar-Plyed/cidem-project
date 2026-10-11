@@ -34,7 +34,8 @@ class SubmitQuestionAnswerUseCaseTest {
 
         UUID attemptId = UUID.randomUUID();
         UUID questionId = UUID.randomUUID();
-        ExamAttempt attempt = new ExamAttempt(attemptId, UUID.randomUUID(), UUID.randomUUID(),
+        UUID studentId = UUID.randomUUID();
+        ExamAttempt attempt = new ExamAttempt(attemptId, UUID.randomUUID(), studentId,
                 java.time.OffsetDateTime.now(), null, false);
         Exam exam = new Exam(attempt.getExamId(), "Historia", "Examen", UUID.randomUUID(),
                 java.time.OffsetDateTime.now(), List.of(new Question(questionId, "Explica el tema",
@@ -47,12 +48,35 @@ class SubmitQuestionAnswerUseCaseTest {
         when(answerRepository.save(any(ExamAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExamAnswer answer = useCase.execute(
-                new SubmitQuestionAnswerCommand(attemptId, questionId, List.of(), "respuesta libre"));
+                new SubmitQuestionAnswerCommand(attemptId, questionId, List.of(), "respuesta libre"), studentId);
 
         assertNotNull(answer);
         assertEquals(attemptId, answer.getAttemptId());
         assertEquals(questionId, answer.getQuestionId());
         assertEquals("respuesta libre", answer.getOpenTextAnswer());
         verify(answerRepository).save(any(ExamAnswer.class));
+    }
+
+    @Test
+    void shouldRejectAnswerWhenRequesterDoesNotOwnAttempt() {
+        ExamAttemptRepository attemptRepository = mock(ExamAttemptRepository.class);
+        ExamAnswerRepository answerRepository = mock(ExamAnswerRepository.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        SubmitQuestionAnswerUseCase useCase = new SubmitQuestionAnswerUseCase(
+                attemptRepository, answerRepository, examRepository);
+
+        UUID attemptId = UUID.randomUUID();
+        ExamAttempt attempt = new ExamAttempt(attemptId, UUID.randomUUID(), UUID.randomUUID(),
+                java.time.OffsetDateTime.now(), null, false);
+        when(attemptRepository.findById(attemptId)).thenReturn(Optional.of(attempt));
+
+        UUID anotherStudent = UUID.randomUUID();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> useCase.execute(
+                        new SubmitQuestionAnswerCommand(attemptId, UUID.randomUUID(), List.of(), "respuesta"),
+                        anotherStudent));
+        verify(answerRepository, org.mockito.Mockito.never()).save(any(ExamAnswer.class));
     }
 }

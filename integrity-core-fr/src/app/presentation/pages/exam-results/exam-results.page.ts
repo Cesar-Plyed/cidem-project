@@ -1,45 +1,17 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
-  IonContent,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonBadge,
-  IonText,
-  IonSpinner,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { BackendExamResult } from '../../../domain/models/evaluator/evaluator.model';
 import { GetExamResultsUseCase } from '../../../application/use-cases/evaluator/get-exam-results.use-case';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 @Component({
   selector: 'app-exam-results',
   templateUrl: 'exam-results.page.html',
   styleUrls: ['exam-results.page.scss'],
-  imports: [
-    CommonModule,
-    RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
-    IonContent,
-    IonList,
-    IonItem,
-    IonLabel,
-    IonBadge,
-    IonText,
-    IonSpinner,
-  ],
+  imports: [CommonModule, RouterLink, IonContent, AppHeaderComponent],
 })
 export class ExamResultsPage implements OnInit {
   private readonly route = inject(ActivatedRoute);

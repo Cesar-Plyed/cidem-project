@@ -1,92 +1,66 @@
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding-top: 3rem;
+.result-summary__label {
+  color: #4a5768;
+  font-size: 0.875rem;
+  margin-bottom: 0;
 }
 
-.feedback {
-  font-style: italic;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
+.result-score {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(2.5rem, 2rem + 2.5vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  margin: 12px 0 4px;
+  color: var(--ocean-navy);
+
+  &--success {
+    color: var(--ocean-success);
+  }
+
+  &--warning {
+    color: var(--ocean-warning);
+  }
+
+  &--danger {
+    color: var(--ocean-danger);
+  }
 }
 
-.student-info {
-  margin: 12px 0;
-
-  ion-item {
-    --padding-start: 0;
-    --padding-end: 0;
-  }
-
-  p {
-    margin: 4px 0;
-    font-size: 0.9rem;
-  }
+.result-score__max {
+  font-size: 0.5em;
+  color: #4a5768;
 }
 
 .statement {
   font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.answer-section {
-  margin: 0.75rem 0;
 }
 
 .section-label {
   font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  font-size: 0.8125rem;
+  color: #4a5768;
   margin-bottom: 0.25rem;
 }
 
 .student-answer {
   font-size: 0.95rem;
   padding: 0.5rem;
-  background: var(--ion-color-light);
+  background: #ffffff;
+  border: 1px solid var(--ion-border-color);
   border-radius: 6px;
   min-height: 48px;
-}
-
-.answer-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
-  li {
-    padding: 0.35rem 0;
-    border-bottom: 1px solid var(--ion-color-light-shade);
-    font-size: 0.9rem;
-  }
+  margin-bottom: 0;
 }
 
 .correct-option {
-  color: var(--ion-color-success);
+  color: var(--ocean-success);
   font-weight: 600;
 }
 
-.empty {
-  color: var(--ion-color-medium);
-  font-style: italic;
+.answer-section {
+  margin: 0.75rem 0;
 }
 
-.qualification {
-  margin-top: 0.75rem;
-
-  ion-item {
-    --padding-start: 0;
-    --padding-end: 0;
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-  }
-
-  .feedback {
-    margin-top: 0.25rem;
-  }
+.feedback {
+  font-style: italic;
+  font-size: 0.9rem;
 }

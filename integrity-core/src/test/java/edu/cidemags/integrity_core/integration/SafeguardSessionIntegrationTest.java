@@ -188,9 +188,9 @@ class SafeguardSessionIntegrationTest {
     // ---------- Ciclo de vida completo ----------
 
     @Test
-    void fullLifecycle_flagsAtThreshold_thenHeartbeatAndClose() throws Exception {
-        // Umbral 25: 10 + 10 + 35 = 55 lo cruza en el tercer evento (FLAGGED,
-        // autoTerminate=false => sigue en curso).
+    void fullLifecycle_integrityIndexBelow50_terminatesSession() throws Exception {
+        // El riesgo SafeGuard llega a 55 sin auto-terminación, pero el índice de
+        // integridad de oversight cruza 50 y cierra el intento en el tercer evento.
         putConfig(3, 25, false);
         UUID sessionId = startSessionViaHttp();
 
@@ -205,39 +205,39 @@ class SafeguardSessionIntegrationTest {
                                 "{\"faces\":3}")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalRiskScore").value(55))
-                .andExpect(jsonPath("$.sessionStatus").value("FLAGGED"))
+                .andExpect(jsonPath("$.sessionStatus").value("TERMINATED"))
                 .andExpect(jsonPath("$.duplicate").value(false));
 
-        // Heartbeat sobre sesión FLAGGED: sigue abierta
+        // El heartbeat refleja el cierre disparado por el índice de integridad.
         mockMvc.perform(post("/api/safeguard/sessions/{id}/heartbeat", sessionId)
                         .with(user(studentId.toString()).roles("ALUMNO"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clientTime\":\"" + Instant.now() + "\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FLAGGED"))
+                .andExpect(jsonPath("$.status").value("TERMINATED"))
                 .andExpect(jsonPath("$.riskScore").value(55))
-                .andExpect(jsonPath("$.closed").value(false));
+                .andExpect(jsonPath("$.closed").value(true));
 
-        // Cierre: FLAGGED no se degrada a COMPLETED
+        // El cierre idempotente conserva el estado TERMINATED.
         mockMvc.perform(post("/api/safeguard/sessions/{id}/close", sessionId)
                         .with(user(studentId.toString()).roles("ALUMNO")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FLAGGED"))
+                .andExpect(jsonPath("$.status").value("TERMINATED"))
                 .andExpect(jsonPath("$.endedAt").exists());
 
-        // Heartbeat post-cierre: informa closed sin tocar last_heartbeat_at
+        // Un heartbeat posterior informa closed sin alterar el estado.
         mockMvc.perform(post("/api/safeguard/sessions/{id}/heartbeat", sessionId)
                         .with(user(studentId.toString()).roles("ALUMNO"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clientTime\":\"" + Instant.now() + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.closed").value(true))
-                .andExpect(jsonPath("$.status").value("FLAGGED"));
+                .andExpect(jsonPath("$.status").value("TERMINATED"));
 
         Map<String, Object> row = jdbcTemplate.queryForMap(
                 "SELECT status, risk_score, ended_at, version FROM safeguard_session WHERE id = ?",
                 sessionId);
-        assertEquals("FLAGGED", row.get("status"));
+        assertEquals("TERMINATED", row.get("status"));
         assertEquals(55, ((Number) row.get("risk_score")).intValue());
         assertNotNull(row.get("ended_at"));
         assertTrue(((Number) row.get("version")).intValue() > 0, "cada transacción bumpa @Version");

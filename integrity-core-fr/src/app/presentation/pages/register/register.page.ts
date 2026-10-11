@@ -1,22 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonButton,
-  IonText,
-  IonSpinner,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { RegisterUseCase } from '../../../application/use-cases/register.use-case';
 import { ListCountriesUseCase } from '../../../application/use-cases/list-countries.use-case';
 import { Country } from '../../../domain/models/country.model';
@@ -27,23 +13,7 @@ import { ApiError } from '../../../domain/models/api-error.model';
   selector: 'app-register',
   templateUrl: 'register.page.html',
   styleUrls: ['register.page.scss'],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
-    IonButton,
-    IonText,
-    IonSpinner,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, IonContent],
 })
 export class RegisterPage implements OnInit {
   private readonly fb = inject(FormBuilder)
@@ -64,10 +34,12 @@ export class RegisterPage implements OnInit {
     registrationCode: [''],
   });
 
-  loading = false;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
-  countries: Country[] = [];
+  // Señales: la app es zoneless, así que mutar campos planos dentro de
+  // subscribe() no repinta la vista (los mensajes de error nunca se mostraban).
+  readonly loading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
+  readonly countries = signal<Country[]>([]);
 
   constructor(
 
@@ -83,8 +55,8 @@ export class RegisterPage implements OnInit {
 
   ngOnInit(): void {
     this.listCountriesUseCase.execute().subscribe({
-      next: (countries) => (this.countries = countries),
-      error: () => (this.errorMessage = 'No se pudo cargar el catálogo de países.'),
+      next: (countries) => this.countries.set(countries),
+      error: () => this.errorMessage.set('No se pudo cargar el catálogo de países.'),
     });
   }
 
@@ -118,9 +90,9 @@ export class RegisterPage implements OnInit {
       return;
     }
 
-    this.loading = true;
-    this.errorMessage = null;
-    this.successMessage = null;
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
 
     const raw = this.form.getRawValue();
 
@@ -137,16 +109,16 @@ export class RegisterPage implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.loading = false;
-          this.successMessage = 'Cuenta creada. Ahora puedes iniciar sesión.';
+          this.loading.set(false);
+          this.successMessage.set('Cuenta creada. Ahora puedes iniciar sesión.');
           setTimeout(() => this.router.navigate(['/login']), 1200);
         },
         error: (err: HttpErrorResponse) => {
-          this.loading = false;
+          this.loading.set(false);
           const body = err.error as ApiError | undefined;
           // El mensaje del backend ya viene listo para mostrar al usuario
           // (ej. "Codigo de registro invalido o faltante para el rol PROFESOR").
-          this.errorMessage = this.formatError(body);
+          this.errorMessage.set(this.formatError(body));
         },
       });
   }

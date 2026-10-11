@@ -1,57 +1,72 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Iniciar sesión</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true">
+  <div class="auth">
+    <div class="auth__card card">
+      <div class="card-body">
+        <div class="auth__brand">
+          <span class="auth__mark" aria-hidden="true">I</span>
+          <span class="auth__name">Integrity</span>
+        </div>
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <ion-list lines="full">
-      <ion-item>
-        <ion-input
-          label="Correo"
-          labelPlacement="floating"
-          type="email"
-          formControlName="email"
-          autocomplete="email"
-          inputmode="email"
-        ></ion-input>
-      </ion-item>
-      @if (email.touched && email.invalid) {
-        <ion-text color="danger">
-          @if (email.errors?.['required']) { <p class="field-error">El correo es obligatorio.</p> }
-          @if (email.errors?.['email']) { <p class="field-error">Ingresa un correo válido.</p> }
-        </ion-text>
-      }
+        <h1 class="auth__title">Iniciar sesión</h1>
+        <p class="auth__subtitle">Accede a tus exámenes y paneles de integridad.</p>
 
-      <ion-item>
-        <ion-input
-          label="Contraseña"
-          labelPlacement="floating"
-          type="password"
-          formControlName="password"
-          autocomplete="current-password"
-        ></ion-input>
-      </ion-item>
-      @if (password.touched && password.invalid) {
-        <ion-text color="danger">
-          <p class="field-error">La contraseña es obligatoria.</p>
-        </ion-text>
-      }
-    </ion-list>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="mb-3">
+            <label class="form-label" for="login-email">Correo</label>
+            <input
+              id="login-email"
+              class="form-control"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              inputmode="email"
+              [attr.aria-invalid]="email.touched && email.invalid ? 'true' : null"
+              [attr.aria-describedby]="'login-email-error'"
+            />
+            @if (email.touched && email.invalid) {
+            <span id="login-email-error" class="field-error">
+              @if (email.errors?.['required']) { El correo es obligatorio. }
+              @if (email.errors?.['email']) { Ingresa un correo válido. }
+            </span>
+            }
+          </div>
 
-    @if (errorMessage) {
-      <ion-text color="danger"><p class="form-error">{{ errorMessage }}</p></ion-text>
-    }
+          <div class="mb-3">
+            <label class="form-label" for="login-password">Contraseña</label>
+            <input
+              id="login-password"
+              class="form-control"
+              type="password"
+              formControlName="password"
+              autocomplete="current-password"
+              [attr.aria-invalid]="password.touched && password.invalid ? 'true' : null"
+              [attr.aria-describedby]="'login-password-error'"
+            />
+            @if (password.touched && password.invalid) {
+            <span id="login-password-error" class="field-error">
+              La contraseña es obligatoria.
+            </span>
+            }
+          </div>
 
-    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="loading">
-      @if (loading) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
-      @if (!loading) { <span>Entrar</span> }
-      @if (loading) { <span>Entrando...</span> }
-    </ion-button>
+          @if (errorMessage()) {
+          <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+          }
 
-    <p class="register-link">
-      ¿No tienes cuenta? <a routerLink="/register">Regístrate</a>
-    </p>
-  </form>
+          <button class="btn btn-primary btn-lg w-100" type="submit" [disabled]="loading()">
+            @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Entrando...
+            } @else {
+            Entrar
+            }
+          </button>
+        </form>
+
+        <p class="auth__link">
+          ¿No tienes cuenta? <a routerLink="/register">Regístrate</a>
+        </p>
+      </div>
+    </div>
+  </div>
 </ion-content>

@@ -1,32 +1,12 @@
 import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonTextarea,
-  IonButton,
-  IonText,
-  IonSpinner,
-  IonBadge,
-  AlertController,
-} from '@ionic/angular';
-import { CommonModule } from '@angular/common';
+import { IonContent, AlertController } from '@ionic/angular';
 import { ListOpenEndedReviewsUseCase } from '../../../application/use-cases/evaluator/list-open-ended-reviews.use-case';
 import { SubmitReviewUseCase } from '../../../application/use-cases/evaluator/submit-review.use-case';
 import { GetExamAverageUseCase } from '../../../application/use-cases/evaluator/get-exam-average.use-case';
 import { BackendOpenEndedReview } from '../../../domain/models/evaluator/evaluator.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 interface ReviewForm {
   score: number;
@@ -37,27 +17,7 @@ interface ReviewForm {
   selector: 'app-exam-reviews',
   templateUrl: 'exam-reviews.page.html',
   styleUrls: ['exam-reviews.page.scss'],
-  imports: [
-    CommonModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
-    IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonItem,
-    IonLabel,
-    IonInput,
-    IonTextarea,
-    IonButton,
-    IonText,
-    IonSpinner,
-    IonBadge,
-  ],
+  imports: [IonContent, AppHeaderComponent],
 })
 export class ExamReviewsPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -146,7 +106,10 @@ export class ExamReviewsPage implements OnInit {
 
   onScoreInput(review: BackendOpenEndedReview, value: string | null | undefined): void {
     const num = value ? Number(value) : 0;
-    const score = num >= 0 ? num : 0;
+    const points = review.questionPoints ?? Number.MAX_SAFE_INTEGER;
+    // El backend rechaza puntajes sobre los puntos de la pregunta: se acota aquí
+    // para no llegar al error.
+    const score = num >= 0 ? Math.min(num, points) : 0;
     this.formMap.update((forms) => ({
       ...forms,
       [review.answerId]: {

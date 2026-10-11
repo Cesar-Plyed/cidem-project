@@ -142,14 +142,16 @@ public class SafeguardService {
                 cmd.eventId(), cmd.eventType(), assessment.severity(), assessment.riskPoints(),
                 session.getRiskScore(), occurredAt));
 
-        if (previous != session.getStatus()) {
+        SafeguardSession persistedSession = sessionRepository.findByIdForUpdate(session.getId())
+                .orElseThrow(() -> new IllegalStateException("SafeguardSession disappeared after event recording"));
+        if (previous != persistedSession.getStatus()) {
             publisher.publishEvent(new SafeguardDomainEvent.SessionStatusChanged(
                     session.getId(), session.getExamId(), session.getAttemptId(), session.getStudentId(),
-                    previous, session.getStatus(), session.getRiskScore(), now));
+                    previous, persistedSession.getStatus(), persistedSession.getRiskScore(), now));
         }
 
         return new RecordEventResult(event.getId(), event.getEventId(), event.getSeverity(),
-                event.getRiskPoints(), session.getRiskScore(), session.getStatus(), false);
+                event.getRiskPoints(), persistedSession.getRiskScore(), persistedSession.getStatus(), false);
     }
 
     @Transactional

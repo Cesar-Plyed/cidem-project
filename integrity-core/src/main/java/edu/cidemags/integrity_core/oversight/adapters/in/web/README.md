@@ -1,1 +1,1 @@
-controllers REST
+Controladores REST para consultar el resumen de integridad (`GET /api/oversight/exams/{examId}/summary`), la línea de tiempo (`GET /api/oversight/exams/{examId}/timeline`) y el índice de un intento (`GET /api/oversight/attempts/{attemptId}/integrity`). Los eventos nuevos también se publican en `/topic/oversight/exams/{examId}` por STOMP sobre `/ws/sentinel`; la suscripción se limita a administradores y al profesor propietario del examen. Al caer el índice bajo 50, el intento y su sesión SafeGuard se cierran en el servidor.

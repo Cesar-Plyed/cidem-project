@@ -14,6 +14,7 @@ import edu.cidemags.integrity_core.evaluator.domain.port.ExamAttemptRepository;
 import edu.cidemags.integrity_core.evaluator.domain.port.ExamRepository;
 import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -86,7 +87,7 @@ class GetExamResultUseCaseTest {
                 mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
         // A random user who is neither student nor teacher tries to access
-        assertThrows(IllegalStateException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> useCase.execute(attemptId, UUID.randomUUID(), false));
     }
 
@@ -100,7 +101,7 @@ class GetExamResultUseCaseTest {
         GetExamResultUseCase useCase = new GetExamResultUseCase(mock(ExamAttemptRepository.class), exams,
                 mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> useCase.executeForExam(exam.getId(), UUID.randomUUID(), false));
     }
 
@@ -187,5 +188,95 @@ class GetExamResultUseCaseTest {
         assertEquals(9, result.questions().get(0).score());
         assertEquals("Muy bien", result.questions().get(0).feedback());
         assertFalse(result.pendingReview());
+    }
+
+    @Test
+    void blocksStudentFromReadingTheAnswerKeyBeforeSubmitting() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        ExamAttempt openAttempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, false);
+        Exam exam = new Exam(examId, "Exam", null, UUID.randomUUID(), OffsetDateTime.now(), List.of(),
+                ExamStatus.PUBLISHED);
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(openAttempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams,
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
+
+        // El resultado incluye isCorrect por opcion y el puntaje en vivo: si un alumno
+        // lo leyera antes de entregar, se regalaria la llave de respuestas.
+        assertThrows(IllegalStateException.class, () -> useCase.execute(attemptId, studentId, false));
+    }
+
+    @Test
+    void letsTeacherAndAdminWatchAnOpenAttemptButNotOtherStudents() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        ExamAttempt openAttempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, false);
+        Exam exam = new Exam(examId, "Exam", null, teacherId, OffsetDateTime.now(), List.of(),
+                ExamStatus.PUBLISHED);
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(openAttempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams,
+                mock(ExamAnswerRepository.class), mock(EvaluationReviewRepository.class), mock(UserRepository.class));
+
+        // Quien escribio el examen (y el administrador) si puede ver el avance en vivo.
+        assertEquals(attemptId, useCase.execute(attemptId, teacherId, false).attemptId());
+        assertEquals(attemptId, useCase.execute(attemptId, UUID.randomUUID(), true).attemptId());
+        // Otro alumno sigue sin poder.
+        assertThrows(AccessDeniedException.class,
+                () -> useCase.execute(attemptId, UUID.randomUUID(), false));
+    }
+
+    @Test
+    void scoresByQuestionPointsAndCapsMaxScoreAtThePointsSum() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
+        EvaluationReviewRepository reviews = mock(EvaluationReviewRepository.class);
+        UserRepository users = mock(UserRepository.class);
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews, users);
+
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID correctOptionId = UUID.randomUUID();
+        UUID openQuestionId = UUID.randomUUID();
+
+        // Examen de 10 puntos: una cerrada de 4 y una abierta de 6.
+        Question choice = new Question(UUID.randomUUID(), "2 + 2", QuestionType.SINGLE_CHOICE,
+                List.of(new QuestionOption(correctOptionId, "4", true), new QuestionOption(UUID.randomUUID(), "5", false)),
+                null, 4);
+        Question open = new Question(openQuestionId, "Explica", QuestionType.OPEN_ENDED, List.of(), null, 6);
+        Exam exam = new Exam(examId, "Matematicas", null, UUID.randomUUID(), OffsetDateTime.now(),
+                List.of(choice, open), ExamStatus.PUBLISHED);
+        ExamAttempt attempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, true);
+        UUID openAnswerId = UUID.randomUUID();
+
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(attempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        when(answers.findByAttemptId(attemptId)).thenReturn(List.of(
+                new ExamAnswer(UUID.randomUUID(), attemptId, choice.getId(), List.of(correctOptionId), null),
+                new ExamAnswer(openAnswerId, attemptId, openQuestionId, List.of(), "texto")));
+        when(reviews.findByAnswerId(openAnswerId)).thenReturn(
+                Optional.of(new EvaluationReview(UUID.randomUUID(), openAnswerId, UUID.randomUUID(), 4,
+                        "ok", OffsetDateTime.now(), OffsetDateTime.now())));
+
+        var result = useCase.execute(attemptId, studentId, false);
+
+        // 4 puntos por el acierto + 4 de la revisión = 8 sobre un máximo de 10.
+        assertEquals(10, result.maxScore());
+        assertEquals(8, result.score());
+        assertEquals(4, result.questions().get(0).score());
+        assertEquals(4, result.questions().get(0).points());
+        assertEquals(4, result.questions().get(1).score());
+        assertEquals(6, result.questions().get(1).points());
+        assertEquals(openAnswerId, result.questions().get(1).answerId());
     }
 }

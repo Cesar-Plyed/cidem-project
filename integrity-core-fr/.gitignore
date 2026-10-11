@@ -20,6 +20,7 @@ log.txt
 # Ionic
 /.ionic
 /www
+/tauri.alpha.conf.json
 /platforms
 /plugins
 

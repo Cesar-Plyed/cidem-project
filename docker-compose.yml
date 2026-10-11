@@ -77,7 +77,7 @@ services:
 volumes:
   integrity-db-data:
     external: true
-    name: b98896fb802fe6281d6f268378511036b8ffdb8283b9e5c582ee9fc7f79da7c7
+    name: postgre-db
 
 networks:
   integrity-net:

@@ -15,6 +15,19 @@ import { ExamRepository } from './app/domain/ports/exam.repository';
 import { ExamHttpRepository } from './app/infrastructure/http/exam-http.repository';
 import { EvaluatorRepository } from './app/domain/ports/evaluator.repository';
 import { EvaluatorHttpRepository } from './app/infrastructure/http/evaluator-http.repository';
+import { SafeguardRepository } from './app/domain/ports/safeguard.repository';
+import { SafeguardHttpRepository } from './app/infrastructure/http/safeguard-http.repository';
+import { OversightRepository } from './app/domain/ports/oversight.repository';
+import { OversightHttpRepository } from './app/infrastructure/http/oversight-http.repository';
+import { SafeguardPlatform } from './app/domain/ports/safeguard-platform';
+import { WebSafeguardPlatform } from './app/infrastructure/platform/web-safeguard-platform';
+import { TauriSafeguardPlatform } from './app/infrastructure/platform/tauri-safeguard-platform';
+
+// En Tauri ('__TAURI_INTERNALS__' lo inyecta el webview), la plataforma aporta
+// capacidades nativas que el navegador no tiene (bloqueo de atajos del SO,
+// foco a nivel sistema). En web puro queda la implementación DOM.
+const safeguardPlatform =
+  '__TAURI_INTERNALS__' in globalThis ? TauriSafeguardPlatform : WebSafeguardPlatform;
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -30,6 +43,12 @@ bootstrapApplication(AppComponent, {
     // Este SÍ pega contra el backend real — pero solo cubre las 5
     // operaciones que existen hoy (ver evaluator-demo.page.ts).
     { provide: EvaluatorRepository, useClass: EvaluatorHttpRepository },
+    { provide: SafeguardRepository, useClass: SafeguardHttpRepository },
+    // Oversight: los use-cases inyectan la clase abstracta; sin este provider
+    // la página /exams/:id/oversight revienta con NG0201 en runtime.
+    { provide: OversightRepository, useClass: OversightHttpRepository },
+    // Plataforma donde corre SafeGuard: Tauri (atajos nativos) o web (solo DOM).
+    { provide: SafeguardPlatform, useClass: safeguardPlatform },
     importProvidersFrom(IonicStorageModule.forRoot()),
   ],
 });

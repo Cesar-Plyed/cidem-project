@@ -4,7 +4,7 @@
 # =====================================================================
 
 # ---------- Etapa 1: build ----------
-FROM node:latest AS build
+FROM node:24 AS build
 WORKDIR /app
 
 # Copiamos primero solo los manifiestos para aprovechar cache de capas

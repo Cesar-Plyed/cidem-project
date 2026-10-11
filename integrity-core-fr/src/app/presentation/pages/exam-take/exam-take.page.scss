@@ -1,34 +1,29 @@
-form,
-.exam-summary {
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.loading {
+.safeguard-warning {
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: flex;
-  justify-content: center;
-  margin-top: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--ion-color-danger);
+  color: var(--ion-color-danger-contrast);
+  font-weight: 600;
 }
 
-.exam-summary {
-  margin-bottom: 16px;
-
-  ion-badge {
-    margin-right: 8px;
-  }
+.exam-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-.submitted-banner {
-  text-align: center;
-  margin-top: 32px;
+.question-statement {
+  font-weight: 600;
 }
 
-.form-error {
-  margin: 12px 0 0 0;
-  text-align: center;
-  font-size: 14px;
-}
-
-ion-card {
-  margin-bottom: 16px;
+.form-check {
+  margin-bottom: 4px;
 }

@@ -1,18 +1,9 @@
-.intro,
-.note {
-  font-size: 13px;
-}
-
-ion-card {
-  max-width: 640px;
-  margin: 16px auto;
-}
-
-pre {
-  background: var(--ion-color-light, #f4f4f4);
+.diag-output {
+  background: #f4f8f8;
+  border: 1px solid var(--ion-border-color);
+  border-radius: 0.5rem;
   padding: 12px;
-  border-radius: 8px;
+  margin-top: 12px;
   font-size: 12px;
   overflow-x: auto;
-  margin-top: 12px;
 }

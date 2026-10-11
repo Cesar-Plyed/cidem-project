@@ -1,104 +1,154 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>{{ exam()?.title ?? 'Examen' }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header [title]="exam()?.title ?? 'Examen'" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
-    <div class="loading">
-      <ion-spinner name="crescent"></ion-spinner>
-      <p>Cargando examen...</p>
-    </div>
-  }
-
-  @if (!loading() && errorMessage() && !exam()) {
-    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
-    <ion-button fill="outline" routerLink="/home">Volver al panel</ion-button>
-  }
-
-  @if (!loading() && exam(); as current) {
-    <div class="exam-summary">
-      @if (current.description) {
-        <p>{{ current.description }}</p>
-      }
-      <ion-badge color="medium">{{ current.questions.length }} preguntas</ion-badge>
-      @if (!submitted()) {
-        <ion-badge color="primary">Respondidas: {{ answeredCount() }} de {{ current.questions.length }}</ion-badge>
-      }
-    </div>
-
-    @if (submitted()) {
-      <div class="submitted-banner">
-        <ion-text color="success"><p>Examen enviado correctamente. ¡Buen trabajo!</p></ion-text>
-        <ion-button expand="block" routerLink="/home">Volver al panel</ion-button>
-        <ion-button expand="block" fill="outline" [routerLink]="['/attempts', current.attemptId, 'result']">
-          Ver resultado
-        </ion-button>
-      </div>
-    } @else {
-      @for (question of current.questions; track question.id; let i = $index) {
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>Pregunta {{ i + 1 }}</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <p class="prompt">{{ question.prompt }}</p>
-
-            @switch (question.type) {
-              @case ('SINGLE_CHOICE') {
-                <ion-radio-group
-                  [value]="selected()[question.id]?.[0]"
-                  (ionChange)="selectSingle(question.id, $event.detail.value)"
-                >
-                  @for (option of question.options; track option.id) {
-                    <ion-item lines="none">
-                      <ion-radio [value]="option.id" labelPlacement="end" justify="start">{{ option.text }}</ion-radio>
-                    </ion-item>
-                  }
-                </ion-radio-group>
-              }
-              @case ('MULTIPLE_CHOICE') {
-                <p class="hint">Puede haber más de una respuesta correcta.</p>
-                @for (option of question.options; track option.id) {
-                  <ion-item lines="none">
-                    <ion-checkbox
-                      labelPlacement="end"
-                      justify="start"
-                      [checked]="isSelected(question.id, option.id)"
-                      (ionChange)="toggleOption(question.id, option.id, $event.detail.checked)"
-                      >{{ option.text }}</ion-checkbox
-                    >
-                  </ion-item>
-                }
-              }
-              @case ('OPEN_ENDED') {
-                <ion-item lines="none">
-                  <ion-textarea
-                    placeholder="Escribe tu respuesta..."
-                    [autoGrow]="true"
-                    [value]="texts()[question.id] ?? ''"
-                    (ionInput)="setText(question.id, $event.detail.value)"
-                  ></ion-textarea>
-                </ion-item>
-              }
-            }
-          </ion-card-content>
-        </ion-card>
-      }
-
-      @if (errorMessage()) {
-        <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text>
-      }
-
-      <ion-button expand="block" class="ion-margin-top" [disabled]="submitting()" (click)="confirmSubmit()">
-        @if (submitting()) {
-          <ion-spinner name="crescent" slot="start"></ion-spinner>
-          <span>Enviando...</span>
-        } @else {
-          <span>Enviar examen</span>
-        }
-      </ion-button>
+<ion-content [fullscreen]="true">
+  @if (safeguard.warning(); as warning) {
+  <div slot="fixed" class="safeguard-warning" role="alert">
+    <span>{{ warning.message }}</span>
+    @if (warning.type === 'FULLSCREEN_EXIT') {
+    <button type="button" class="btn btn-sm btn-light" (click)="safeguard.requestFullscreen()">
+      Pantalla completa
+    </button>
     }
+    <button type="button" class="btn btn-sm btn-outline-light" (click)="safeguard.dismissWarning()">Entendido</button>
+  </div>
   }
+
+  <div class="page ion-padding">
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando examen...</span>
+    </div>
+    }
+
+    @if (!loading() && errorMessage() && !exam()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    <a class="btn btn-outline-secondary" routerLink="/home">Volver al panel</a>
+    }
+
+    @if (!loading() && exam(); as current) {
+    <header class="page-heading">
+      <p class="eyebrow">Examen en curso</p>
+      <h2>{{ current.title }}</h2>
+      @if (current.description) {
+      <p>{{ current.description }}</p>
+      }
+      <div class="exam-badges">
+        <span class="badge rounded-pill text-bg-dark">{{ current.questions.length }} preguntas</span>
+        @if (!submitted()) {
+        <span class="badge rounded-pill text-bg-primary" aria-live="polite">
+          Tiempo restante: {{ formatRemainingTime() }}
+        </span>
+        }
+        @if (!submitted()) {
+        <span class="badge rounded-pill text-bg-dark">Respondidas: {{ answeredCount() }} de {{ current.questions.length }}</span>
+        }
+        @if (safeguard.active()) {
+        <span class="badge rounded-pill text-bg-success">Examen protegido</span>
+        @if (safeguard.warningCount() > 0) {
+        <span class="badge rounded-pill text-bg-danger">Avisos: {{ safeguard.warningCount() }}</span>
+        }
+        @if (safeguard.connectionLost()) {
+        <span class="badge rounded-pill text-bg-warning">Sin conexión con SafeGuard ({{ safeguard.pendingEvents() }} pendientes)</span>
+        }
+        }
+      </div>
+      @if (!submitted() && !integrityClosed() && current.questions.length > 0) {
+      <div class="progress attempt-progress" role="progressbar" [attr.aria-valuenow]="answeredCount()" aria-valuemin="0"
+        [attr.aria-valuemax]="current.questions.length"
+        [attr.aria-label]="'Preguntas respondidas: ' + answeredCount() + ' de ' + current.questions.length">
+        <div class="progress-bar" [style.width.%]="(answeredCount() / current.questions.length) * 100"></div>
+      </div>
+      }
+    </header>
+
+    @if (submitted() || integrityClosed()) {
+    <section class="card">
+      <div class="card-body text-center">
+        @if (integrityClosed() || current.integrityFailed) {
+        <h3>Intento cerrado por integridad académica</h3>
+        <p>El intento se cerró automáticamente y quedó reprobado por el índice de integridad.</p>
+        } @else {
+        <h3>Examen enviado</h3>
+        <p>Examen enviado correctamente. ¡Buen trabajo!</p>
+        @if (hasOpenEndedQuestions()) {
+        <div class="alert alert-info" role="status">
+          <h4 class="h6">El examen está en revisión</h4>
+          <p class="mb-0">Pronto tendrás el resultado. Tu calificación estará disponible cuando se revisen las preguntas abiertas.</p>
+        </div>
+        }
+        }
+        <div class="d-grid gap-2">
+          <a class="btn btn-primary" routerLink="/home">Volver al panel</a>
+          <a class="btn btn-outline-secondary" [routerLink]="['/attempts', current.attemptId, 'result']">
+            Ver resultado
+          </a>
+        </div>
+      </div>
+    </section>
+    } @else {
+    @for (question of current.questions; track question.id; let i = $index) {
+    <section class="card mb-3">
+      <div class="card-body">
+        <h3>
+          <span class="badge rounded-pill text-bg-dark me-2">{{ i + 1 }}</span>
+          Pregunta {{ i + 1 }}
+        </h3>
+        <p class="prompt">{{ question.prompt }}</p>
+
+        @switch (question.type) {
+        @case ('SINGLE_CHOICE') {
+        <div role="radiogroup" [attr.aria-label]="'Pregunta ' + (i + 1)">
+          @for (option of question.options; track option.id) {
+          <div class="form-check">
+            <input class="form-check-input" type="radio" [id]="'q-' + question.id + '-' + option.id"
+              [name]="'question-' + question.id" [checked]="isSelected(question.id, option.id)"
+              (change)="selectSingle(question.id, option.id)" />
+            <label class="form-check-label" [attr.for]="'q-' + question.id + '-' + option.id">
+              {{ option.text }}
+            </label>
+          </div>
+          }
+        </div>
+        }
+        @case ('MULTIPLE_CHOICE') {
+        <p class="hint">Puede haber más de una respuesta correcta.</p>
+        @for (option of question.options; track option.id) {
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" [id]="'q-' + question.id + '-' + option.id"
+            [checked]="isSelected(question.id, option.id)"
+            (change)="toggleOption(question.id, option.id, $any($event.target).checked)" />
+          <label class="form-check-label" [attr.for]="'q-' + question.id + '-' + option.id">
+            {{ option.text }}
+          </label>
+        </div>
+        }
+        }
+        @case ('OPEN_ENDED') {
+        <label class="form-label" [attr.for]="'q-' + question.id">Tu respuesta</label>
+        <textarea class="form-control" rows="4" [id]="'q-' + question.id" placeholder="Escribe tu respuesta..."
+          [value]="texts()[question.id] ?? ''" (input)="setText(question.id, $any($event.target).value)"></textarea>
+        }
+        }
+      </div>
+    </section>
+    }
+
+    @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+      <button class="btn btn-primary btn-lg" [disabled]="submitting()" (click)="confirmSubmit()">
+        @if (submitting()) {
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Enviando...
+        } @else {
+        Enviar examen
+        }
+      </button>
+    </div>
+    }
+    }
+  </div>
 </ion-content>

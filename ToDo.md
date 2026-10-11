@@ -511,3 +511,66 @@ En ese escenario, no intentaría completar simultáneamente:
 - Reportes avanzados.
 
 El alcance mínimo realista para cerrar en dos meses es: **EVALUATOR funcional + Sentinel persistente + SafeGuard básico + Oversight con WebSockets + eventos internos + Docker + pruebas de integración + despliegue en una VM**.
+
+## Pendientes de auditoría (Fase 2 — 2026-10-09)
+
+Cuatro revisiones (seguridad, calidad, backend, frontend) con los agentes de `.opencode/agents/`. Todo lo crítico/corregible de esfuerzo razonable se arregló en esta fase; esto queda **documentado como pendiente a propósito**:
+
+### Backend
+
+- **N+1 en `GetExamResultUseCase`** (alto): por cada resultado se resuelven intento/examen/usuario/respuestas de forma individual. Requiere fetch-join o proyección SQL; no se tocó para no arriesgar la calificación en caliente.
+- **Límites de módulo** (alto): `oversight` importa dominio/aplicación de `sentinel` (`AlertSeverity`, `AttemptId`, `AlertGeneratedEvent`, …) y los contratos entre módulos no pasan todos por `shared.events`. Unificar nombres de eventos implica cambiar publicadores y listeners en varios módulos a la vez.
+- **El dominio depende de Spring** (alto): `BCryptPasswordHasher`, `IntegrityScoringPolicy`, `SafeguardRiskPolicy` y `AlertEscalationPolicy` son beans de Spring dentro de `domain`. Moverlos a adapters obliga a replantear la creación de los use-cases.
+- **`@TransactionalEventListener(AFTER_COMMIT)`**: los listeners entre módulos corren dentro de la transacción del publicador; si el consumidor falla, revierte datos de otro módulo. Debe migrarse a `AFTER_COMMIT` con manejo de errores propio.
+- **Carrera en el primer snapshot de oversight** (medio): si llegan dos eventos a la vez para un intento aún sin snapshot, ambos pasan el lock (la fila no existe), el segundo insert choca con `uq_oversight_snapshot_attempt` y la transacción entera (log + snapshot) se revierte, perdiendo ese evento. Corrección futura: reintentar al violar la unique con una transacción nueva (`REQUIRES_NEW`), porque dentro de la misma transacción ya está marcada para rollback.
+- **El handler global de excepciones vive en `auth`** (medio): `GlobalExceptionHandler` importa excepciones de `evaluator`, y su `@ExceptionHandler(Exception.class)` convierte en 500 lo que Spring habría devuelto como 404/405/415/400/401 (`NoResourceFoundException`, `HttpRequestMethodNotSupportedException`, …). Moverlo a `shared_kernel` y estrechar el catch genérico.
+- **`WebSocketConfig.setAllowedOriginPatterns("*")`** (`/ws/sentinel`): acepta cualquier origen; debe limitarse a `CORS_ALLOWED_ORIGINS` (el propio comentario del código lo pide).
+- **Payloads de Sentinel sin atar a la sesión**: `attemptId`/`studentId` llegan en el mensaje y no se contrastan con el principal del JWT, así que un alumno podría registrar eventos de otro intento.
+- **Refresh tokens en texto plano**: el valor crudo (`UUID.randomUUID()`) se guarda en `refresh_tokens`; además el frontend lo guarda en `localStorage`. Ideal: hash en BD + cookie `HttpOnly` + rotación.
+- **`metadata` de SafeGuard es `String`** y devuelve 500 con entrada no-JSON (ya anotado en `safeguard/README.md` §8); los 4 tipos de enum sin regla de riesgo quedan igual.
+- **`trust-proxy-header` apagado por defecto** en el rate limit: correcto hasta que haya un proxy de confianza; mientras, `X-Forwarded-For` se ignora a propósito.
+
+### Frontend
+
+- **`/exams/:id/take` es un callejón sin salida**: `ExamHttpRepository.submitAttempt` siempre lanza error y pasa `examId` como `attemptId`; la ruta que realmente toma exámenes es `exam-attempt`. Falta decidir la ruta canónica antes de borrarla.
+- **SCSS todavía duplicado entre páginas**: `.dashboard-card*` se movió a `global.scss`, pero conviene revisar el resto clase por clase antes de mover (riesgo de romper el budget de 4 KB por página).
+- **`console.error` en callbacks de error**: se dejaron a propósito para diagnóstico de red; si se quiere producción sin logs, condicionarlos por entorno.
+
+### Producto / legal
+
+- **Faltan política de privacidad, aviso legal y consentimiento informado**: la plataforma graba cámara/micrófono, captura pantalla y monitorea pestañas de estudiantes, y el repo no tiene ningún documento de ese tipo. Se evaluó el MCP `legal-docs-mcp` como atajo y **se descartó** (paquete discontinuado en npm, sin repo fuente, plantillas mercantiles francesas sin relación con proctoring — ver `docs/evaluacion-legal-docs-mcp.md`). Recomendación: redactarlos directamente en español (qué se captura, finalidad, retención, derechos ARCO) y registrar la aceptación con timestamp al iniciar el intento.
+
+## SonarQube (Fase 2 — 2026-10-10)
+
+Escaneo local con `sonarqube:community` + `sonarsource/sonar-scanner-cli` en podman (red aislada, volúmenes reutilizables; no toca el Postgres de la app). Guiones para repetirlo en `/tmp/opencode/sonar/`: `up.sh` levanta la pila y `scan.sh` escanea **y espera al Compute Engine** — sin esa espera el reporte se pierde y la API devuelve 0 issues. Alcance: `integrity-core/src/main/java` + `integrity-core-fr/src` (14.4 K líneas).
+
+| | Antes | Después |
+|---|---|---|
+| Issues abiertas | 77 | **64** |
+| BLOCKER | 1 | **0** |
+| CRITICAL | 5 | **0** |
+| Vulnerabilidades | 1 | **0** |
+| Bugs | 7 | 4 |
+| Deuda (sqale) | 383 min | 314 min |
+
+### Cerrados
+
+- `9277b84` — java:S1845 **BLOCKER** (constante `SOURCE` junto al componente `source` de `SafeguardBlockEvent` → `SOURCE_SAFEGUARD`), java:S3077 (`volatile` → `AtomicReference` en el listener), java:S1186 (comentario *dentro* del constructor vacío de JPA; el comentario encima no lo cierra).
+- `8648615` — typescript:S7059 ×2 **CRITICAL** (async en constructor: `token-storage` pasó a getter perezoso, `evaluator-demo` pasó a `ngOnInit`), typescript:S6544 ×2 (`async ngOnInit` → `void` + método privado en home y app-header), typescript:S2245 (fallback `Math.random` justificado con comentario + `NOSONAR`).
+- `9d98ad9` — java:S3776 ×2 **CRITICAL**: `GetExamResultUseCase.calculate` (19) y `ListOpenEndedReviewsUseCase.execute` (27) sobre el límite de 15. De paso se eliminó el doble `findByAttemptId` por intento y la lista `nonSubmittedAttempts` que nadie leía.
+- `cf77266` + esta pasada — typescript:S1854 (asignación inútil, borrado con la reescritura de oversight), typescript:S1121, typescript:S3863 ×2 (imports duplicados), Web:S7926 (viewport que bloqueaba el zoom).
+
+### Aceptados a propósito (falsos positivos)
+
+- **`Web:MouseEventWithoutKeyboardEquivalentCheck` ×4** — son los 4 "bugs" que quedan. Las filas con `(click)` de ratón tienen su camino de teclado/AT en el `<button class="btn btn-link p-0 text-reset">` de la celda del nombre (patrón documentado en `DESIGN-SYSTEM.md` § Accesibilidad) y el `<ion-button>` del encabezado envuelve un `<button>` nativo. Quitar el clic de la fila empeoraría la UX del monitor sin ganar nada accesible.
+- `typescript:S2245` — ver arriba (el id solo correlaciona eventos, no firma nada, y solo corre en contextos http inseguros).
+
+### Pendientes (backlog sin tocar)
+
+- `Web:S6819` ×20 MAJOR — `role="status"` donde Sonar pide `<output>`. Es una mejora real de accesibilidad, pero son 20 elementos en 8 páginas: hacerlo en una pasada dedicada con capturas.
+- `java:S6213` ×4 MAJOR — `RecordLogEntryService.record(…)` usa el identificador restringido `record`. Renombrar toca puerto + listener + tests por un tema cosmético.
+- `java:S107` ×3 MAJOR — constructores con 8 parámetros (`User`, …); quiere un DTO/record de construcción.
+- `css:S125` ×3 + `java:S125` ×1 MAJOR — código comentado en `ionic.scss` y `RateLimitConfig`.
+- `Web:S7927` ×2 (nombre accesible ≠ etiqueta visible), `css:S4666` (`:root` duplicado en `variables.scss`), `css:S4667` (`app.component.scss` vacío) y la cola de estilo: `S2933`, `S3626`, `S6582` ×3, `S7755`, `S7766`, `S7778`.
+- `java:S1135` ×5 INFO — TODOs que **son** el roadmap (Sprint 1/7 de SafeGuard en evaluator, etc.); no es deuda.
+- `java:S8688` ×4 INFO — `OffsetDateTime.now()` sin `ZoneId` explícito.

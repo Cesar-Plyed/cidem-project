@@ -12,11 +12,19 @@ const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 @Injectable({ providedIn: 'root' })
 export class TokenStorageService {
   private storage: Storage | null = null;
-  private readonly ready: Promise<void>;
+  private readyPromise: Promise<void> | null = null;
   private readonly ionicStorage = inject(Storage);
-  
-  constructor() {
-    this.ready = this.init();
+
+  /**
+   * Inicialización perezosa: Ionic Storage solo se crea en el primer uso, así
+   * el constructor no dispara trabajo asíncrono (y el servicio se puede
+   * instanciar sin coste hasta que alguien guarda o lee un token).
+   */
+  private get ready(): Promise<void> {
+    if (this.readyPromise === null) {
+      this.readyPromise = this.init();
+    }
+    return this.readyPromise;
   }
 
   private async init(): Promise<void> {

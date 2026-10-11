@@ -30,17 +30,26 @@ public class ExamAttemptEntity {
     @Column(nullable = false)
     private boolean submitted;
 
+    @Column(name = "integrity_failed", nullable = false)
+    private boolean integrityFailed;
+
     protected ExamAttemptEntity() {
     }
 
     public ExamAttemptEntity(UUID id, UUID examId, UUID studentId, OffsetDateTime startedAt,
             OffsetDateTime submittedAt, boolean submitted) {
+        this(id, examId, studentId, startedAt, submittedAt, submitted, false);
+    }
+
+    public ExamAttemptEntity(UUID id, UUID examId, UUID studentId, OffsetDateTime startedAt,
+            OffsetDateTime submittedAt, boolean submitted, boolean integrityFailed) {
         this.id = id;
         this.examId = examId;
         this.studentId = studentId;
         this.startedAt = startedAt;
         this.submittedAt = submittedAt;
         this.submitted = submitted;
+        this.integrityFailed = integrityFailed;
     }
 
     public UUID getId() {
@@ -85,5 +94,13 @@ public class ExamAttemptEntity {
 
     public void setSubmitted(boolean submitted) {
         this.submitted = submitted;
+    }
+
+    public boolean isIntegrityFailed() {
+        return integrityFailed;
+    }
+
+    public void setIntegrityFailed(boolean integrityFailed) {
+        this.integrityFailed = integrityFailed;
     }
 }

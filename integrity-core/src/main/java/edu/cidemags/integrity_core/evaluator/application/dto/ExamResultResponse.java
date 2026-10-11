@@ -7,11 +7,11 @@ import edu.cidemags.integrity_core.evaluator.domain.model.QuestionType;
 
 public record ExamResultResponse(UUID attemptId, UUID examId, UUID studentId, String studentEmail,
         String studentFirstName, String studentLastName, String studentPhone,
-        int score, int maxScore, boolean pendingReview, List<QuestionResult> questions) {
-    public record QuestionResult(UUID questionId, String statement, QuestionType questionType,
+        int score, int maxScore, boolean pendingReview, boolean integrityFailed, List<QuestionResult> questions) {
+    public record QuestionResult(UUID questionId, UUID answerId, String statement, QuestionType questionType,
             List<UUID> selectedOptionIds, String openTextAnswer,
             List<OptionDetail> options,
-            boolean answered, int score, boolean pendingReview, String feedback) {
+            boolean answered, int score, int points, boolean pendingReview, String feedback) {
         public record OptionDetail(UUID id, String text, boolean correct) {
         }
     }
