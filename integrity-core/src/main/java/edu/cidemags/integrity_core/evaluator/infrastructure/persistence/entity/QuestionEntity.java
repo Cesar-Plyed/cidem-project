@@ -35,6 +35,9 @@ public class QuestionEntity {
     @Column(nullable = false, length = 30)
     private QuestionType type;
 
+    @Column(nullable = false)
+    private int points = 1;
+
     @Column(name = "correct_answer_text", length = 1000)
     private String correctAnswerText;
 
@@ -45,11 +48,17 @@ public class QuestionEntity {
     }
 
     public QuestionEntity(UUID id, ExamEntity exam, String prompt, QuestionType type, String correctAnswerText) {
+        this(id, exam, prompt, type, correctAnswerText, 1);
+    }
+
+    public QuestionEntity(UUID id, ExamEntity exam, String prompt, QuestionType type, String correctAnswerText,
+            int points) {
         this.id = id;
         this.exam = exam;
         this.prompt = prompt;
         this.type = type;
         this.correctAnswerText = correctAnswerText;
+        this.points = points;
     }
 
     public UUID getId() {
@@ -86,6 +95,14 @@ public class QuestionEntity {
 
     public void setCorrectAnswerText(String correctAnswerText) {
         this.correctAnswerText = correctAnswerText;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 
     public List<QuestionOptionEntity> getOptions() {

@@ -26,6 +26,8 @@ export interface BackendQuestion {
   type: BackendQuestionType;
   options: BackendQuestionOption[];
   correctAnswerText: string | null;
+  /** Puntos de la pregunta (1..10); la suma del examen no puede exceder 10. */
+  points: number;
 }
 
 export interface BackendExam {
@@ -34,6 +36,7 @@ export interface BackendExam {
   description: string | null;
   createdByUserId: string;
   createdAt: string; // ISO-8601
+  durationMinutes: number;
   questions: BackendQuestion[]; // hoy siempre viene vacío: no hay forma de mandar preguntas al crear
   status: BackendExamStatus;
 }
@@ -53,6 +56,7 @@ export interface BackendExamAttempt {
   startedAt: string; // ISO-8601
   submittedAt: string | null;
   submitted: boolean;
+  integrityFailed: boolean;
 }
 
 export interface BackendExamAnswer {
@@ -80,6 +84,8 @@ export interface BackendOpenEndedReview {
   questionId: string;
   questionPrompt: string;
   openTextAnswer: string | null;
+  /** Puntos de la pregunta: tope de la puntuación al revisar. */
+  questionPoints: number | null;
   score: number | null;
   feedback: string | null;
   reviewerId: string | null;
@@ -96,6 +102,8 @@ export interface BackendQuestionOptionResult {
 
 export interface BackendQuestionResult {
   questionId: string;
+  /** Solo viene cuando el alumno respondió; sirve para calificar la respuesta abierta en línea. */
+  answerId: string | null;
   statement: string;
   questionType: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'OPEN_ENDED';
   selectedOptionIds: string[];
@@ -103,6 +111,8 @@ export interface BackendQuestionResult {
   options: BackendQuestionOptionResult[];
   answered: boolean;
   score: number;
+  /** Puntos máximos de la pregunta: la respuesta abierta no puede superarlos. */
+  points: number;
   pendingReview: boolean;
   feedback: string | null;
 }
@@ -118,6 +128,7 @@ export interface BackendExamResult {
   score: number;
   maxScore: number;
   pendingReview: boolean;
+  integrityFailed: boolean;
   questions: BackendQuestionResult[];
 }
 
@@ -130,4 +141,16 @@ export interface BackendExamAverage {
   averageScore: number;
   maxScore: number;
   averagePercentage: number;
+}
+
+export interface StudentExamHistoryEntry {
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  startedAt: string;
+  submittedAt: string;
+  score: number;
+  maxScore: number;
+  pendingReview: boolean;
+  integrityFailed: boolean;
 }

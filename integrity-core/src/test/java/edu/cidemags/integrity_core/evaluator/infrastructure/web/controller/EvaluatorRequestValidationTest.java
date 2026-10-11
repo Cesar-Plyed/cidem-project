@@ -26,13 +26,17 @@ import edu.cidemags.integrity_core.evaluator.application.usecase.JoinExamByAcces
 import edu.cidemags.integrity_core.evaluator.application.usecase.ListOpenEndedReviewsUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.QuestionBankManagementUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.ReviewOpenEndedAnswerUseCase;
+import edu.cidemags.integrity_core.evaluator.application.usecase.RevokeExamAttemptUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.SubmitExamAttemptUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.SubmitQuestionAnswerUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
+import edu.cidemags.integrity_core.evaluator.application.dto.CreateExamCommand;
+import edu.cidemags.integrity_core.evaluator.application.dto.UpdateExamCommand;
 
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -68,6 +72,8 @@ class EvaluatorRequestValidationTest {
     @MockitoBean
     private GetExamResultUseCase getExamResultUseCase;
     @MockitoBean
+    private RevokeExamAttemptUseCase revokeExamAttemptUseCase;
+    @MockitoBean
     private ExportExamResultsUseCase exportExamResultsUseCase;
     @MockitoBean
     private JoinExamByAccessCodeUseCase joinExamByAccessCodeUseCase;
@@ -86,9 +92,11 @@ class EvaluatorRequestValidationTest {
     @MockitoBean
     private ListOpenEndedReviewsUseCase listOpenEndedReviewsUseCase;
 
-    private void givenProfessor() {
+    private UUID givenProfessor() {
+        UUID teacherId = UUID.randomUUID();
         when(tokenProvider.validateAccessToken(TOKEN)).thenReturn(
-                new TokenProvider.AccessTokenClaims(UUID.randomUUID(), "profesor@test.com", Role.PROFESOR));
+                new TokenProvider.AccessTokenClaims(teacherId, "profesor@test.com", Role.PROFESOR));
+        return teacherId;
     }
 
     // ---------- Examenes ----------
@@ -99,7 +107,7 @@ class EvaluatorRequestValidationTest {
 
         mockMvc.perform(post("/api/evaluator/exams").header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"   \",\"description\":\"desc\"}"))
+                        .content("{\"title\":\"   \",\"description\":\"desc\",\"durationMinutes\":30}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.title").exists())
                 .andExpect(jsonPath("$.message").value("El titulo del examen no puede estar vacio"));
@@ -125,9 +133,13 @@ class EvaluatorRequestValidationTest {
 
         mockMvc.perform(post("/api/evaluator/exams").header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Examen valido\",\"description\":\"desc\"}"))
+                        .content("{\"title\":\"Examen valido\",\"description\":\"desc\",\"durationMinutes\":12}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Examen valido"));
+
+        var commandCaptor = org.mockito.ArgumentCaptor.forClass(CreateExamCommand.class);
+        verify(createExamUseCase).execute(commandCaptor.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(12, commandCaptor.getValue().durationMinutes());
     }
 
     @Test
@@ -139,6 +151,24 @@ class EvaluatorRequestValidationTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.title").exists());
+    }
+
+    @Test
+    void updateExam_forwards_requested_duration() throws Exception {
+        UUID teacherId = givenProfessor();
+        UUID examId = UUID.randomUUID();
+        when(examManagementUseCase.get(examId)).thenReturn(new Exam("Examen actual", "desc", teacherId));
+        when(examManagementUseCase.update(any())).thenReturn(new Exam("Examen actualizado", "desc", teacherId));
+
+        mockMvc.perform(put("/api/evaluator/exams/{examId}", examId)
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Examen actualizado\",\"description\":\"desc\",\"durationMinutes\":17}"))
+                .andExpect(status().isOk());
+
+        var commandCaptor = org.mockito.ArgumentCaptor.forClass(UpdateExamCommand.class);
+        verify(examManagementUseCase).update(commandCaptor.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(17, commandCaptor.getValue().durationMinutes());
     }
 
     // ---------- Bancos de preguntas ----------

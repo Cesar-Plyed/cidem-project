@@ -57,8 +57,11 @@
 
         <div class="row g-3">
           <div class="col-12 col-md-3">
-            <label class="form-label" [attr.for]="'score-' + review.answerId">Puntuación</label>
-            <input class="form-control" type="number" min="0" [id]="'score-' + review.answerId"
+            <label class="form-label" [attr.for]="'score-' + review.answerId">
+              Puntuación (0 a {{ review.questionPoints ?? 10 }})
+            </label>
+            <input class="form-control" type="number" min="0" [max]="review.questionPoints ?? undefined"
+              [id]="'score-' + review.answerId"
               [value]="getScore(review).toString()" (input)="onScoreInput(review, $any($event.target).value)" />
           </div>
           <div class="col-12 col-md-9">

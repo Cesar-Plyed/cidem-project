@@ -17,7 +17,7 @@ COPY . .
 # Build de producción de Angular (ajusta el nombre del proyecto si tu
 # angular.json define uno distinto al default; revisa la carpeta que
 # genera "dist/" si el build falla por nombre)
-RUN npm run build -- --configuration production
+RUN npm run build --configuration production
 
 # ---------- Etapa 2: runtime ----------
 FROM nginx:alpine AS runtime

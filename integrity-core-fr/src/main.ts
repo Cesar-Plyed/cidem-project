@@ -21,6 +21,13 @@ import { OversightRepository } from './app/domain/ports/oversight.repository';
 import { OversightHttpRepository } from './app/infrastructure/http/oversight-http.repository';
 import { SafeguardPlatform } from './app/domain/ports/safeguard-platform';
 import { WebSafeguardPlatform } from './app/infrastructure/platform/web-safeguard-platform';
+import { TauriSafeguardPlatform } from './app/infrastructure/platform/tauri-safeguard-platform';
+
+// En Tauri ('__TAURI_INTERNALS__' lo inyecta el webview), la plataforma aporta
+// capacidades nativas que el navegador no tiene (bloqueo de atajos del SO,
+// foco a nivel sistema). En web puro queda la implementación DOM.
+const safeguardPlatform =
+  '__TAURI_INTERNALS__' in globalThis ? TauriSafeguardPlatform : WebSafeguardPlatform;
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -40,8 +47,8 @@ bootstrapApplication(AppComponent, {
     // Oversight: los use-cases inyectan la clase abstracta; sin este provider
     // la página /exams/:id/oversight revienta con NG0201 en runtime.
     { provide: OversightRepository, useClass: OversightHttpRepository },
-    // Plataforma donde corre SafeGuard. Para Tauri: sustituir por TauriSafeguardPlatform.
-    { provide: SafeguardPlatform, useClass: WebSafeguardPlatform },
+    // Plataforma donde corre SafeGuard: Tauri (atajos nativos) o web (solo DOM).
+    { provide: SafeguardPlatform, useClass: safeguardPlatform },
     importProvidersFrom(IonicStorageModule.forRoot()),
   ],
 });

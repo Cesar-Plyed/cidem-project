@@ -30,6 +30,9 @@
       <div class="card-body">
         <h3>Ingresar a un examen</h3>
         <p class="dashboard-card__hint">Usa el código que te entregó tu profesor.</p>
+        <a class="btn btn-outline-secondary mb-3 align-self-start" routerLink="/exam-history">
+          Historial de exámenes
+        </a>
 
         <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
           <div class="row g-3 align-items-end">

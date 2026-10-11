@@ -19,7 +19,17 @@ public class JpaLogEntryRepositoryAdapter implements LogEntryRepositoryPort {
 
     @Override
     public void save(LogEntry entry) {
-        jpaRepository.save(LogEntryMapper.toEntity(entry));
+        jpaRepository.save(LogEntryMapper.toEntity(entry, null));
+    }
+
+    @Override
+    public void save(LogEntry entry, String dedupKey) {
+        jpaRepository.save(LogEntryMapper.toEntity(entry, dedupKey));
+    }
+
+    @Override
+    public boolean existsByDedupKey(String dedupKey) {
+        return jpaRepository.existsByDedupKey(dedupKey);
     }
 
     @Override

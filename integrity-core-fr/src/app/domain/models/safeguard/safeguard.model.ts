@@ -6,11 +6,17 @@
 export type SafeguardEventType =
   | 'TAB_HIDDEN'
   | 'WINDOW_BLUR'
+  | 'FULLSCREEN_EXIT'
   | 'COPY_ATTEMPT'
   | 'CUT_ATTEMPT'
   | 'PASTE_ATTEMPT'
   | 'CONTEXT_MENU'
-  | 'RESTRICTED_SHORTCUT';
+  | 'RESTRICTED_SHORTCUT'
+  /** Se abrieron herramientas de desarrollo (deteción heurística) o se intentó imprimir. */
+  | 'DEVTOOLS_OPENED'
+  | 'PRINT_ATTEMPT'
+  /** Señal nativa (Tauri): cambió la ventana activa del SO. */
+  | 'NATIVE_WINDOW_SWITCH';
 
 /** Resultado local de la detección. El backend conserva este dato dentro de metadata. */
 export type SafeguardEventResult = 'BLOCKED' | 'DETECTED';
@@ -43,6 +49,10 @@ export interface SafeguardConfig {
   eventThrottleMs: number;
   /** Intervalo de heartbeat del cliente. El backend no lo configura todavía. */
   heartbeatIntervalSeconds: number;
+  /** Heurística de devtools (diferencia de tamaño outer/inner anómala). */
+  detectDevtools: boolean;
+  /** Reporta y bloquea Intento de impresión (beforeprint). */
+  blockPrint: boolean;
 }
 
 /** Política web por defecto mientras llega la configuración del servidor. */
@@ -50,7 +60,9 @@ export const DEFAULT_SAFEGUARD_CONFIG: SafeguardConfig = {
   enabled: true,
   requireCamera: false,
   requireMicrophone: false,
-  requireFullscreen: false,
+  // Por defecto se exige pantalla completa: una ventana en modo dividido o
+  // reducido se reporta como FULLSCREEN_EXIT.
+  requireFullscreen: true,
   blockCopyPaste: true,
   maxTabSwitches: 3,
   riskThreshold: 100,
@@ -77,6 +89,8 @@ export const DEFAULT_SAFEGUARD_CONFIG: SafeguardConfig = {
   ],
   eventThrottleMs: 2000,
   heartbeatIntervalSeconds: 15,
+  detectDevtools: true,
+  blockPrint: true,
 };
 
 export type SafeguardSessionStatus =

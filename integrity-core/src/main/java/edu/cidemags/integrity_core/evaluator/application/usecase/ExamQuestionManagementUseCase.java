@@ -37,8 +37,9 @@ public class ExamQuestionManagementUseCase {
         List<QuestionOption> options = command.options() == null ? List.of()
                 : command.options().stream().map(option -> new QuestionOption(option.text(), option.correct()))
                         .toList();
+        // addQuestion valida además que la suma de puntos no exceda el tope del examen.
         exam.addQuestion(new Question(UUID.randomUUID(), command.prompt(), command.type(), options,
-                command.correctAnswerText()));
+                command.correctAnswerText(), command.points()));
         return examRepository.save(exam);
     }
 
@@ -61,7 +62,7 @@ public class ExamQuestionManagementUseCase {
                 question.getPrompt(), question.getType(), question.getOptions().stream()
                         .map(option -> new QuestionOption(UUID.randomUUID(), option.getText(), option.isCorrect()))
                         .toList(),
-                question.getCorrectAnswerText())));
+                question.getCorrectAnswerText(), question.getPoints())));
         return examRepository.save(exam);
     }
 

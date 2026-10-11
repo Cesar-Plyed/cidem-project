@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -15,11 +15,12 @@ import { AppHeaderComponent } from '../presentation/components/app-header/app-he
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, IonContent, AppHeaderComponent],
+  imports: [RouterLink, ReactiveFormsModule, IonContent, AppHeaderComponent],
 })
 export class HomePage implements OnInit {
 
   private readonly fb = inject(FormBuilder);
+  private readonly doc = inject(DOCUMENT);
   private readonly sessionService = inject(SessionService);
   private readonly joinRemoteExamUseCase = inject(JoinRemoteExamUseCase);
   private readonly listUsersUseCase = inject(ListUsersUseCase);
@@ -84,9 +85,31 @@ export class HomePage implements OnInit {
 
     this.errorMessage.set(null);
     this.joining.set(true);
-    // Los códigos se guardan en mayúsculas: se normaliza lo que escribe el alumno.
     const code = this.joinForm.getRawValue().code!.trim().toUpperCase();
 
+    let fullscreenRequest: Promise<void>;
+    try {
+      fullscreenRequest = this.doc.fullscreenElement
+        ? Promise.resolve()
+        : this.doc.documentElement.requestFullscreen();
+    } catch (err) {
+      this.joining.set(false);
+      this.errorMessage.set('No se pudo activar la pantalla completa. Actívala para comenzar el examen.');
+      console.error('No se pudo solicitar pantalla completa', err);
+      return;
+    }
+
+    void fullscreenRequest.then(
+      () => this.startExam(code),
+      (err: unknown) => {
+        this.joining.set(false);
+        this.errorMessage.set('Debes permitir la pantalla completa para comenzar el examen.');
+        console.warn('El alumno no pudo activar pantalla completa', err);
+      },
+    );
+  }
+
+  private startExam(code: string): void {
     this.joinRemoteExamUseCase.executeByCode(code).subscribe({
       next: (attempt) => {
         // Se mantiene "joining" hasta que la navegación termina, para no aceptar otro clic en medio.

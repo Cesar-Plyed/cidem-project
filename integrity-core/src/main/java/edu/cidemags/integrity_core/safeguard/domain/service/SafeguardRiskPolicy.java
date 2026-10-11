@@ -15,9 +15,13 @@ public class SafeguardRiskPolicy {
             case WINDOW_BLUR, RIGHT_CLICK -> 1;
             case TAB_SWITCH, NETWORK_DISCONNECT -> 2;
             case FULLSCREEN_EXIT, COPY_PASTE, NO_FACE_DETECTED, MICROPHONE_DISABLED -> 3;
-            case CAMERA_DISABLED, DEVICE_CHANGE -> 4;
+            case CAMERA_DISABLED, DEVICE_CHANGE, SCREEN_SHARE_STOPPED -> 4;
             case MULTIPLE_FACES, SUSPICIOUS_ACTIVITY -> 5;
-            default -> throw new IllegalArgumentException("Unexpected value: " + type);
+            // Herramientas de desarrollo abiertas: es el equivalente directo de una
+            // pestaña con consola → intentar leer/editar la página → severidad 5.
+            case DEVTOOLS_OPENED -> 5;
+            // Hardware apagado/bloqueado: evita la supervisión pero no prueba trampa.
+            case CAMERA_BLOCKED, MICROPHONE_ANOMALY -> 4;
         };
 
         if (type == SafeguardEventType.TAB_SWITCH && priorSameTypeCount + 1 > config.getMaxTabSwitches()) {

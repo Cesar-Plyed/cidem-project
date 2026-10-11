@@ -4,6 +4,11 @@
   @if (safeguard.warning(); as warning) {
   <div slot="fixed" class="safeguard-warning" role="alert">
     <span>{{ warning.message }}</span>
+    @if (warning.type === 'FULLSCREEN_EXIT') {
+    <button type="button" class="btn btn-sm btn-light" (click)="safeguard.requestFullscreen()">
+      Pantalla completa
+    </button>
+    }
     <button type="button" class="btn btn-sm btn-outline-light" (click)="safeguard.dismissWarning()">Entendido</button>
   </div>
   }

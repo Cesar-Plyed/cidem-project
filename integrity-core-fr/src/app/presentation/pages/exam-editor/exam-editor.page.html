@@ -99,11 +99,15 @@
                 }
               </div>
               <div class="col-12 col-sm-6 col-md-4">
-                <label class="form-label" for="question-points-{{ i }}">Puntos</label>
-                <input class="form-control" id="question-points-{{ i }}" type="number" formControlName="points" />
+                <label class="form-label" for="question-points-{{ i }}">Puntos (1 a 10)</label>
+                <input class="form-control" id="question-points-{{ i }}" type="number" formControlName="points"
+                  min="1" max="10" />
                 @if (questionCtrl(i, 'points')?.touched && questionCtrl(i, 'points')?.invalid) {
                 @if (questionCtrl(i, 'points')?.errors?.['required'] || questionCtrl(i, 'points')?.errors?.['min']) {
                 <span class="field-error">Debe ser al menos 1.</span>
+                }
+                @if (questionCtrl(i, 'points')?.errors?.['max']) {
+                <span class="field-error">Una pregunta no puede valer más de 10.</span>
                 }
                 }
               </div>
@@ -157,6 +161,17 @@
           <ion-icon name="add-outline" class="me-1" aria-hidden="true"></ion-icon>
           Agregar pregunta
         </button>
+
+        <!-- La nota del examen se expresa sobre 10: la suma de puntos no puede pasarse. -->
+        <div class="d-flex align-items-center justify-content-between gap-2"
+          [class.text-danger]="exceedsTotalPoints">
+          <span>Puntos totales del examen</span>
+          <strong>{{ totalPoints }} / {{ maxTotalPoints }}</strong>
+        </div>
+        @if (exceedsTotalPoints) {
+        <span class="field-error">La suma de puntos no puede exceder {{ maxTotalPoints }}. Reduce los puntos de
+          alguna pregunta.</span>
+        }
 
         @if (errorMessage()) {
         <div class="alert alert-danger mb-0" role="alert">{{ errorMessage() }}</div>

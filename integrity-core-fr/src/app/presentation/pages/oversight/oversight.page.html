@@ -101,9 +101,16 @@
             <p class="eyebrow mb-1">Detalle de integridad</p>
             <h3 class="mb-0">{{ attempt.studentName || 'Intento ' + attempt.attemptId.slice(0, 8) }}</h3>
           </div>
-          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeAttemptDetail()">
-            Cerrar detalle
-          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-danger btn-sm"
+              [disabled]="revokingAttemptId() === attempt.attemptId"
+              (click)="requestRevokeAttempt(attempt.attemptId)">
+              {{ revokingAttemptId() === attempt.attemptId ? 'Revocando...' : 'Revocar y reprobar intento' }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeAttemptDetail()">
+              Cerrar detalle
+            </button>
+          </div>
         </div>
         <!-- Solo campos que el backend realmente devuelve en el snapshot
              (score + riskLevel + lastUpdatedAt); los contadores de alertas y

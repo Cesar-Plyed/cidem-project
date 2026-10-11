@@ -10,7 +10,7 @@ final class LogEntryMapper {
     private LogEntryMapper() {
     }
 
-    static LogEntryEntity toEntity(LogEntry entry) {
+    static LogEntryEntity toEntity(LogEntry entry, String dedupKey) {
         return new LogEntryEntity(
             entry.id(),
             entry.examSessionId().value(),
@@ -20,7 +20,8 @@ final class LogEntryMapper {
             entry.severity(),
             entry.description(),
             entry.occurredAt(),
-            entry.recordedAt()
+            entry.recordedAt(),
+            dedupKey
         );
     }
 

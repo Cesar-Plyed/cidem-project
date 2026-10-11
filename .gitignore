@@ -9,13 +9,13 @@ logs/
 # IDEs y Editores
 .idea/
 .vscode/*
-.kilo/*
 !.vscode/settings.json
 !.vscode/extensions.json
 *.swp
 *.swo
 *.tmp
 .kilo/
+.freebuff/
 
 # ==========================================
 # 2. Archivos de entorno y secretos

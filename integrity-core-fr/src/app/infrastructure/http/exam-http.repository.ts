@@ -34,6 +34,7 @@ export class ExamHttpRepository extends ExamRepository {
     return this.http.post<BackendExam>(`${this.baseUrl}/exams`, {
       title: exam.title,
       description: exam.description,
+      durationMinutes: exam.durationMinutes,
       questions: exam.questions.map((question) => ({
         prompt: question.statement,
         type: this.toBackendQuestionType(question.type),
@@ -42,6 +43,7 @@ export class ExamHttpRepository extends ExamRepository {
           correct: option.id === question.correctOptionId,
         })),
         correctAnswerText: question.type === QuestionType.OPEN ? null : undefined,
+        points: question.points,
       })),
     }).pipe(
       map((created) => this.toExam(created)),
@@ -49,9 +51,22 @@ export class ExamHttpRepository extends ExamRepository {
   }
 
   update(exam: Exam): Observable<Exam> {
+    // El backend reemplaza el listado completo de preguntas; solo permite editar
+    // exámenes en borrador (en publicados/cerrados rechaza el cambio).
     return this.http.put<BackendExam>(`${this.baseUrl}/exams/${exam.id}`, {
       title: exam.title,
       description: exam.description,
+      durationMinutes: exam.durationMinutes,
+      questions: exam.questions.map((question) => ({
+        prompt: question.statement,
+        type: this.toBackendQuestionType(question.type),
+        options: (question.options ?? []).map((option) => ({
+          text: option.text,
+          correct: option.id === question.correctOptionId,
+        })),
+        correctAnswerText: question.type === QuestionType.OPEN ? null : undefined,
+        points: question.points,
+      })),
     }).pipe(
       map((updated) => this.toExam(updated)),
     );
@@ -97,7 +112,7 @@ export class ExamHttpRepository extends ExamRepository {
       id: exam.id,
       title: exam.title,
       description: exam.description ?? '',
-      durationMinutes: 30,
+      durationMinutes: exam.durationMinutes,
       status: exam.status,
       questions: (exam.questions ?? []).map((question) => this.toQuestion(question)),
     };
@@ -109,7 +124,7 @@ export class ExamHttpRepository extends ExamRepository {
       id: question.id,
       type: question.type === 'OPEN_ENDED' ? QuestionType.OPEN : QuestionType.MULTIPLE_CHOICE,
       statement: question.prompt,
-      points: 1,
+      points: question.points ?? 1,
       options: question.options?.map((option) => ({ id: option.id, text: option.text })),
       correctOptionId: correctOption?.id,
     };

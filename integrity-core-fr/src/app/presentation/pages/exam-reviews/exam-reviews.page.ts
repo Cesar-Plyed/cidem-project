@@ -106,7 +106,10 @@ export class ExamReviewsPage implements OnInit {
 
   onScoreInput(review: BackendOpenEndedReview, value: string | null | undefined): void {
     const num = value ? Number(value) : 0;
-    const score = num >= 0 ? num : 0;
+    const points = review.questionPoints ?? Number.MAX_SAFE_INTEGER;
+    // El backend rechaza puntajes sobre los puntos de la pregunta: se acota aquí
+    // para no llegar al error.
+    const score = num >= 0 ? Math.min(num, points) : 0;
     this.formMap.update((forms) => ({
       ...forms,
       [review.answerId]: {

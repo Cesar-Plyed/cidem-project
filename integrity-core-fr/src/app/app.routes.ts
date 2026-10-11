@@ -59,6 +59,11 @@ export const routes: Routes = [
     loadComponent: () => import('./presentation/pages/exam-result/exam-result.page').then((m) => m.ExamResultPage)
   },
   {
+    path: 'exam-history',
+    canActivate: [roleGuard([Role.ALUMNO])],
+    loadComponent: () => import('./presentation/pages/exam-history/exam-history.page').then((m) => m.ExamHistoryPage)
+  },
+  {
     path: 'attempts/:attemptId',
     canActivate: [roleGuard([Role.ALUMNO])],
     loadComponent: () => import('./presentation/pages/exam-attempt/exam-attempt.page').then((m) => m.ExamAttemptPage)

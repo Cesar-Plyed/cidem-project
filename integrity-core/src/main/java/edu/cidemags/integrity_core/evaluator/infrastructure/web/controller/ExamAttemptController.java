@@ -10,15 +10,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import edu.cidemags.integrity_core.evaluator.application.dto.AttemptExamResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamResultResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.JoinExamByAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.SubmitExamAttemptCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.SubmitQuestionAnswerCommand;
+import edu.cidemags.integrity_core.evaluator.application.dto.StudentExamHistoryResponse;
 import edu.cidemags.integrity_core.evaluator.application.usecase.GetAttemptExamUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.GetExamResultUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.JoinExamByAccessCodeUseCase;
+import edu.cidemags.integrity_core.evaluator.application.usecase.RevokeExamAttemptUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.SubmitExamAttemptUseCase;
 import edu.cidemags.integrity_core.evaluator.application.usecase.SubmitQuestionAnswerUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAnswer;
@@ -35,17 +38,20 @@ public class ExamAttemptController {
     private final SubmitQuestionAnswerUseCase submitQuestionAnswerUseCase;
     private final GetExamResultUseCase getExamResultUseCase;
     private final GetAttemptExamUseCase getAttemptExamUseCase;
+    private final RevokeExamAttemptUseCase revokeExamAttemptUseCase;
 
     public ExamAttemptController(JoinExamByAccessCodeUseCase joinExamByAccessCodeUseCase,
             SubmitExamAttemptUseCase submitExamAttemptUseCase,
             SubmitQuestionAnswerUseCase submitQuestionAnswerUseCase,
             GetExamResultUseCase getExamResultUseCase,
-            GetAttemptExamUseCase getAttemptExamUseCase) {
+            GetAttemptExamUseCase getAttemptExamUseCase,
+            RevokeExamAttemptUseCase revokeExamAttemptUseCase) {
         this.joinExamByAccessCodeUseCase = joinExamByAccessCodeUseCase;
         this.submitExamAttemptUseCase = submitExamAttemptUseCase;
         this.submitQuestionAnswerUseCase = submitQuestionAnswerUseCase;
         this.getExamResultUseCase = getExamResultUseCase;
         this.getAttemptExamUseCase = getAttemptExamUseCase;
+        this.revokeExamAttemptUseCase = revokeExamAttemptUseCase;
     }
 
     @PostMapping("/attempts/join")
@@ -93,6 +99,23 @@ public class ExamAttemptController {
             Authentication authentication) {
         boolean administrator = isAdministrator(authentication);
         return ResponseEntity.ok(getExamResultUseCase.execute(
+                attemptId, (UUID) authentication.getPrincipal(), administrator));
+    }
+
+    @GetMapping("/attempts/history")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public ResponseEntity<java.util.List<StudentExamHistoryResponse>> getStudentHistory(
+            Authentication authentication) {
+        return ResponseEntity.ok(getExamResultUseCase.executeStudentHistory(
+                (UUID) authentication.getPrincipal()));
+    }
+
+    @PostMapping("/attempts/{attemptId}/revoke")
+    @PreAuthorize("hasAnyRole('PROFESOR', 'ADMINISTRATIVO')")
+    public ResponseEntity<ExamAttempt> revokeAttempt(@PathVariable UUID attemptId,
+            Authentication authentication) {
+        boolean administrator = isAdministrator(authentication);
+        return ResponseEntity.ok(revokeExamAttemptUseCase.execute(
                 attemptId, (UUID) authentication.getPrincipal(), administrator));
     }
 

@@ -37,6 +37,9 @@ public class ExamEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "duration_minutes", nullable = false)
+    private int durationMinutes = 30;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ExamStatus status;
@@ -49,11 +52,17 @@ public class ExamEntity {
 
     public ExamEntity(UUID id, String title, String description, UUID createdByUserId,
             OffsetDateTime createdAt, ExamStatus status) {
+        this(id, title, description, createdByUserId, createdAt, 30, status);
+    }
+
+    public ExamEntity(UUID id, String title, String description, UUID createdByUserId,
+            OffsetDateTime createdAt, int durationMinutes, ExamStatus status) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.createdByUserId = createdByUserId;
         this.createdAt = createdAt;
+        this.durationMinutes = durationMinutes;
         this.status = status;
     }
 
@@ -94,6 +103,14 @@ public class ExamEntity {
 
     public OffsetDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public int getDurationMinutes() {
+        return durationMinutes;
+    }
+
+    public void setDurationMinutes(int durationMinutes) {
+        this.durationMinutes = durationMinutes;
     }
 
     public ExamStatus getStatus() {

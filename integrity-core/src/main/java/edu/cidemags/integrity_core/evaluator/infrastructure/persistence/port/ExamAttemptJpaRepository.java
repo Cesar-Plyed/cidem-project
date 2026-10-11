@@ -10,4 +10,6 @@ public interface ExamAttemptJpaRepository extends JpaRepository<ExamAttemptEntit
     List<ExamAttemptEntity> findByStudentId(UUID studentId);
 
     List<ExamAttemptEntity> findByExamId(UUID examId);
+
+    boolean existsByExamId(UUID examId);
 }

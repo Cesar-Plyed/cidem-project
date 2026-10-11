@@ -127,6 +127,7 @@ describe('SafeguardHttpRepository', () => {
   it('mapea los tipos locales al enum del backend', () => {
     expect(mapEventType('TAB_HIDDEN')).toBe('TAB_SWITCH');
     expect(mapEventType('WINDOW_BLUR')).toBe('WINDOW_BLUR');
+    expect(mapEventType('FULLSCREEN_EXIT')).toBe('FULLSCREEN_EXIT');
     expect(mapEventType('COPY_ATTEMPT')).toBe('COPY_PASTE');
     expect(mapEventType('CUT_ATTEMPT')).toBe('COPY_PASTE');
     expect(mapEventType('PASTE_ATTEMPT')).toBe('COPY_PASTE');
