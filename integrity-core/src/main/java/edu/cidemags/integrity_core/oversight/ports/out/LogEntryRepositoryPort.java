@@ -10,6 +10,12 @@ public interface LogEntryRepositoryPort {
 
     void save(LogEntry entry);
 
+    /** Guarda la entrada asociando la huella de dedup (puede ser null). */
+    void save(LogEntry entry, String dedupKey);
+
+    /** true si ya existe una entrada con la misma huella (dedup entre SafeGuard REST y Sentinel WS). */
+    boolean existsByDedupKey(String dedupKey);
+
     List<LogEntry> findByExamSessionId(ExamSessionId examSessionId);
 
     List<LogEntry> findByAttemptId(AttemptId attemptId);

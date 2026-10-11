@@ -66,7 +66,8 @@ public class ExamController {
             Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED).body(createExamUseCase.execute(
-            new CreateExamCommand(command.title(), command.description(), userId, command.questions())));
+            new CreateExamCommand(command.title(), command.description(), userId, command.questions(),
+                    command.durationMinutes())));
     }
 
     // Staff-only: la serialización incluye Question.correctAnswerText y
@@ -90,7 +91,8 @@ public class ExamController {
             Authentication authentication) {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(examManagementUseCase.update(
-                new UpdateExamCommand(examId, command.title(), command.description())));
+                new UpdateExamCommand(examId, command.title(), command.description(), command.questions(),
+                        command.durationMinutes())));
     }
 
     @DeleteMapping("/{examId}")
@@ -156,7 +158,7 @@ public class ExamController {
         UUID requesterId = (UUID) authentication.getPrincipal();
         boolean administrator = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMINISTRATIVO"));
-        return ResponseEntity.ok(getExamResultUseCase.executeForExam(examId, requesterId, administrator));
+        return ResponseEntity.ok(getExamResultUseCase.executeLatestForExam(examId, requesterId, administrator));
     }
 
     @GetMapping("/{examId}/results/page")

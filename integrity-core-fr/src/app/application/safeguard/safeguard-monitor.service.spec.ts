@@ -13,6 +13,7 @@ import { SendSafeguardHeartbeatUseCase } from '../use-cases/safeguard/send-safeg
 import { CloseSafeguardSessionUseCase } from '../use-cases/safeguard/close-safeguard-session.use-case';
 import { SafeguardEventDispatcher } from './safeguard-event-dispatcher';
 import { SafeguardMonitorService } from './safeguard-monitor.service';
+import { SentinelStompService } from '../../infrastructure/http/sentinel-stomp.service';
 
 function session(id = 'session-1'): SafeguardSession {
   return { sessionId: id, examId: 'exam-1', attemptId: 'attempt-1', startedAt: new Date().toISOString() };
@@ -26,6 +27,8 @@ describe('SafeguardMonitorService', () => {
   let enqueue: ReturnType<typeof vi.fn<(event: SafeguardEvent) => void>>;
   let enterProtectedMode: ReturnType<typeof vi.fn<() => Promise<void>>>;
   let exitProtectedMode: ReturnType<typeof vi.fn<() => Promise<void>>>;
+  let sentinelPublish: ReturnType<typeof vi.fn<(event: unknown) => Promise<void>>>;
+  let sentinelDisconnect: ReturnType<typeof vi.fn<() => Promise<void>>>;
   let monitor: SafeguardMonitorService;
 
   beforeEach(() => {
@@ -38,6 +41,8 @@ describe('SafeguardMonitorService', () => {
     enqueue = vi.fn();
     enterProtectedMode = vi.fn(() => Promise.resolve());
     exitProtectedMode = vi.fn(() => Promise.resolve());
+    sentinelPublish = vi.fn(() => Promise.resolve());
+    sentinelDisconnect = vi.fn(() => Promise.resolve());
 
     TestBed.configureTestingModule({
       providers: [
@@ -67,6 +72,13 @@ describe('SafeguardMonitorService', () => {
             unreachable: () => false,
           },
         },
+        {
+          provide: SentinelStompService,
+          useValue: {
+            publish: sentinelPublish,
+            disconnect: sentinelDisconnect,
+          },
+        },
       ],
     });
 
@@ -82,6 +94,11 @@ describe('SafeguardMonitorService', () => {
   function start(): void {
     monitor.start('exam-1', 'attempt-1');
     vi.advanceTimersByTime(0); // resuelve las promesas/observables síncronos encolados
+  }
+
+  /** Finge el estado de pantalla completa del documento (Fullscreen API no existe en jsdom). */
+  function defineFullscreenElement(element: Element | null): void {
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => element });
   }
 
   it('al iniciar entra en modo protegido, pide la config y abre sesión', () => {
@@ -231,11 +248,67 @@ describe('SafeguardMonitorService', () => {
 
   it('muestra un aviso visible en cada ocurrencia, aunque el reporte esté en throttling', () => {
     start();
-    document.dispatchEvent(new Event('copy', { cancelable: true }));
-    expect(monitor.warningCount()).toBe(1);
+    // Al arrancar sin pantalla completa ya salió el aviso FULLSCREEN_EXIT.
+    expect(monitor.warning()?.type).toBe('FULLSCREEN_EXIT');
     document.dispatchEvent(new Event('copy', { cancelable: true }));
     expect(monitor.warningCount()).toBe(2);
+    document.dispatchEvent(new Event('copy', { cancelable: true }));
+    expect(monitor.warningCount()).toBe(3);
     expect(monitor.warning()?.type).toBe('COPY_ATTEMPT');
+  });
+
+  // ---- pantalla completa (modo dividido / ventana suelta) ----
+
+  function fullscreenReports(): unknown[] {
+    return enqueue.mock.calls.filter((call) => call[0].type === 'FULLSCREEN_EXIT');
+  }
+
+  it('exige pantalla completa: sin fullscreenElement reporta FULLSCREEN_EXIT y avisa al alumno', () => {
+    start();
+
+    expect(fullscreenReports()).toHaveLength(1);
+    expect(enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'FULLSCREEN_EXIT', result: 'DETECTED' }),
+    );
+    expect(monitor.warning()?.type).toBe('FULLSCREEN_EXIT');
+  });
+
+  it('no repite FULLSCREEN_EXIT hasta la cadencia, y se reinicia al entrar en pantalla completa', () => {
+    start();
+    expect(fullscreenReports()).toHaveLength(1);
+
+    // El chequeo sigue corriendo (5 s) pero la ventana de reporte es de 30 s.
+    vi.advanceTimersByTime(6000);
+    expect(fullscreenReports()).toHaveLength(1);
+
+    // Vuelve a pantalla completa: la próxima salida se reporta sin esperar.
+    defineFullscreenElement(document.documentElement);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(fullscreenReports()).toHaveLength(1);
+
+    defineFullscreenElement(null);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(fullscreenReports()).toHaveLength(2);
+  });
+
+  it('si la política no exige pantalla completa, no reporta FULLSCREEN_EXIT', () => {
+    getConfig.mockReturnValue(of({ ...DEFAULT_SAFEGUARD_CONFIG, requireFullscreen: false }));
+    start();
+
+    expect(fullscreenReports()).toHaveLength(0);
+    expect(monitor.warning()).toBeNull();
+  });
+
+  it('requestFullscreen() pide pantalla completa al navegador (botón del aviso)', () => {
+    start();
+    const requestFullscreen = vi.fn(() => Promise.resolve());
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: requestFullscreen,
+    });
+
+    monitor.requestFullscreen();
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
   });
 
   it('dismissWarning apaga el aviso actual', () => {

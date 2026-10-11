@@ -27,7 +27,7 @@ src/main/java/edu/cidemags/integrity_core/evaluator/
 
 - Exam
   - Representa un examen.
-  - Tiene título, descripción, creador, preguntas y estado.
+  - Tiene título, descripción, creador, preguntas, duración en minutos y estado.
   - Estados: DRAFT, PUBLISHED, CLOSED.
 
 - Question
@@ -48,7 +48,7 @@ src/main/java/edu/cidemags/integrity_core/evaluator/
 
 - ExamAttempt
   - Intento de resolución del examen por un estudiante.
-  - Guarda inicio y finalización del intento.
+  - Guarda inicio, finalización y si se cerró por una infracción de integridad.
 
 - ExamAnswer
   - Respuesta de una pregunta en el contexto del intento.
@@ -141,7 +141,13 @@ El módulo expone endpoints REST bajo el prefijo:
 ### Exámenes
 
 - POST /api/evaluator/exams
-  - Crea un examen.
+  - Crea un examen. El cuerpo incluye `durationMinutes` (mínimo 1).
+- PUT /api/evaluator/exams/{examId}
+  - Actualiza los datos del examen, incluida su duración.
+- DELETE /api/evaluator/exams/{examId}
+  - Elimina un examen en cualquier estado si ningún alumno ha iniciado un intento.
+- GET /api/evaluator/exams/{examId}/results
+  - Devuelve el intento más reciente de cada alumno para la vista del docente.
 
 - POST /api/evaluator/exams/{examId}/access-code
   - Genera un código temporal para entrar al examen.
@@ -150,12 +156,18 @@ El módulo expone endpoints REST bajo el prefijo:
 
 - POST /api/evaluator/attempts/join
   - El alumno se une al examen con un código.
-
+- GET /api/evaluator/attempts/history
+  - Devuelve al alumno sus intentos entregados, con acceso al resultado de cada uno.
+- POST /api/evaluator/attempts/join y /api/evaluator/attempts/join-by-code
+  - Solo permiten un intento por alumno y examen; la regla se vincula al `examId`, no al código temporal. Si ya existe un intento abierto, se devuelve ese mismo; tras entregar el examen, un nuevo ingreso responde 409.
+- GET /api/evaluator/attempts/{attemptId}/result
+  - Consulta el resultado del intento propio una vez entregado.
 - POST /api/evaluator/attempts/{attemptId}/submit
-  - Envía el examen terminado.
-
+  - Envía el examen terminado. Repetir la entrega del mismo intento ya enviado devuelve su estado actual.
 - POST /api/evaluator/attempts/{attemptId}/answers
   - Guarda la respuesta a una pregunta del intento.
+- POST /api/evaluator/attempts/{attemptId}/revoke
+  - Permite al docente propietario o al administrador revocar el intento; lo cierra y lo califica con cero.
 
 ### Revisión
 
@@ -171,7 +183,7 @@ El módulo expone endpoints REST bajo el prefijo:
 5. El estudiante entra con el código.
 6. El alumno responde preguntas.
 7. El alumno envía el intento.
-8. El docente revisa respuestas abiertas.
+8. El docente revisa respuestas abiertas; el resultado final se muestra al alumno al terminar esa revisión.
 
 ## Reglas de negocio actuales
 
@@ -180,6 +192,10 @@ El módulo expone endpoints REST bajo el prefijo:
 - Las preguntas abiertas no deben contener opciones.
 - Los códigos de acceso deben ser válidos y no expirados.
 - No se permite responder si el intento ya fue entregado.
+- El plazo se calcula desde el inicio persistido del intento y no se reinicia al generar otro código de acceso.
+- Si el índice de integridad baja de 50, el intento se cierra y queda reprobado automáticamente.
+- Un examen con intentos de alumnos se conserva para proteger su historial y resultados.
+- Cada alumno puede realizar un solo intento por examen, sin importar cuántos códigos de acceso se generen.
 
 ## Observaciones de diseño
 
@@ -190,28 +206,7 @@ El módulo expone endpoints REST bajo el prefijo:
 
 ## Estado actual
 
-Este módulo ya tiene:
-
-- dominio base
-- casos de uso principales
-- persistencia JPA
-- controladores REST
-- validaciones y excepciones de negocio
-
-Faltan como etapas siguientes:
-
-- migraciones Flyway detalladas para evaluator
-- pruebas de integración reales con Testcontainers
-- validación por roles (docente / alumno / admin)
-- endpoints adicionales para consultar resultados y calificaciones
-
-## Siguientes pasos sugeridos
-
-1. Añadir migraciones SQL para las tablas del módulo evaluator.
-2. Crear pruebas de integración para flujo completo de examen.
-3. Añadir seguridad por roles y permisos.
-4. Exponer DTOs de salida más ricos para frontend.
-5. Añadir consulta de resultados por estudiante y por examen.
+Las entidades y contratos están respaldados por migraciones Flyway. Las operaciones de gestión y revocación están protegidas por rol y verifican la propiedad del examen cuando corresponde; la consulta de historial y resultados del alumno se limita a sus propios intentos.
 
 ## Notas
 

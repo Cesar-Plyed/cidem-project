@@ -13,7 +13,7 @@ import edu.cidemags.integrity_core.shared.events.SafeguardBlockEvent;
  * solo conserva el último evento recibido para que las pruebas de
  * publicación/recepción puedan verificar el cableado.
  */
-@Component
+@Component("evaluatorSafeguardBlockEventListener")
 public class SafeguardBlockEventListener {
 
     // AtomicReference en vez de volatile: los listeners pueden ejecutarse en

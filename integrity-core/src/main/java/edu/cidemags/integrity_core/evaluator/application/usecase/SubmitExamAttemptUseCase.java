@@ -31,6 +31,10 @@ public class SubmitExamAttemptUseCase {
             throw new AccessDeniedException("No puedes enviar el intento de otro estudiante");
         }
 
+        if (attempt.isSubmitted()) {
+            return attempt;
+        }
+
         attempt.submit();
         return examAttemptRepository.save(attempt);
     }

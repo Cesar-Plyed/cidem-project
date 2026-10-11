@@ -57,6 +57,17 @@ public class ReviewOpenEndedAnswerUseCase {
                     "Solo el profesor que creo el examen puede revisar respuestas abiertas");
         }
 
+        // El puntaje de una respuesta abierta no puede superar los puntos asignados
+        // a la pregunta: sin este tope, la nota se disparaba (p. ej. 10 sobre 2).
+        var question = exam.getQuestions().stream()
+                .filter(q -> q.getId().equals(answer.getQuestionId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("La pregunta de la respuesta no existe"));
+        if (command.score() > question.getPoints()) {
+            throw new IllegalArgumentException(
+                    "La calificacion no puede exceder los puntos de la pregunta (" + question.getPoints() + ")");
+        }
+
         EvaluationReview review = evaluationReviewRepository.findByAnswerId(command.answerId())
                 .map(existing -> existing.withScoreAndFeedback(command.score(), command.feedback(),
                         command.reviewerId()))

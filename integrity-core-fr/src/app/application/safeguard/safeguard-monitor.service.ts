@@ -9,6 +9,8 @@ import {
   SafeguardWarning,
 } from '../../domain/models/safeguard/safeguard.model';
 import { SafeguardPlatform } from '../../domain/ports/safeguard-platform';
+import { TauriSafeguardPlatform } from '../../infrastructure/platform/tauri-safeguard-platform';
+import { SentinelStompService } from '../../infrastructure/http/sentinel-stomp.service';
 import { CloseSafeguardSessionUseCase } from '../use-cases/safeguard/close-safeguard-session.use-case';
 import { GetSafeguardConfigUseCase } from '../use-cases/safeguard/get-safeguard-config.use-case';
 import { SendSafeguardHeartbeatUseCase } from '../use-cases/safeguard/send-safeguard-heartbeat.use-case';
@@ -16,15 +18,26 @@ import { StartSafeguardSessionUseCase } from '../use-cases/safeguard/start-safeg
 import { SafeguardEventDispatcher } from './safeguard-event-dispatcher';
 import { CLIPBOARD_SHORTCUTS, normalizeShortcut, prettyShortcut, shortcutOf } from './safeguard-shortcuts';
 import { warningMessageFor } from './safeguard-warning-messages';
+import { SafeguardEventWithSessionId, sentinelEventTypeOf } from './sentinel-event-mapping';
 
 /** Espera antes de dar por buena una pérdida de foco (el cambio de pestaña dispara blur y visibilitychange a la vez). */
 const BLUR_CONFIRM_MS = 150;
 const WARNING_VISIBLE_MS = 6000;
+/** Cada cuánto se comprueba que la ventana siga en pantalla completa. */
+const FULLSCREEN_CHECK_MS = 5000;
+/** Cadencia mínima de un aviso/reporte FULLSCREEN_EXIT (evita llenar la línea de tiempo del profesor). */
+const FULLSCREEN_REPORT_MS = 30000;
+/** Cadencia mínima de un aviso/reporte de devtools (klausel heurística de ventana). */
+const DEVTOOLS_REPORT_MS = 30000;
+/** Heurística devtools: umbral de diferencia outer-inner anómala en px (horizontal/vertical). */
+const DEVTOOLS_WIDTH_DELTA_PX = 160;
+const DEVTOOLS_HEIGHT_DELTA_PX = 160;
 
 /**
- * Vigila el examen mientras esté abierto: detecta cambio de pestaña y pérdida de foco, y
- * bloquea copiar, cortar, pegar, el menú contextual y los atajos restringidos. Todo eso
- * SOLO entre start() y stop(): fuera del examen el navegador se comporta con normalidad.
+ * Vigila el examen mientras esté abierto: detecta cambio de pestaña, pérdida de foco y
+ * ventanas fuera de pantalla completa (modo dividido), y bloquea copiar, cortar, pegar,
+ * el menú contextual y los atajos restringidos. Todo eso SOLO entre start() y stop():
+ * fuera del examen el navegador se comporta con normalidad.
  *
  * Uso desde la pantalla del examen:
  *   monitor.start(examId, attemptId);   // al cargar un intento sin entregar
@@ -35,6 +48,7 @@ export class SafeguardMonitorService {
   private readonly doc = inject(DOCUMENT);
   private readonly platform = inject(SafeguardPlatform);
   private readonly dispatcher = inject(SafeguardEventDispatcher);
+  private readonly sentinel = inject(SentinelStompService);
   private readonly getConfigUseCase = inject(GetSafeguardConfigUseCase);
   private readonly startSessionUseCase = inject(StartSafeguardSessionUseCase);
   private readonly heartbeatUseCase = inject(SendSafeguardHeartbeatUseCase);
@@ -73,8 +87,12 @@ export class SafeguardMonitorService {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private blurTimer: ReturnType<typeof setTimeout> | null = null;
   private warningTimer: ReturnType<typeof setTimeout> | null = null;
+  private fullscreenTimer: ReturnType<typeof setInterval> | null = null;
+  private devtoolsTimer: ReturnType<typeof setInterval> | null = null;
   private unsubscribeNative: (() => void) | null = null;
   private readonly lastReportedAt = new Map<string, number>();
+  /** Último reporte FULLSCREEN_EXIT (para no repetirlo cada pocos segundos). */
+  private lastFullscreenReportAt = 0;
 
   start(examId: string, attemptId: string): void {
     if (this.context) {
@@ -88,6 +106,7 @@ export class SafeguardMonitorService {
     this.sessionStarting = false;
     this.sessionRejected = false;
     this.lastReportedAt.clear();
+    this.lastFullscreenReportAt = 0;
     this.warningsTotal.set(0);
     this.heartbeatFailed.set(false);
     this.dispatcher.resume();
@@ -96,11 +115,19 @@ export class SafeguardMonitorService {
     // La protección arranca YA con la política estricta; la configuración del
     // servidor se aplica cuando llegue, así no hay una ventana sin protección.
     this.setConfig(DEFAULT_SAFEGUARD_CONFIG);
+    void this.sentinel.connectForExam().catch((err: unknown) =>
+      console.warn('Sentinel: no se pudo iniciar al comenzar el examen.', err),
+    );
     this.attachListeners();
     this.unsubscribeNative = this.platform.onNativeViolation((violation) =>
       this.report(violation.type, 'DETECTED', violation.detail),
     );
+    // Bloqueo nativo de atajos (Tauri): registra la lista actual restringida.
+    this.registerNativeShortcuts();
     this.activeState.set(true);
+    // El primer chequeo de pantalla completa se hace al llegar la configuración
+    // (para respetar requireFullscreen); este intervalo cubre el resto del examen.
+    this.fullscreenTimer = setInterval(() => this.checkFullscreen(), FULLSCREEN_CHECK_MS);
 
     this.platform.enterProtectedMode().catch((err: unknown) => console.warn('SafeGuard: modo protegido no disponible', err));
 
@@ -113,6 +140,9 @@ export class SafeguardMonitorService {
           return;
         }
         this.beginSessionAndHeartbeat(run);
+        // Con la política ya aplicada: si la ventana no está en pantalla completa
+        // (pantalla dividida, ventana suelta) se reporta de inmediato.
+        this.checkFullscreen();
       },
       error: (err: unknown) => {
         if (!this.isCurrent(run)) return;
@@ -125,6 +155,7 @@ export class SafeguardMonitorService {
         }
         console.warn('SafeGuard: no se pudo leer la configuración, se usa la política estricta por defecto.', err);
         this.beginSessionAndHeartbeat(run);
+        this.checkFullscreen(); // política estricta: pantalla completa exigida
       },
     });
   }
@@ -147,9 +178,14 @@ export class SafeguardMonitorService {
     this.clearHeartbeat();
     this.clearBlurTimer();
     this.clearWarningTimer();
+    this.clearFullscreenTimer();
+    this.clearDevtoolsTimer();
 
     this.dispatcher.finalize();
     if (sessionId) this.closeQuietly(sessionId);
+    // Sentinel también deja de recibir eventos (el WebSocket se desconecta
+    // al terminar el examen y se puede reabrir en el siguiente).
+    this.sentinel.disconnect().catch(() => undefined);
     this.platform.exitProtectedMode().catch((err: unknown) => console.warn('SafeGuard: no se pudo salir del modo protegido', err));
 
     this.activeState.set(false);
@@ -162,6 +198,19 @@ export class SafeguardMonitorService {
     this.currentWarning.set(null);
   }
 
+  /**
+   * Pone la ventana en pantalla completa (botón del aviso FULLSCREEN_EXIT).
+   * Se llama desde un clic, que es el único contexto donde el navegador acepta
+   * la petición; si la plataforma no la admite, el aviso sigue en pantalla.
+   */
+  requestFullscreen(): void {
+    const element = this.doc.documentElement;
+    if (typeof element.requestFullscreen !== 'function') return;
+    element.requestFullscreen().catch((err: unknown) => {
+      console.info('SafeGuard: el navegador no permitió activar pantalla completa', err);
+    });
+  }
+
   // ---- configuración, sesión y latido ----
 
   private setConfig(config: SafeguardConfig): void {
@@ -169,6 +218,18 @@ export class SafeguardMonitorService {
     this.restricted = new Set(
       config.restrictedShortcuts.map(normalizeShortcut).filter((shortcut): shortcut is string => shortcut !== null),
     );
+  }
+
+  /**
+   * En Tauri, además de bloquear los atajos en el DOM, se registran a nivel de
+   * app/global-shortcut del SO. En web no hay phase native: es un no-op.
+   */
+  private registerNativeShortcuts(): void {
+    if (this.platform.kind !== 'tauri') return;
+    const tauri = this.platform as TauriSafeguardPlatform;
+    for (const shortcut of DEFAULT_SAFEGUARD_CONFIG.restrictedShortcuts) {
+      void tauri.blockShortcut(shortcut);
+    }
   }
 
   private beginSessionAndHeartbeat(run: number): void {
@@ -257,6 +318,8 @@ export class SafeguardMonitorService {
     // blur va SIN capture: así solo llega el de la ventana y no el de cada campo de texto.
     win.addEventListener('blur', (event) => this.onWindowBlur(event, win), { signal: controller.signal });
     win.addEventListener('online', () => this.dispatcher.flushNow(), { signal: controller.signal });
+    // Salir de pantalla completa (F11, Esc, modo dividido) se reporta al instante.
+    this.doc.addEventListener('fullscreenchange', () => this.checkFullscreen(), capture);
 
     this.doc.addEventListener('copy', (event) => this.block(event, 'COPY_ATTEMPT', this.config.blockCopy), capture);
     this.doc.addEventListener('cut', (event) => this.block(event, 'CUT_ATTEMPT', this.config.blockCut), capture);
@@ -267,6 +330,38 @@ export class SafeguardMonitorService {
       capture,
     );
     this.doc.addEventListener('keydown', (event) => this.onKeyDown(event), capture);
+    // Impresión: beforeprint dispara con File→Print y con Ctrl+P del MENÚ del navegador
+    // (el atajo ya lo bloquea onKeyDown; esto cubre el camino que no pasa por el teclado).
+    this.doc.defaultView?.addEventListener('beforeprint', () => this.onBeforePrint(), { signal: controller.signal });
+    // Devtools: heurística de tamaño de ventana (diferencia outer-inner anómala).
+    this.startDevtoolsWatch(win);
+  }
+
+  private onBeforePrint(): void {
+    if (!this.config.blockPrint) return;
+    this.report('PRINT_ATTEMPT', 'BLOCKED');
+  }
+
+  /**
+   * Detecta devtools heurísticamente: cuando se abren acoplados, la diferencia entre
+   * outerWidth/innerWidth (barra del navegador, que normalmente es ~80 px) sube por encima
+   * del umbral, o outerHeight/innerHeight si están a la derecha. Es la mejor señal que
+   * existe en web sin APIs de depurador (Chrome no las ofrece a páginas normales).
+   */
+  private startDevtoolsWatch(win: Window): void {
+    if (!this.config.detectDevtools) return;
+    let lastDevtoolsReportAt = 0;
+    this.devtoolsTimer = setInterval(() => {
+      if (!this.context || !this.config.detectDevtools) return;
+      const widthDelta = win.outerWidth - win.innerWidth;
+      const heightDelta = win.outerHeight - win.innerHeight;
+      const open = widthDelta > DEVTOOLS_WIDTH_DELTA_PX || heightDelta > DEVTOOLS_HEIGHT_DELTA_PX;
+      if (!open) return;
+      const now = Date.now();
+      if (now - lastDevtoolsReportAt < DEVTOOLS_REPORT_MS) return;
+      lastDevtoolsReportAt = now;
+      this.report('DEVTOOLS_OPENED', 'DETECTED');
+    }, DEVTOOLS_REPORT_MS);
   }
 
   private onVisibilityChange(): void {
@@ -285,6 +380,25 @@ export class SafeguardMonitorService {
       if (!this.context || this.doc.hidden || this.doc.hasFocus()) return;
       this.report('WINDOW_BLUR', 'DETECTED');
     }, BLUR_CONFIRM_MS);
+  }
+
+  /**
+   * Exige pantalla completa cuando la política lo pide: una ventana en modo
+   * dividido o reducido (sin fullscreenElement) dispara FULLSCREEN_EXIT. Al
+   * volver a pantalla completa se restablece la cadencia del reporte.
+   */
+  private checkFullscreen(): void {
+    if (!this.context || !this.config.requireFullscreen) return;
+
+    if (this.doc.fullscreenElement) {
+      // Estaba en pantalla completa: la próxima salida se reporta sin esperar.
+      this.lastFullscreenReportAt = 0;
+      return;
+    }
+    const now = Date.now();
+    if (now - this.lastFullscreenReportAt < FULLSCREEN_REPORT_MS) return;
+    this.lastFullscreenReportAt = now;
+    this.report('FULLSCREEN_EXIT', 'DETECTED');
   }
 
   private block(event: Event, type: SafeguardEventType, enabled: boolean): void {
@@ -340,6 +454,7 @@ export class SafeguardMonitorService {
     // /sessions/start, se conservan localmente y se entregan apenas exista la sesión.
     if (this.sessionId) {
       this.dispatcher.enqueue(safeguardEvent);
+      this.publishToSentinel(context, safeguardEvent);
     } else {
       this.preSessionEvents.push(safeguardEvent);
       this.pendingBeforeSession.set(this.preSessionEvents.length);
@@ -356,7 +471,29 @@ export class SafeguardMonitorService {
 
     for (const event of pending) {
       this.dispatcher.enqueue({ ...event, sessionId });
+      this.publishToSentinel({ ...this.context! }, { ...event, sessionId });
     }
+  }
+
+  /**
+   * Segundo canal: envía el evento a Sentinel por STOMP para que agregue en ventana
+   * de tiempo y genere alertas (dedup en Redis). Es complementario al REST de
+   * SafeGuard; si falla no afecta al flujo principal.
+   */
+  private publishToSentinel(
+    context: { examId: string; attemptId: string },
+    event: SafeguardEventWithSessionId,
+  ): void {
+    const mapped = sentinelEventTypeOf(event.type);
+    if (!mapped) return;
+    void this.sentinel.publish({
+      // examSessionId es el id de la sesión de SafeGuard (única sesión activa por intento).
+      examSessionId: event.sessionId,
+      studentId: '',  // el backend lo toma del principal del JWT
+      attemptId: context.attemptId,
+      type: mapped,
+      occurredAt: event.occurredAt,
+    });
   }
 
   private showWarning(type: SafeguardEventType, detail?: string): void {
@@ -385,6 +522,20 @@ export class SafeguardMonitorService {
     if (this.warningTimer !== null) {
       clearTimeout(this.warningTimer);
       this.warningTimer = null;
+    }
+  }
+
+  private clearFullscreenTimer(): void {
+    if (this.fullscreenTimer !== null) {
+      clearInterval(this.fullscreenTimer);
+      this.fullscreenTimer = null;
+    }
+  }
+
+  private clearDevtoolsTimer(): void {
+    if (this.devtoolsTimer !== null) {
+      clearInterval(this.devtoolsTimer);
+      this.devtoolsTimer = null;
     }
   }
 }

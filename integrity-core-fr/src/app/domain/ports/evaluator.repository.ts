@@ -8,6 +8,7 @@ import {
   BackendExamResult,
   BackendEvaluationReview,
   BackendOpenEndedReview,
+  StudentExamHistoryEntry,
 } from '../models/evaluator/evaluator.model';
 import { AttemptExam } from '../models/evaluator/attempt-exam.model';
 
@@ -55,9 +56,13 @@ export abstract class EvaluatorRepository {
 
   abstract submitAttempt(attemptId: string): Observable<BackendExamAttempt>;
 
+  abstract revokeAttempt(attemptId: string): Observable<BackendExamAttempt>;
+
   abstract getExamResults(examId: string): Observable<BackendExamResult[]>;
 
   abstract getAttemptResult(attemptId: string): Observable<BackendExamResult>;
+
+  abstract getStudentExamHistory(): Observable<StudentExamHistoryEntry[]>;
 
   abstract getExamAverage(examId: string): Observable<BackendExamAverage>;
 

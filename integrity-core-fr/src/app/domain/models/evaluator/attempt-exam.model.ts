@@ -27,7 +27,9 @@ export interface AttemptExam {
   title: string;
   description: string | null;
   startedAt: string; // ISO-8601
+  durationMinutes: number;
   submitted: boolean;
+  integrityFailed: boolean;
   questions: AttemptExamQuestion[];
   answers: AttemptExamAnswer[];
 }

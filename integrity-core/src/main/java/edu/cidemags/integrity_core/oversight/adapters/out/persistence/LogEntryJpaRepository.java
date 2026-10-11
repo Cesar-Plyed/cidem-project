@@ -10,4 +10,6 @@ public interface LogEntryJpaRepository extends JpaRepository<LogEntryEntity, UUI
     List<LogEntryEntity> findByExamSessionId(UUID examSessionId);
 
     List<LogEntryEntity> findByAttemptId(UUID attemptId);
+
+    boolean existsByDedupKey(String dedupKey);
 }

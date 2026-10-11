@@ -10,6 +10,7 @@ public record OpenEndedReviewResponse(
         UUID questionId,
         String questionPrompt,
         String openTextAnswer,
+        Integer questionPoints,
         Integer score,
         String feedback,
         UUID reviewerId,

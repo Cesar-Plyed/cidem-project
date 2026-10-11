@@ -3,6 +3,7 @@ package edu.cidemags.integrity_core.evaluator.application.usecase;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamAverageResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamResultResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.PagedExamResultsResponse;
+import edu.cidemags.integrity_core.evaluator.application.dto.StudentExamHistoryResponse;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamNotFoundException;
 import edu.cidemags.integrity_core.evaluator.domain.model.EvaluationReview;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
@@ -18,16 +19,20 @@ import edu.cidemags.integrity_core.auth.domain.model.Phone;
 import edu.cidemags.integrity_core.auth.domain.model.User;
 import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 @Service
 public class GetExamResultUseCase {
@@ -87,6 +92,45 @@ public class GetExamResultUseCase {
                 .toList();
     }
 
+    public List<ExamResultResponse> executeLatestForExam(UUID examId, UUID requesterId, boolean administrator) {
+        if (examId == null || requesterId == null) {
+            throw new IllegalArgumentException("El examen y el usuario son obligatorios");
+        }
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ExamNotFoundException(examId));
+        if (!administrator && !exam.getCreatedByUserId().equals(requesterId)) {
+            throw new AccessDeniedException("No puedes consultar resultados de otro profesor");
+        }
+        return attemptRepository.findByExamId(examId).stream()
+                .collect(Collectors.toMap(
+                        ExamAttempt::getStudentId,
+                        attempt -> attempt,
+                        BinaryOperator.maxBy(Comparator.comparing(ExamAttempt::getStartedAt))))
+                .values().stream()
+                .map(attempt -> calculate(attempt, exam))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentExamHistoryResponse> executeStudentHistory(UUID studentId) {
+        if (studentId == null) {
+            throw new IllegalArgumentException("El estudiante es obligatorio");
+        }
+        return attemptRepository.findByStudentId(studentId).stream()
+                .filter(ExamAttempt::isSubmitted)
+                .map(attempt -> {
+                    Exam exam = examRepository.findById(attempt.getExamId())
+                            .orElseThrow(() -> new ExamNotFoundException(attempt.getExamId()));
+                    ExamResultResponse result = calculate(attempt, exam);
+                    return new StudentExamHistoryResponse(
+                            attempt.getId(), exam.getId(), exam.getTitle(), attempt.getStartedAt(),
+                            attempt.getSubmittedAt(), result.score(), result.maxScore(), result.pendingReview(),
+                            attempt.isIntegrityFailed());
+                })
+                .sorted(Comparator.comparing(StudentExamHistoryResponse::submittedAt).reversed())
+                .toList();
+    }
+
     public PagedExamResultsResponse executeForExamPage(UUID examId, UUID requesterId, boolean administrator,
             int page, int size) {
         if (page < 0 || size <= 0 || size > 200) {
@@ -106,7 +150,7 @@ public class GetExamResultUseCase {
                 .orElseThrow(() -> new ExamNotFoundException(examId));
 
         int totalAttempts = results.size();
-        int maxScore = exam.getQuestions().size();
+        int maxScore = exam.getTotalPoints();
         int pendingReviewCount = 0;
         double totalScore = 0;
 
@@ -149,10 +193,12 @@ public class GetExamResultUseCase {
             if (answer != null && question.getType() == QuestionType.OPEN_ENDED) {
                 var review = reviewRepository.findByAnswerId(answer.getId());
                 questionPending = review.isEmpty();
+                // La revisión ya viene validada contra los puntos de la pregunta al
+                // guardarla (ReviewOpenEndedAnswerUseCase); aquí solo se suma.
                 questionScore = review.map(EvaluationReview::getScore).orElse(0);
                 feedback = review.map(EvaluationReview::getFeedback).orElse(null);
             } else if (answer != null) {
-                questionScore = isCorrectlyAnswered(question, answer) ? 1 : 0;
+                questionScore = isCorrectlyAnswered(question, answer) ? question.getPoints() : 0;
             }
             score += questionScore;
             pendingReview = pendingReview || questionPending;
@@ -162,7 +208,8 @@ public class GetExamResultUseCase {
         StudentContact contact = resolveStudent(attempt.getStudentId());
         return new ExamResultResponse(attempt.getId(), exam.getId(), attempt.getStudentId(),
                 contact.email(), contact.firstName(), contact.lastName(), contact.phone(),
-                score, exam.getQuestions().size(), pendingReview, details);
+                attempt.isIntegrityFailed() ? 0 : score, exam.getTotalPoints(), pendingReview,
+                attempt.isIntegrityFailed(), details);
     }
 
     /** Puntúa una opción múltiple: solo suma si el conjunto seleccionado es exactamente el correcto. */
@@ -183,9 +230,10 @@ public class GetExamResultUseCase {
                 .toList();
         List<UUID> selectedIds = answer != null ? answer.getSelectedOptionIds() : List.of();
         String openText = answer != null ? answer.getOpenTextAnswer() : null;
-        return new ExamResultResponse.QuestionResult(question.getId(), question.getPrompt(),
+        UUID answerId = answer != null ? answer.getId() : null;
+        return new ExamResultResponse.QuestionResult(question.getId(), answerId, question.getPrompt(),
                 question.getType(), selectedIds, openText, optionDetails,
-                answer != null, questionScore, questionPending, feedback);
+                answer != null, questionScore, question.getPoints(), questionPending, feedback);
     }
 
     /** Datos de contacto del alumno; el intento puede pertenecer a un usuario ya borrado. */

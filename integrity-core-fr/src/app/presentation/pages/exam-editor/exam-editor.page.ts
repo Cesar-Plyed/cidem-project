@@ -72,6 +72,22 @@ export class ExamEditorPage implements OnInit {
     return this.form.controls.questions;
   }
 
+  /** Tope total de puntos del examen: la nota se expresa sobre 10. */
+  readonly maxTotalPoints = 10;
+
+  /** Suma de los puntos de todas las preguntas (para el indicador "Total: X / 10"). */
+  get totalPoints(): number {
+    return this.questions.controls.reduce((sum, group) => {
+      const value = Number(group.get('points')?.value);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }
+
+  /** true cuando la suma de puntos se pasa del tope de 10. */
+  get exceedsTotalPoints(): boolean {
+    return this.totalPoints > this.maxTotalPoints;
+  }
+
   get title() {
     return this.form.controls.title;
   }
@@ -152,7 +168,7 @@ export class ExamEditorPage implements OnInit {
       id: [crypto.randomUUID()],
       type: [type, Validators.required],
       statement: ['', Validators.required],
-      points: [1, [Validators.required, Validators.min(1)]],
+      points: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
       correctOptionId: [null as string | null],
       options: this.fb.array<FormGroup>(
         type === QuestionType.MULTIPLE_CHOICE
@@ -248,6 +264,13 @@ export class ExamEditorPage implements OnInit {
     if (missingCorrectAnswer) {
       this.errorMessage.set(
         'Marca la respuesta correcta en cada pregunta de opción múltiple.',
+      );
+      return;
+    }
+
+    if (this.exceedsTotalPoints) {
+      this.errorMessage.set(
+        `La suma de puntos del examen no puede exceder ${this.maxTotalPoints} (llevas ${this.totalPoints}).`,
       );
       return;
     }

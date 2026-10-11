@@ -233,4 +233,50 @@ class GetExamResultUseCaseTest {
         assertThrows(AccessDeniedException.class,
                 () -> useCase.execute(attemptId, UUID.randomUUID(), false));
     }
+
+    @Test
+    void scoresByQuestionPointsAndCapsMaxScoreAtThePointsSum() {
+        ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
+        ExamRepository exams = mock(ExamRepository.class);
+        ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
+        EvaluationReviewRepository reviews = mock(EvaluationReviewRepository.class);
+        UserRepository users = mock(UserRepository.class);
+        GetExamResultUseCase useCase = new GetExamResultUseCase(attempts, exams, answers, reviews, users);
+
+        UUID attemptId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID correctOptionId = UUID.randomUUID();
+        UUID openQuestionId = UUID.randomUUID();
+
+        // Examen de 10 puntos: una cerrada de 4 y una abierta de 6.
+        Question choice = new Question(UUID.randomUUID(), "2 + 2", QuestionType.SINGLE_CHOICE,
+                List.of(new QuestionOption(correctOptionId, "4", true), new QuestionOption(UUID.randomUUID(), "5", false)),
+                null, 4);
+        Question open = new Question(openQuestionId, "Explica", QuestionType.OPEN_ENDED, List.of(), null, 6);
+        Exam exam = new Exam(examId, "Matematicas", null, UUID.randomUUID(), OffsetDateTime.now(),
+                List.of(choice, open), ExamStatus.PUBLISHED);
+        ExamAttempt attempt = new ExamAttempt(attemptId, examId, studentId, OffsetDateTime.now(), null, true);
+        UUID openAnswerId = UUID.randomUUID();
+
+        when(attempts.findById(attemptId)).thenReturn(Optional.of(attempt));
+        when(exams.findById(examId)).thenReturn(Optional.of(exam));
+        when(answers.findByAttemptId(attemptId)).thenReturn(List.of(
+                new ExamAnswer(UUID.randomUUID(), attemptId, choice.getId(), List.of(correctOptionId), null),
+                new ExamAnswer(openAnswerId, attemptId, openQuestionId, List.of(), "texto")));
+        when(reviews.findByAnswerId(openAnswerId)).thenReturn(
+                Optional.of(new EvaluationReview(UUID.randomUUID(), openAnswerId, UUID.randomUUID(), 4,
+                        "ok", OffsetDateTime.now(), OffsetDateTime.now())));
+
+        var result = useCase.execute(attemptId, studentId, false);
+
+        // 4 puntos por el acierto + 4 de la revisión = 8 sobre un máximo de 10.
+        assertEquals(10, result.maxScore());
+        assertEquals(8, result.score());
+        assertEquals(4, result.questions().get(0).score());
+        assertEquals(4, result.questions().get(0).points());
+        assertEquals(4, result.questions().get(1).score());
+        assertEquals(6, result.questions().get(1).points());
+        assertEquals(openAnswerId, result.questions().get(1).answerId());
+    }
 }

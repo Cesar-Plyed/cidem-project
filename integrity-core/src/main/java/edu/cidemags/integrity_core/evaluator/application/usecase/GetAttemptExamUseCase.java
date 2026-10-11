@@ -66,6 +66,7 @@ public class GetAttemptExamUseCase {
                 .toList();
 
         return new AttemptExamResponse(attempt.getId(), exam.getId(), exam.getTitle(), exam.getDescription(),
-                attempt.getStartedAt(), attempt.isSubmitted(), questions, answers);
+                attempt.getStartedAt(), exam.getDurationMinutes(), attempt.isSubmitted(),
+                attempt.isIntegrityFailed(), questions, answers);
     }
 }

@@ -6,6 +6,7 @@ import {
   IonRefresher,
   IonRefresherContent,
   RefresherCustomEvent,
+  AlertController,
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -36,6 +37,8 @@ import { GetExamTimelineUseCase } from '../../../application/use-cases/oversight
 import { GetAttemptIntegrityUseCase } from '../../../application/use-cases/oversight/get-attempt-integrity.use-case';
 import { GetExamAverageUseCase } from '../../../application/use-cases/evaluator/get-exam-average.use-case';
 import { GetExamResultsUseCase } from '../../../application/use-cases/evaluator/get-exam-results.use-case';
+import { RevokeExamAttemptUseCase } from '../../../application/use-cases/evaluator/revoke-exam-attempt.use-case';
+import { OversightStompService } from '../../../infrastructure/http/oversight-stomp.service';
 import {
   ExamIntegritySummary,
   LogEntry,
@@ -69,6 +72,9 @@ export class OversightPage implements OnInit, OnDestroy {
   private readonly getAttemptIntegrity = inject(GetAttemptIntegrityUseCase);
   private readonly getExamAverage = inject(GetExamAverageUseCase);
   private readonly getExamResults = inject(GetExamResultsUseCase);
+  private readonly revokeExamAttempt = inject(RevokeExamAttemptUseCase);
+  private readonly oversightStomp = inject(OversightStompService);
+  private readonly alertController = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
 
   // State
@@ -86,6 +92,8 @@ export class OversightPage implements OnInit, OnDestroy {
   isLoading = signal<boolean>(false);
   lastRefresh = signal<Date | null>(null);
   autoRefreshSub: Subscription | null = null;
+  private stopRealtime: (() => void) | null = null;
+  readonly revokingAttemptId = signal<string | null>(null);
 
   // Computed
   examTitle = computed(() => this.examAverage()?.examTitle ?? '');
@@ -245,6 +253,8 @@ export class OversightPage implements OnInit, OnDestroy {
       const id = params.get('examId');
       if (id) {
         this.examId.set(id);
+        this.stopRealtime?.();
+        this.stopRealtime = this.oversightStomp.subscribeToExam(id, () => this.loadData());
         this.loadData();
         this.startAutoRefresh();
       }
@@ -253,6 +263,8 @@ export class OversightPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopAutoRefresh();
+    this.stopRealtime?.();
+    this.stopRealtime = null;
   }
 
   private startAutoRefresh() {
@@ -370,6 +382,36 @@ export class OversightPage implements OnInit, OnDestroy {
 
   closeAttemptDetail(): void {
     this.selectedAttempt.set(null);
+  }
+
+  async requestRevokeAttempt(attemptId: string): Promise<void> {
+    if (this.revokingAttemptId()) return;
+    const alert = await this.alertController.create({
+      header: 'Revocar intento',
+      message: 'El intento se cerrará inmediatamente y quedará reprobado. Esta acción no se puede deshacer.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Revocar y reprobar', role: 'destructive', handler: () => this.revokeAttemptNow(attemptId) },
+      ],
+    });
+    await alert.present();
+  }
+
+  private revokeAttemptNow(attemptId: string): void {
+    if (this.revokingAttemptId()) return;
+    this.revokingAttemptId.set(attemptId);
+    this.revokeExamAttempt.execute(attemptId).subscribe({
+      next: () => {
+        this.revokingAttemptId.set(null);
+        this.showToast('El intento fue revocado y quedó reprobado.', 'success');
+        this.loadData();
+      },
+      error: (err: unknown) => {
+        console.error('Error al revocar el intento:', err);
+        this.revokingAttemptId.set(null);
+        this.showToast('No se pudo revocar el intento.', 'danger');
+      },
+    });
   }
 
   getRiskColor(riskLevel: RiskLevel): 'success' | 'warning' | 'danger' | 'secondary' {

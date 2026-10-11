@@ -165,7 +165,7 @@ export class ExamListPage implements OnInit {
   async confirmDelete(exam: Exam): Promise<void> {
     const alert = await this.alertController.create({
       header: 'Eliminar examen',
-      message: `¿Seguro que quieres eliminar "${exam.title}"? Esta acción no se puede deshacer.`,
+      message: `¿Seguro que quieres eliminar "${exam.title}"? Se eliminará aunque esté publicado, siempre que ningún alumno haya iniciado un intento. Esta acción no se puede deshacer.`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         { text: 'Eliminar', role: 'destructive', handler: () => this.deleteExam(exam.id) },
@@ -177,8 +177,13 @@ export class ExamListPage implements OnInit {
   private deleteExam(id: string): void {
     this.deleteExamUseCase.execute(id).subscribe({
       next: () => this.loadExams(),
-      error: (err: HttpErrorResponse) =>
-        this.errorMessage.set(`No se pudo eliminar el examen (HTTP ${err.status}).`),
+      error: (err: HttpErrorResponse) => {
+        console.error('Error al eliminar el examen', err.status, err.error);
+        const detail = (err.error as { message?: string } | null)?.message;
+        this.errorMessage.set(
+          `No se pudo eliminar el examen (HTTP ${err.status}).${detail ? ' ' + detail : ''}`,
+        );
+      },
     });
   }
 

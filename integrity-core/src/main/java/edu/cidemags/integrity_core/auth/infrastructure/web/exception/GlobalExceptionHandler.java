@@ -20,6 +20,7 @@ import edu.cidemags.integrity_core.auth.domain.exception.InvalidRoleAssignmentEx
 import edu.cidemags.integrity_core.auth.domain.exception.UserNotFoundException;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.ErrorResponse;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAccessCodeNotFoundException;
+import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAlreadyAttemptedException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamClosedException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamNotFoundException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.QuestionBankNotFoundException;
@@ -64,6 +65,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExamClosedException.class)
     public ResponseEntity<ErrorResponse> handleClosedExam(ExamClosedException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(ExamAlreadyAttemptedException.class)
+    public ResponseEntity<ErrorResponse> handleExamAlreadyAttempted(ExamAlreadyAttemptedException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 

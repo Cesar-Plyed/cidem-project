@@ -45,4 +45,13 @@ public class JdbcExamAttemptAdapter implements ExamAttemptPort {
                 Boolean.class, examId, studentId);
         return Boolean.TRUE.equals(exists);
     }
+
+    @Override
+    public void failAttemptForIntegrity(UUID attemptId) {
+        jdbc.update(
+                "UPDATE exam_attempts SET submitted = TRUE, "
+                        + "submitted_at = COALESCE(submitted_at, CURRENT_TIMESTAMP), integrity_failed = TRUE "
+                        + "WHERE id = ?",
+                attemptId);
+    }
 }

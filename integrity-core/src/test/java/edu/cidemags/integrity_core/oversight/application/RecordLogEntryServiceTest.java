@@ -11,6 +11,7 @@ import edu.cidemags.integrity_core.sentinel.domain.StudentId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -37,7 +38,8 @@ class RecordLogEntryServiceTest {
         snapshotRepository = mock(IntegritySnapshotRepositoryPort.class);
         scoringPolicy = new IntegrityScoringPolicy();
 
-        service = new RecordLogEntryService(logEntryRepository, snapshotRepository, scoringPolicy);
+        service = new RecordLogEntryService(
+                logEntryRepository, snapshotRepository, scoringPolicy, mock(ApplicationEventPublisher.class));
     }
 
     private RecordLogEntryCommand command(AlertSeverity severity) {
@@ -73,12 +75,13 @@ class RecordLogEntryServiceTest {
 
     @Test
     void shouldSaveLogEntryWithCorrectFields() {
-        when(snapshotRepository.findByAttemptId(any())).thenReturn(Optional.empty());
+        when(logEntryRepository.existsByDedupKey(any())).thenReturn(false);
+        when(snapshotRepository.findByAttemptIdForUpdate(any())).thenReturn(Optional.empty());
 
         service.record(command(AlertSeverity.LOW));
 
         ArgumentCaptor<LogEntry> captor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(logEntryRepository).save(captor.capture());
+        verify(logEntryRepository).save(captor.capture(), any());
 
         LogEntry saved = captor.getValue();
         assertThat(saved.examSessionId().value()).isEqualTo(examSessionId);
@@ -86,6 +89,26 @@ class RecordLogEntryServiceTest {
         assertThat(saved.attemptId().value()).isEqualTo(attemptId);
         assertThat(saved.source()).isEqualTo(LogSource.SENTINEL);
         assertThat(saved.severity()).isEqualTo(AlertSeverity.LOW);
+    }
+
+    @Test
+    void shouldSkipPenaltyWhenSameEventArrivesTwice() {
+        // El mismo hecho lógico (attempt+source+severity+descripción+segundo) ya
+        // fue registrado (SafeGuard REST): la alerta duplicada de Sentinel por WS
+        // NO penaliza de nuevo el índice.
+        String key = "huella-repetida";
+        when(logEntryRepository.existsByDedupKey(any())).thenReturn(true);
+        IntegritySnapshot existing = new IntegritySnapshot(
+            UUID.randomUUID(), new ExamSessionId(examSessionId), new StudentId(studentId), new AttemptId(attemptId),
+            85, RiskLevel.LOW, Instant.now()
+        );
+        when(snapshotRepository.findByAttemptIdForUpdate(any())).thenReturn(Optional.of(existing));
+
+        IntegritySnapshot result = service.record(command(AlertSeverity.LOW));
+
+        verify(logEntryRepository, never()).save(any(LogEntry.class), any());
+        verify(snapshotRepository, never()).save(any());
+        assertThat(result.score()).isEqualTo(85); // sin penalización adicional
     }
 
     @Test

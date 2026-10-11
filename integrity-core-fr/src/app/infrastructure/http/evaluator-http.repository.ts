@@ -12,6 +12,7 @@ import {
   BackendExamResult,
   BackendEvaluationReview,
   BackendOpenEndedReview,
+  StudentExamHistoryEntry,
 } from '../../domain/models/evaluator/evaluator.model';
 import { AttemptExam } from '../../domain/models/evaluator/attempt-exam.model';
 
@@ -90,12 +91,20 @@ export class EvaluatorHttpRepository extends EvaluatorRepository {
     return this.http.post<BackendExamAttempt>(`${this.baseUrl}/attempts/${attemptId}/submit`, null);
   }
 
+  revokeAttempt(attemptId: string): Observable<BackendExamAttempt> {
+    return this.http.post<BackendExamAttempt>(`${this.baseUrl}/attempts/${attemptId}/revoke`, null);
+  }
+
   getExamResults(examId: string): Observable<BackendExamResult[]> {
     return this.http.get<BackendExamResult[]>(`${this.baseUrl}/exams/${examId}/results`);
   }
 
   getAttemptResult(attemptId: string): Observable<BackendExamResult> {
     return this.http.get<BackendExamResult>(`${this.baseUrl}/attempts/${attemptId}/result`);
+  }
+
+  getStudentExamHistory(): Observable<StudentExamHistoryEntry[]> {
+    return this.http.get<StudentExamHistoryEntry[]>(`${this.baseUrl}/attempts/history`);
   }
 
   getExamAverage(examId: string): Observable<BackendExamAverage> {

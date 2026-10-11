@@ -52,7 +52,9 @@ interface BackendHeartbeatRequest {
 type BackendSafeguardEventType =
   | 'TAB_SWITCH'
   | 'WINDOW_BLUR'
+  | 'FULLSCREEN_EXIT'
   | 'COPY_PASTE'
+  | 'DEVTOOLS_OPENED'
   | 'RIGHT_CLICK'
   | 'SUSPICIOUS_ACTIVITY';
 
@@ -153,6 +155,8 @@ export function normalizeConfig(
     restrictedShortcuts: [...base.restrictedShortcuts],
     eventThrottleMs: base.eventThrottleMs,
     heartbeatIntervalSeconds: base.heartbeatIntervalSeconds,
+    detectDevtools: base.detectDevtools,
+    blockPrint: base.blockPrint,
   };
 }
 
@@ -162,6 +166,8 @@ export function mapEventType(type: SafeguardEvent['type']): BackendSafeguardEven
       return 'TAB_SWITCH';
     case 'WINDOW_BLUR':
       return 'WINDOW_BLUR';
+    case 'FULLSCREEN_EXIT':
+      return 'FULLSCREEN_EXIT';
     case 'COPY_ATTEMPT':
     case 'CUT_ATTEMPT':
     case 'PASTE_ATTEMPT':
@@ -170,6 +176,12 @@ export function mapEventType(type: SafeguardEvent['type']): BackendSafeguardEven
       return 'RIGHT_CLICK';
     case 'RESTRICTED_SHORTCUT':
       return 'SUSPICIOUS_ACTIVITY';
+    case 'DEVTOOLS_OPENED':
+      return 'DEVTOOLS_OPENED';
+    case 'PRINT_ATTEMPT':
+      return 'SUSPICIOUS_ACTIVITY';
+    case 'NATIVE_WINDOW_SWITCH':
+      return 'TAB_SWITCH';
   }
 }
 

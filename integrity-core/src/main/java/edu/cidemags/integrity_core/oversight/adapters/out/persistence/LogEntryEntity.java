@@ -45,6 +45,10 @@ public class LogEntryEntity {
     @Column(name = "recorded_at", nullable = false)
     private Instant recordedAt;
 
+    /** Huella del hecho lógico (attempt+source+severity+description+occurred_at): dedup entre canales. */
+    @Column(name = "dedup_key", length = 120)
+    private String dedupKey;
+
     protected LogEntryEntity() {
     }
 
@@ -61,6 +65,13 @@ public class LogEntryEntity {
         this.recordedAt = recordedAt;
     }
 
+    public LogEntryEntity(UUID id, UUID examSessionId, UUID studentId, UUID attemptId, LogSource source,
+                           AlertSeverity severity, String description, Instant occurredAt, Instant recordedAt,
+                           String dedupKey) {
+        this(id, examSessionId, studentId, attemptId, source, severity, description, occurredAt, recordedAt);
+        this.dedupKey = dedupKey;
+    }
+
     public UUID getId() { return id; }
     public UUID getExamSessionId() { return examSessionId; }
     public UUID getStudentId() { return studentId; }
@@ -70,4 +81,5 @@ public class LogEntryEntity {
     public String getDescription() { return description; }
     public Instant getOccurredAt() { return occurredAt; }
     public Instant getRecordedAt() { return recordedAt; }
+    public String getDedupKey() { return dedupKey; }
 }

@@ -125,6 +125,7 @@ public class ListOpenEndedReviewsUseCase {
                 question.getId(),
                 question.getPrompt(),
                 answer.getOpenTextAnswer(),
+                question.getPoints(),
                 review != null ? review.getScore() : null,
                 review != null ? review.getFeedback() : null,
                 review != null ? review.getReviewerId() : null,
