@@ -1,6 +1,6 @@
 {
   "installCommand": "npm ci",
-  "buildCommand": "node scripts/set-api-url.js && npm run build",
+  "buildCommand": "node scripts/set-api-url.js && npm run build -- --configuration production",
   "outputDirectory": "www",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

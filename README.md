@@ -127,3 +127,14 @@ http://localhost:8080
 ```
 
 El endpoint publico de paises es `GET /auth/countries`. La documentacion OpenAPI, si esta habilitada, esta disponible en `/swagger-ui/index.html`.
+
+## Despliegue del frontend en Vercel
+
+El frontend se despliega como sitio estatico independiente; el backend Spring Boot, PostgreSQL y Redis deben estar desplegados y ser accesibles por HTTPS en otro servicio.
+
+1. Importa este repositorio en Vercel y configura **Root Directory** como `integrity-core-fr`.
+2. Conserva los comandos y la salida definidos en `integrity-core-fr/vercel.json`: `npm ci`, build de produccion y directorio `www/`. Las reescrituras SPA permiten que las rutas Angular funcionen al recargar.
+3. Configura la variable de entorno `API_URL` en Vercel para Preview y Production con la URL HTTPS publica del backend (sin barra final). El build falla si falta o si no usa HTTPS, en vez de publicar una app apuntando a localhost.
+4. En el servicio del backend, configura `CORS_ALLOWED_ORIGINS` con los origenes de Vercel permitidos (dominio de produccion y, si aplica, dominio Preview). No uses `*` con autenticacion por credenciales.
+
+El workflow de GitHub Actions en `.github/workflows/ci.yml` sigue ejecutando tests, lint y builds de backend/frontend en push a `main` y en Pull Requests. No hace un segundo deploy: al conectar el proyecto Vercel con GitHub, Vercel crea Preview Deployments para Pull Requests y Production Deployments desde `main`; usa los checks de GitHub como proteccion de despliegue si se requiere que CI pase antes de publicar. El primer enlace del repositorio y la configuracion de variables se completan en el panel de Vercel; no se guardan tokens ni IDs de proyecto en Git.
