@@ -7,7 +7,7 @@
     "frontendDist": "../www",
     "devUrl": "http://localhost:4200",
     "beforeDevCommand": "npm start",
-    "beforeBuildCommand": "npm run build -- --configuration production"
+    "beforeBuildCommand": "node scripts/set-api-url.js && npm run build -- --configuration production"
   },
   "app": {
     "windows": [

@@ -109,5 +109,10 @@ jobs:
           API_URL: https://api.ci.invalid
         run: node scripts/set-api-url.js && npm run build -- --configuration production
 
+      - name: Restaurar API_URL local antes de construir la imagen Docker
+        env:
+          API_URL: http://localhost:8080
+        run: node scripts/set-api-url.js
+
       - name: Verificar que la imagen Docker construye
         run: docker build -t integrity-core-fr:ci .
