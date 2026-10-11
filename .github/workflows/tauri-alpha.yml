@@ -1,0 +1,152 @@
+name: Tauri Alpha Release
+
+on:
+  push:
+    tags:
+      - 'v*-alpha*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tauri-alpha-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate alpha source
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 24 + caché de npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: integrity-core-fr/package-lock.json
+
+      - name: Instalar dependencias del frontend
+        working-directory: integrity-core-fr
+        run: npm ci
+
+      - name: Validar API_URL y lint del frontend
+        working-directory: integrity-core-fr
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [[ -z "$API_URL" ]]; then
+            echo "::error::Configura la variable de repositorio API_URL con la misma URL HTTPS del backend que usa Vercel."
+            exit 1
+          fi
+          node scripts/set-api-url.js
+          node scripts/set-tauri-csp.js
+          npm run lint
+
+      - name: Java 25 (Temurin) + caché de Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: integrity-core/pom.xml
+
+      - name: Permiso de ejecución para mvnw
+        working-directory: integrity-core
+        run: chmod +x mvnw
+
+      - name: Verificar backend
+        working-directory: integrity-core
+        env:
+          JWT_SECRET: ci-only-jwt-secret-with-at-least-32-characters
+          ADMIN_REGISTRATION_CODE: ci-admin-code
+          PROFESOR_REGISTRATION_CODE: ci-profesor-code
+        run: ./mvnw -B --no-transfer-progress verify
+
+  release:
+    name: Alpha (${{ matrix.name }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            platform: ubuntu-22.04
+            args: ''
+          - name: Windows
+            platform: windows-latest
+            args: ''
+          - name: macOS Apple Silicon
+            platform: macos-latest
+            target: aarch64-apple-darwin
+            args: '--target aarch64-apple-darwin'
+          - name: macOS Intel
+            platform: macos-latest
+            target: x86_64-apple-darwin
+            args: '--target x86_64-apple-darwin'
+    runs-on: ${{ matrix.platform }}
+    defaults:
+      run:
+        working-directory: integrity-core-fr
+    env:
+      API_URL: ${{ vars.API_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 24 + caché de npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: integrity-core-fr/package-lock.json
+
+      - name: Instalar dependencias de Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential file libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf rpm xdg-utils
+
+      - name: Instalar dependencias del frontend
+        run: npm ci
+
+      - name: Validar backend y generar CSP para Tauri
+        shell: bash
+        run: |
+          if [[ -z "$API_URL" ]]; then
+            echo "::error::Configura la variable de repositorio API_URL con la misma URL HTTPS del backend que usa Vercel."
+            exit 1
+          fi
+          node scripts/set-api-url.js
+          node scripts/set-tauri-csp.js
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Caché de Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: integrity-core-fr/src-tauri -> target
+
+      - name: Crear release alpha y adjuntar instaladores
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: integrity-core-fr
+          tauriScript: npx tauri
+          args: ${{ matrix.args }} --config tauri.alpha.conf.json
+          tagName: ${{ github.ref_name }}
+          releaseName: CIDEM Integrity ${{ github.ref_name }} (Alpha)
+          releaseBody: |
+            Version alpha de CIDEM Integrity.
+
+            Los instaladores se conectan al backend configurado en `API_URL` al momento de compilar.
+            Consulta las notas del release y el README para los requisitos de instalacion de cada plataforma.
+          releaseDraft: false
+          prerelease: true
+          generateReleaseNotes: true

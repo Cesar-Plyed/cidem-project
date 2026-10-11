@@ -138,3 +138,16 @@ El frontend se despliega como sitio estatico independiente; el backend Spring Bo
 4. En el servicio del backend, configura `CORS_ALLOWED_ORIGINS` con los origenes de Vercel permitidos (dominio de produccion y, si aplica, dominio Preview). No uses `*` con autenticacion por credenciales.
 
 El workflow de GitHub Actions en `.github/workflows/ci.yml` sigue ejecutando tests, lint y builds de backend/frontend en push a `main` y en Pull Requests. No hace un segundo deploy: al conectar el proyecto Vercel con GitHub, Vercel crea Preview Deployments para Pull Requests y Production Deployments desde `main`; usa los checks de GitHub como proteccion de despliegue si se requiere que CI pase antes de publicar. El primer enlace del repositorio y la configuracion de variables se completan en el panel de Vercel; no se guardan tokens ni IDs de proyecto en Git.
+
+## Releases alpha de Tauri
+
+El workflow `.github/workflows/tauri-alpha.yml` primero valida el backend con `verify` y ejecuta lint, luego compila instaladores para Linux, Windows, macOS Apple Silicon y macOS Intel y los publica como GitHub Pre-release al subir un tag con formato `v*-alpha*` (por ejemplo, `v0.1.0-alpha.1`). Antes, configura la variable de repositorio `API_URL` en **Settings → Secrets and variables → Actions → Variables** con la misma URL HTTPS del backend que se usa en Vercel. No es un secreto; el endpoint queda incorporado en la aplicación.
+
+El workflow exige esa variable, genera un CSP que solo permite conexiones HTTPS/WSS al origen configurado (además de localhost para desarrollo) y después compila Tauri. Para crear una alpha:
+
+```bash
+git tag v0.1.0-alpha.1
+git push origin v0.1.0-alpha.1
+```
+
+Configura `CORS_ALLOWED_ORIGINS` en el backend para aceptar los origenes del frontend web y de Tauri (`tauri://localhost` y `http://tauri.localhost` cuando aplique). `GITHUB_TOKEN` lo proporciona Actions automáticamente para publicar los assets; no requiere un token personal.
