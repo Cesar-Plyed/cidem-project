@@ -12,9 +12,17 @@ import java.io.IOException;
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final InMemoryRateLimiter rateLimiter;
+    private final boolean trustProxyHeader;
 
-    public RateLimitingFilter(InMemoryRateLimiter rateLimiter) {
+    /**
+     * @param trustProxyHeader si es true se toma el cliente real del header
+     *        X-Forwarded-For. Solo debe activarse detrás de un proxy que
+     *        sobrescriba el header: si no, cualquier cliente puede rotar el
+     *        header y evadir el limite por completo.
+     */
+    public RateLimitingFilter(InMemoryRateLimiter rateLimiter, boolean trustProxyHeader) {
         this.rateLimiter = rateLimiter;
+        this.trustProxyHeader = trustProxyHeader;
     }
 
     @Override
@@ -37,9 +45,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
+        if (trustProxyHeader) {
+            String forwardedFor = request.getHeader("X-Forwarded-For");
+            if (forwardedFor != null && !forwardedFor.isBlank()) {
+                return forwardedFor.split(",")[0].trim();
+            }
         }
         return request.getRemoteAddr();
     }

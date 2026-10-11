@@ -1,37 +1,290 @@
 /*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
+ * Capa final de estilo de la app (gana sobre Ionic y Bootstrap).
+ *
+ * Orden de carga declarado en angular.json → "styles":
+ *   1. Tipografías (@fontsource)
+ *   2. src/theme/ionic.scss      — CSS base de Ionic
+ *   3. src/theme/bootstrap.scss  — Bootstrap 5 con la paleta Ocean Depths
+ *   4. src/theme/variables.scss  — tokens del tema (pisan Ionic)
+ *   5. src/global.scss (este)    — estilo específico de la app
+ *
+ * Regla: este archivo solo contiene estilos de app; no se importa CSS de
+ * frameworks aquí (eso vive en src/theme/).
  */
 
-/* Core CSS required for Ionic components to work properly */
-@import "@ionic/angular/css/core.css";
+/* ==========================================================================
+   Base
+   ========================================================================== */
 
-/* Basic CSS for apps built with Ionic */
-@import "@ionic/angular/css/normalize.css";
-@import "@ionic/angular/css/structure.css";
-@import "@ionic/angular/css/typography.css";
-@import "@ionic/angular/css/display.css";
+:root {
+  color-scheme: light;
+}
 
-/* Optional CSS utils that can be commented out */
-@import "@ionic/angular/css/padding.css";
-@import "@ionic/angular/css/float-elements.css";
-@import "@ionic/angular/css/text-alignment.css";
-@import "@ionic/angular/css/text-transformation.css";
-@import "@ionic/angular/css/flex-utils.css";
+html {
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+}
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
+/* --- Tipografía: escala deliberada, títulos en Fraunces ------------------- */
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ocean-navy);
+}
+
+h1,
+.h1 {
+  font-size: clamp(1.75rem, 1.45rem + 1.4vw, 2.25rem);
+  line-height: 1.15;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+h2,
+.h2 {
+  font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.625rem);
+  line-height: 1.2;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+h3,
+.h3 {
+  font-size: 1.1875rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* --- Enlaces: teal oscuro (5.5:1 sobre cream) ---------------------------- */
+
+a {
+  color: var(--ocean-teal-ink);
+  text-decoration: none;
+  transition: color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: #145151;
+    text-decoration: underline;
+  }
+}
+
+/* --- Contenedores de página ---------------------------------------------- */
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-narrow {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.page-heading {
+  margin-bottom: 1.5rem;
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ocean-teal-ink);
+    margin-bottom: 0.375rem;
+  }
+
+  p {
+    color: #4a5768;
+    margin-bottom: 0;
+  }
+}
+
+/* --- Tarjetas ------------------------------------------------------------- */
+
+.card {
+  background-color: #ffffff;
+  border: 1px solid var(--ion-border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(26, 35, 50, 0.05);
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* Tarjetas de dashboard/hint: estaban solo en home.page.scss (scoped), así
+   que en exam-list y evaluator-demo la clase no aplicaba. */
+.dashboard-card {
+  padding: 4px;
+}
+
+.dashboard-card__hint {
+  margin-bottom: 16px;
+  color: #4a5768;
+  font-size: 15px;
+}
+
+/* --- Formularios ---------------------------------------------------------- */
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--ocean-navy);
+  margin-bottom: 0.375rem;
+}
+
+.form-control,
+.form-select {
+  min-height: 2.75rem;
+  border-color: #c5d4d3;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+
+  &:focus {
+    border-color: var(--ocean-teal);
+    box-shadow: 0 0 0 0.2rem rgba(45, 139, 139, 0.25);
+  }
+
+  &::placeholder {
+    color: #7d8b99;
+  }
+}
+
+.form-text {
+  color: #4a5768;
+}
+
+/* --- Contraste AA --------------------------------------------------------- */
+/* Auditoría H2: .text-secondary de Bootstrap toma $secondary (teal #2d8b8b),
+   que da 3.79:1 sobre el fondo cream — insuficiente para texto normal (4.5:1).
+   Se reutiliza el mismo gris azulado de .form-text: 6.9:1 sobre #f1faee. */
+.text-secondary {
+  color: #4a5768 !important;
+}
+
+/* Auditoría de contraste (SonarQube/UX): .btn-outline-secondary pinta el
+   texto con $secondary (teal #2d8b8b) = 3.80:1 sobre cream — no llega a 4.5:1.
+   Con teal-ink (#1f6f6f) el texto queda en 5.9:1 y el hover en blanco sobre
+   teal-ink, también 5.9:1. Bootstrap no usa !important en estas reglas y
+   global.scss va después en el orden de estilos, así que basta con declarar. */
+.btn-outline-secondary {
+  color: var(--ocean-teal-ink);
+
+  &:hover,
+  &:focus-visible,
+  &:active,
+  &.show {
+    color: #fff;
+    background: var(--ocean-teal-ink);
+    border-color: var(--ocean-teal-ink);
+  }
+}
+
+/* --- Errores de campo ----------------------------------------------------- */
+
+.field-error {
+  display: block;
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ocean-danger);
+}
+
+/* --- Layout de autenticación (login / registro) --------------------------- */
+
+.auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 24px 16px;
+}
+
+.auth__card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.auth__mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-tertiary);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.auth__name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+.auth__title {
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.auth__subtitle {
+  margin-bottom: 24px;
+  color: #4a5768;
+  font-size: 15px;
+  text-align: center;
+}
+
+.auth__link {
+  margin: 20px 0 0;
+  color: #4a5768;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* --- Estados de carga compartidos ----------------------------------------- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: #4a5768;
+}
+
+/* --- Estados de foco visibles (accesibilidad) ----------------------------- */
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ocean-teal);
+  outline-offset: 2px;
+}

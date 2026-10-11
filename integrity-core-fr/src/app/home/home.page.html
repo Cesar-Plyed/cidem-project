@@ -1,129 +1,116 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Panel principal</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="clear" aria-label="Cerrar sesión" (click)="logout()">
-        Cerrar sesión
-      </ion-button>
-    </ion-buttons>
-    <ion-title>{{ role() }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header title="Panel principal" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
-  <div class="dashboard-loading">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p>Cargando tu panel...</p>
-  </div>
-  }
-
-  <ng-container>
-    @if (!loading()) {
-    <section class="dashboard-heading">
-      <p class="eyebrow">Integridad académica</p>
-
-      @switch (role()) { @case (Role.ADMINISTRATIVO) {
-      <h1>Panel administrativo</h1>
-      } @case (Role.PROFESOR) {
-      <h1>Panel del profesor</h1>
-      } @case (Role.ALUMNO) {
-      <h1>Panel del alumno</h1>
-      } }
-    </section>
-
-    @if (role() === Role.ADMINISTRATIVO || role() === Role.PROFESOR) {
-    <div class="dashboard-grid">
-      <ion-card>
-        <ion-card-header
-          ><ion-card-title>Gestión de exámenes</ion-card-title></ion-card-header
-        >
-        <ion-card-content>
-          <p>
-            {{ role() === Role.ADMINISTRATIVO ? 'Administra los exámenes de toda la plataforma.' : 'Crea y administra tus exámenes.' }}
-          </p>
-          <ion-button expand="block" routerLink="/exams"
-            >Ver exámenes</ion-button
-          >
-          <ion-button expand="block" fill="outline" routerLink="/exams/new"
-            >Crear examen</ion-button
-          >
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card>
-        <ion-card-header
-          ><ion-card-title>Acceso de alumnos</ion-card-title></ion-card-header
-        >
-        <ion-card-content>
-          <p>Genera códigos para que los alumnos ingresen a una evaluación.</p>
-          <ion-button expand="block" fill="outline" routerLink="/evaluator-demo"
-            >Generar código</ion-button
-          >
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card>
-        <ion-card-header
-          ><ion-card-title
-            >{{ role() === Role.ADMINISTRATIVO ? 'Todos los usuarios' : 'Alumnos'
-            }}</ion-card-title
-          ></ion-card-header
-        >
-        <ion-card-content>
-          <ion-list>
-            @for (user of users(); track user.id) {
-            <ion-item>
-              <ion-label>
-                <h2>{{ user.firstNames }} {{ user.lastNames }}</h2>
-                <p>{{ user.email }} · {{ user.role }}</p>
-              </ion-label>
-            </ion-item>
-            } @if (usersLoading()) {
-            <ion-item><ion-spinner name="dots"></ion-spinner></ion-item>
-            } @else if (users().length === 0) {
-            <ion-item
-              ><ion-label>No hay usuarios para mostrar.</ion-label></ion-item
-            >
-            }
-          </ion-list>
-        </ion-card-content>
-      </ion-card>
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando tu panel...</span>
     </div>
-    } @if (role() === Role.ALUMNO) {<ion-card>
-      <ion-card-header
-        ><ion-card-title>Ingresar a un examen</ion-card-title></ion-card-header
-      >
-      <ion-card-content>
-        <p>Usa el código que te entregó tu profesor.</p>
+    } @else {
+
+    <header class="page-heading">
+      <p class="eyebrow">Integridad académica</p>
+      @switch (role()) {
+      @case (Role.ADMINISTRATIVO) {
+      <h2>Panel administrativo</h2>
+      } @case (Role.PROFESOR) {
+      <h2>Panel del profesor</h2>
+      } @case (Role.ALUMNO) {
+      <h2>Panel del alumno</h2>
+      } }
+    </header>
+
+    @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (role() === Role.ALUMNO) {
+    <section class="card dashboard-card">
+      <div class="card-body">
+        <h3>Ingresar a un examen</h3>
+        <p class="dashboard-card__hint">Usa el código que te entregó tu profesor.</p>
+        <a class="btn btn-outline-secondary mb-3 align-self-start" routerLink="/exam-history">
+          Historial de exámenes
+        </a>
+
         <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
-          <ion-list lines="full">
-            <ion-item>
-              <ion-input
-                label="Código de acceso"
-                labelPlacement="floating"
-                formControlName="code"
-              ></ion-input>
-            </ion-item>
-          </ion-list>
-          <ion-button
-            expand="block"
-            type="submit"
-            class="ion-margin-top"
-            [disabled]="joining()"
-          >
-            @if (joining()) {
-            <ion-spinner name="crescent" slot="start"></ion-spinner>
-            <span>Entrando...</span>
-            } @else {
-            <span>Comenzar examen</span>
-            }
-          </ion-button>
+          <div class="row g-3 align-items-end">
+            <div class="col">
+              <label class="form-label" for="join-code">Código de acceso</label>
+              <input id="join-code" class="form-control form-control-lg text-uppercase" type="text"
+                formControlName="code" placeholder="Ej. AB12CD" autocomplete="off" autocapitalize="characters" />
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-primary btn-lg" type="submit" [disabled]="joining()">
+                @if (joining()) {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Entrando...
+                } @else {
+                Comenzar examen
+                }
+              </button>
+            </div>
+          </div>
         </form>
-        @if(errorMessage()){<ion-text color="danger"
-          ><p>{{ errorMessage() }}</p></ion-text
-        >}
-      </ion-card-content> </ion-card
-    >} }
-  </ng-container>
+      </div>
+    </section>
+    } @else {
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-xl-4">
+        <section class="card dashboard-card h-100">
+          <div class="card-body d-flex flex-column">
+            <h3>Gestión de exámenes</h3>
+            <p class="dashboard-card__hint">
+              {{ role() === Role.ADMINISTRATIVO
+                ? 'Administra los exámenes de toda la plataforma.'
+                : 'Crea y administra tus exámenes.' }}
+            </p>
+            <div class="mt-auto d-grid gap-2">
+              <a class="btn btn-primary" routerLink="/exams">Ver exámenes</a>
+              <a class="btn btn-outline-secondary" routerLink="/exams/new">Crear examen</a>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-md-6 col-xl-4">
+        <section class="card dashboard-card h-100">
+          <div class="card-body d-flex flex-column">
+            <h3>Acceso de alumnos</h3>
+            <p class="dashboard-card__hint">Genera códigos para que los alumnos ingresen a una evaluación.</p>
+            <div class="mt-auto d-grid">
+              <a class="btn btn-outline-secondary" routerLink="/evaluator-demo">Generar código</a>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-xl-4">
+        <section class="card dashboard-card">
+          <div class="card-body">
+            <h3>{{ role() === Role.ADMINISTRATIVO ? 'Todos los usuarios' : 'Alumnos' }}</h3>
+            @if (usersLoading()) {
+            <div class="loading loading--compact">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span class="ms-2">Cargando directorio...</span>
+            </div>
+            } @else if (users().length === 0) {
+            <p class="dashboard-card__hint">No hay usuarios para mostrar.</p>
+            } @else {
+            <ul class="list-group list-group-flush">
+              @for (user of users(); track user.id) {
+              <li class="list-group-item px-0">
+                <span class="user-list__name">{{ user.firstNames }} {{ user.lastNames }}</span>
+                <span class="user-list__meta">{{ user.email }} · {{ user.role }}</span>
+              </li>
+              }
+            </ul>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+    } }
+  </div>
 </ion-content>

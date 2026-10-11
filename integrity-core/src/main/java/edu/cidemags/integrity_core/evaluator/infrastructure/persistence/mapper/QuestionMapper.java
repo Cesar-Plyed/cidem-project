@@ -18,7 +18,8 @@ public class QuestionMapper {
                 entity.getPrompt(),
                 entity.getType(),
                 entity.getOptions().stream().map(this::toOptionDomain).toList(),
-                entity.getCorrectAnswerText());
+                entity.getCorrectAnswerText(),
+                entity.getPoints());
     }
 
     public QuestionEntity toEntity(Question domain) {
@@ -31,7 +32,8 @@ public class QuestionMapper {
                 null,
                 domain.getPrompt(),
                 domain.getType(),
-                domain.getCorrectAnswerText());
+                domain.getCorrectAnswerText(),
+                domain.getPoints());
 
         entity.setOptions(domain.getOptions().stream().map(this::toOptionEntity).toList());
         entity.getOptions().forEach(option -> option.setQuestion(entity));

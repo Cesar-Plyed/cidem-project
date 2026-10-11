@@ -44,12 +44,13 @@ class ReviewOpenEndedAnswerUseCaseTest {
         UUID reviewerId = UUID.randomUUID();
         UUID attemptId = UUID.randomUUID();
         UUID examId = UUID.randomUUID();
+        UUID questionId = UUID.randomUUID();
 
         ExamAttempt attempt = new ExamAttempt(attemptId, examId, UUID.randomUUID(),
                 OffsetDateTime.now(), null, false);
         Exam exam = new Exam(examId, "Matematicas", null, reviewerId,
-                OffsetDateTime.now(), List.of(), ExamStatus.PUBLISHED);
-        ExamAnswer answer = new ExamAnswer(answerId, attemptId, UUID.randomUUID(), List.of(), "respuesta");
+                OffsetDateTime.now(), List.of(openQuestion(questionId, 10)), ExamStatus.PUBLISHED);
+        ExamAnswer answer = new ExamAnswer(answerId, attemptId, questionId, List.of(), "respuesta");
 
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
         when(attemptRepository.findById(attemptId)).thenReturn(Optional.of(attempt));
@@ -82,12 +83,13 @@ class ReviewOpenEndedAnswerUseCaseTest {
         UUID attemptId = UUID.randomUUID();
         UUID examId = UUID.randomUUID();
         UUID reviewId = UUID.randomUUID();
+        UUID questionId = UUID.randomUUID();
 
         ExamAttempt attempt = new ExamAttempt(attemptId, examId, UUID.randomUUID(),
                 OffsetDateTime.now(), null, false);
         Exam exam = new Exam(examId, "Historia", null, reviewerId,
-                OffsetDateTime.now(), List.of(), ExamStatus.PUBLISHED);
-        ExamAnswer answer = new ExamAnswer(answerId, attemptId, UUID.randomUUID(), List.of(), "texto");
+                OffsetDateTime.now(), List.of(openQuestion(questionId, 10)), ExamStatus.PUBLISHED);
+        ExamAnswer answer = new ExamAnswer(answerId, attemptId, questionId, List.of(), "texto");
         EvaluationReview existing = new EvaluationReview(reviewId, answerId, reviewerId,
                 5, "feedback inicial", OffsetDateTime.now(), OffsetDateTime.now());
 
@@ -152,5 +154,39 @@ class ReviewOpenEndedAnswerUseCaseTest {
         assertThrows(IllegalArgumentException.class,
                 () -> useCase.execute(new ReviewOpenEndedAnswerCommand(answerId, UUID.randomUUID(),
                         8, "feedback", true)));
+    }
+
+    @Test
+    void shouldRejectScoreAboveQuestionPoints() {
+        EvaluationReviewRepository reviewRepository = mock(EvaluationReviewRepository.class);
+        ExamAnswerRepository answerRepository = mock(ExamAnswerRepository.class);
+        ExamAttemptRepository attemptRepository = mock(ExamAttemptRepository.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        ReviewOpenEndedAnswerUseCase useCase = new ReviewOpenEndedAnswerUseCase(
+                reviewRepository, answerRepository, attemptRepository, examRepository);
+
+        UUID answerId = UUID.randomUUID();
+        UUID reviewerId = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        UUID questionId = UUID.randomUUID();
+
+        ExamAttempt attempt = new ExamAttempt(attemptId, examId, UUID.randomUUID(),
+                OffsetDateTime.now(), null, false);
+        // La pregunta vale 5 puntos: un 10 como calificación rompía la escala 0..10 del examen.
+        Exam exam = new Exam(examId, "Matematicas", null, reviewerId,
+                OffsetDateTime.now(), List.of(openQuestion(questionId, 5)), ExamStatus.PUBLISHED);
+        ExamAnswer answer = new ExamAnswer(answerId, attemptId, questionId, List.of(), "respuesta");
+
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        when(attemptRepository.findById(attemptId)).thenReturn(Optional.of(attempt));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(
+                new ReviewOpenEndedAnswerCommand(answerId, reviewerId, 10, "demasiado alto", true)));
+    }
+
+    private static Question openQuestion(UUID questionId, int points) {
+        return new Question(questionId, "Explica", QuestionType.OPEN_ENDED, List.of(), null, points);
     }
 }

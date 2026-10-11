@@ -1,153 +1,178 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Verificación: backend evaluator</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header title="Verificación: backend del evaluador" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  <ion-text color="medium">
-    <p class="intro">
-      Pantalla de prueba, no de producto. Ejercita paso a paso las 5 operaciones reales que
-      expone el backend hoy. Cada tarjeta precarga el id que devuelve el paso anterior.
-    </p>
-  </ion-text>
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    <header class="page-heading">
+      <p class="eyebrow">Herramienta de diagnóstico</p>
+      <h2>Verificación: backend del evaluador</h2>
+      <p>
+        Pantalla de prueba, no de producto. Ejercita paso a paso las 5 operaciones reales que
+        expone el backend hoy. Cada tarjeta precarga el id que devuelve el paso anterior.
+      </p>
+    </header>
 
-  <!-- 1. Crear examen -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>1. Crear examen (real)</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <form [formGroup]="createExamForm" (ngSubmit)="createExam()">
-        <ion-list lines="full">
-          <ion-item>
-            <ion-input label="Título" labelPlacement="floating" formControlName="title"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input label="Descripción" labelPlacement="floating" formControlName="description"></ion-input>
-          </ion-item>
-        </ion-list>
-        <ion-button expand="block" type="submit" class="ion-margin-top">Crear examen</ion-button>
-      </form>
-      @if (createExamError) { <ion-text color="danger"><p>{{ createExamError }}</p></ion-text> }
-      @if (createExamResult) { <pre>{{ createExamResult | json }}</pre> }
-    </ion-card-content>
-  </ion-card>
+    <div class="d-grid gap-3">
+      <!-- 1. Crear examen -->
+      <section class="card">
+        <div class="card-body">
+          <h3 class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary">1</span>
+            Crear examen (real)
+          </h3>
+          <form [formGroup]="createExamForm" (ngSubmit)="createExam()">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-title">Título</label>
+                <input class="form-control" id="demo-title" type="text" formControlName="title" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-description">Descripción</label>
+                <input class="form-control" id="demo-description" type="text" formControlName="description" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Crear examen</button>
+          </form>
+          @if (createExamError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ createExamError() }}</div>
+          }
+          @if (createExamResult()) {
+          <pre class="diag-output">{{ createExamResult() | json }}</pre>
+          }
+        </div>
+      </section>
 
-  <!-- 2. Generar código -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>2. Generar código de acceso</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <form [formGroup]="accessCodeForm" (ngSubmit)="generateAccessCode()">
-        <ion-list lines="full">
-          <ion-item>
-            <ion-input label="Exam ID" labelPlacement="floating" formControlName="examId"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input
-              label="Expira en (min)"
-              labelPlacement="floating"
-              type="number"
-              formControlName="expiresInMinutes"
-            ></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input label="Código (opcional)" labelPlacement="floating" formControlName="code"></ion-input>
-          </ion-item>
-        </ion-list>
-        <ion-button expand="block" type="submit" class="ion-margin-top">Generar código</ion-button>
-      </form>
-      @if (accessCodeError) { <ion-text color="danger"><p>{{ accessCodeError }}</p></ion-text> }
-      @if (accessCodeResult) { <pre>{{ accessCodeResult | json }}</pre> }
-    </ion-card-content>
-  </ion-card>
+      <!-- 2. Generar código -->
+      <section class="card">
+        <div class="card-body">
+          <h3 class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary">2</span>
+            Generar código de acceso
+          </h3>
+          <form [formGroup]="accessCodeForm" (ngSubmit)="generateAccessCode()">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-exam-id">ID del examen</label>
+                <input class="form-control" id="demo-exam-id" type="text" formControlName="examId" />
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="demo-expires">Caduca en (min)</label>
+                <input class="form-control" id="demo-expires" type="number" formControlName="expiresInMinutes" />
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="demo-code">Código (opcional)</label>
+                <input class="form-control" id="demo-code" type="text" formControlName="code" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Generar código</button>
+          </form>
+          @if (accessCodeError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ accessCodeError() }}</div>
+          }
+          @if (accessCodeResult()) {
+          <pre class="diag-output">{{ accessCodeResult() | json }}</pre>
+          }
+        </div>
+      </section>
 
-  <!-- 3. Unirse -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>3. Unirse al examen (alumno)</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
-        <ion-list lines="full">
-          <ion-item>
-            <ion-input label="Exam ID" labelPlacement="floating" formControlName="examId"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input label="Código" labelPlacement="floating" formControlName="code"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input label="Student ID" labelPlacement="floating" formControlName="studentId"></ion-input>
-          </ion-item>
-        </ion-list>
-        <ion-button expand="block" type="submit" class="ion-margin-top">Unirse</ion-button>
-      </form>
-      @if (joinError) { <ion-text color="danger"><p>{{ joinError }}</p></ion-text> }
-      @if (joinResult) { <pre>{{ joinResult | json }}</pre> }
-    </ion-card-content>
-  </ion-card>
+      <!-- 3. Unirse -->
+      <section class="card">
+        <div class="card-body">
+          <h3 class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary">3</span>
+            Unirse al examen (alumno)
+          </h3>
+          <form [formGroup]="joinForm" (ngSubmit)="joinExam()">
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="demo-join-exam-id">ID del examen</label>
+                <input class="form-control" id="demo-join-exam-id" type="text" formControlName="examId" />
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label" for="demo-join-code">Código</label>
+                <input class="form-control" id="demo-join-code" type="text" formControlName="code" />
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label" for="demo-student-id">ID del alumno</label>
+                <input class="form-control" id="demo-student-id" type="text" formControlName="studentId" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Unirse</button>
+          </form>
+          @if (joinError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ joinError() }}</div>
+          }
+          @if (joinResult()) {
+          <pre class="diag-output">{{ joinResult() | json }}</pre>
+          }
+        </div>
+      </section>
 
-  <!-- 4. Responder pregunta -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>4. Enviar respuesta</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <ion-text color="medium">
-        <p class="note">
-          El backend no tiene forma de decirnos qué preguntas tiene el examen, así que aquí el
-          questionId lo escribes a mano (o lo dejas y esta llamada fallará con 404/500 — es
-          esperado hasta que exista un examen real con preguntas reales).
-        </p>
-      </ion-text>
-      <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()">
-        <ion-list lines="full">
-          <ion-item>
-            <ion-input label="Attempt ID" labelPlacement="floating" formControlName="attemptId"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input label="Question ID" labelPlacement="floating" formControlName="questionId"></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input
-              label="Option IDs (separados por coma)"
-              labelPlacement="floating"
-              formControlName="selectedOptionIds"
-            ></ion-input>
-          </ion-item>
-          <ion-item>
-            <ion-input
-              label="Respuesta abierta (opcional)"
-              labelPlacement="floating"
-              formControlName="openTextAnswer"
-            ></ion-input>
-          </ion-item>
-        </ion-list>
-        <ion-button expand="block" type="submit" class="ion-margin-top">Enviar respuesta</ion-button>
-      </form>
-      @if (answerError) { <ion-text color="danger"><p>{{ answerError }}</p></ion-text> }
-      @if (answerResult) { <pre>{{ answerResult | json }}</pre> }
-    </ion-card-content>
-  </ion-card>
+      <!-- 4. Responder pregunta -->
+      <section class="card">
+        <div class="card-body">
+          <h3 class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary">4</span>
+            Enviar respuesta
+          </h3>
+          <p class="dashboard-card__hint">
+            El backend no tiene forma de decirnos qué preguntas tiene el examen, así que aquí el
+            questionId lo escribes a mano (o lo dejas y esta llamada fallará con 404/500 — es
+            esperado hasta que exista un examen real con preguntas reales).
+          </p>
+          <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-attempt-id">ID del intento</label>
+                <input class="form-control" id="demo-attempt-id" type="text" formControlName="attemptId" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-question-id">ID de la pregunta</label>
+                <input class="form-control" id="demo-question-id" type="text" formControlName="questionId" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-option-ids">IDs de opciones (separados por coma)</label>
+                <input class="form-control" id="demo-option-ids" type="text" formControlName="selectedOptionIds" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-open-answer">Respuesta abierta (opcional)</label>
+                <input class="form-control" id="demo-open-answer" type="text" formControlName="openTextAnswer" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Enviar respuesta</button>
+          </form>
+          @if (answerError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ answerError() }}</div>
+          }
+          @if (answerResult()) {
+          <pre class="diag-output">{{ answerResult() | json }}</pre>
+          }
+        </div>
+      </section>
 
-  <!-- 5. Entregar intento -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>5. Entregar intento</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <form [formGroup]="submitForm" (ngSubmit)="submitAttempt()">
-        <ion-list lines="full">
-          <ion-item>
-            <ion-input label="Attempt ID" labelPlacement="floating" formControlName="attemptId"></ion-input>
-          </ion-item>
-        </ion-list>
-        <ion-button expand="block" type="submit" class="ion-margin-top" color="success">Entregar</ion-button>
-      </form>
-      @if (submitError) { <ion-text color="danger"><p>{{ submitError }}</p></ion-text> }
-      @if (submitResult) { <pre>{{ submitResult | json }}</pre> }
-    </ion-card-content>
-  </ion-card>
+      <!-- 5. Entregar intento -->
+      <section class="card">
+        <div class="card-body">
+          <h3 class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-secondary">5</span>
+            Entregar intento
+          </h3>
+          <form [formGroup]="submitForm" (ngSubmit)="submitAttempt()">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="demo-submit-attempt-id">ID del intento</label>
+                <input class="form-control" id="demo-submit-attempt-id" type="text" formControlName="attemptId" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" type="submit">Entregar</button>
+          </form>
+          @if (submitError()) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ submitError() }}</div>
+          }
+          @if (submitResult()) {
+          <pre class="diag-output">{{ submitResult() | json }}</pre>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
 </ion-content>

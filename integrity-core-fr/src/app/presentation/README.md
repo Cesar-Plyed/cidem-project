@@ -1,1 +1,1 @@
-Componentes Angular/Ionic, formularios, rutas.
+Componentes Angular/Ionic, formularios y rutas de las vistas. Incluye el historial del alumno y el acceso al resultado de cada intento; los resultados provisionales permanecen ocultos mientras existan respuestas abiertas pendientes de revisión. Al entrar a un examen se solicita pantalla completa antes de unirse, se activa Sentinel durante el intento y el temporizador usa el inicio y la duración persistidos por el servidor. La vista de oversight recibe alertas por STOMP y permite revocar intentos.

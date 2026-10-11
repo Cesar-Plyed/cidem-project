@@ -6,10 +6,11 @@ import {
   BackendExamAttempt,
   BackendExamAverage,
   BackendExamResult,
+  BackendEvaluationReview,
   BackendOpenEndedReview,
+  StudentExamHistoryEntry,
 } from '../models/evaluator/evaluator.model';
 import { AttemptExam } from '../models/evaluator/attempt-exam.model';
-import { BackendEvaluationReview } from '../models/evaluator/evaluator.model';
 
 /**
  * Puerto para el backend REAL de evaluator (no confundir con
@@ -55,9 +56,13 @@ export abstract class EvaluatorRepository {
 
   abstract submitAttempt(attemptId: string): Observable<BackendExamAttempt>;
 
+  abstract revokeAttempt(attemptId: string): Observable<BackendExamAttempt>;
+
   abstract getExamResults(examId: string): Observable<BackendExamResult[]>;
 
   abstract getAttemptResult(attemptId: string): Observable<BackendExamResult>;
+
+  abstract getStudentExamHistory(): Observable<StudentExamHistoryEntry[]>;
 
   abstract getExamAverage(examId: string): Observable<BackendExamAverage>;
 

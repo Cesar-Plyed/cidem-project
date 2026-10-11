@@ -1,136 +1,194 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Resultado del examen</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header title="Resultado del examen" backHref="/home" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    @if (loading()) {
     <div class="loading">
-      <ion-spinner name="crescent"></ion-spinner>
-      <p>Cargando resultado...</p>
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando resultado...</span>
     </div>
-  }
+    }
 
-  @if (!loading() && errorMessage()) {
-    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
-  }
+    @if (!loading() && errorMessage()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
 
-  @if (!loading() && result(); as result) {
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Calificación</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <p>
-          <ion-badge [color]="scoreColor(result.score, result.maxScore)" style="font-size: 1.5rem">
-            {{ result.score }} / {{ result.maxScore }}
-          </ion-badge>
+    @if (!loading() && result(); as result) {
+    <header class="page-heading">
+      <p class="eyebrow">Resultado del examen</p>
+      <h2>Reporte de calificación</h2>
+    </header>
+
+    <section class="card mb-3">
+      <div class="card-body text-center result-summary">
+        @if (!result.pendingReview || canGrade() || result.integrityFailed) {
+        @switch (scoreColor(result.score, result.maxScore)) {
+        @case ('success') {
+        <span class="badge rounded-pill text-bg-success">Aprobado</span>
+        } @case ('danger') {
+        <span class="badge rounded-pill text-bg-danger">Reprobado</span>
+        } @default {
+        <span class="badge rounded-pill text-bg-secondary">Sin puntaje máximo</span>
+        }
+        }
+        }
+
+        @if (!result.pendingReview || canGrade() || result.integrityFailed) {
+        <p class="result-score" [class.result-score--success]="scoreColor(result.score, result.maxScore) === 'success'"
+          [class.result-score--danger]="scoreColor(result.score, result.maxScore) === 'danger'">
+          {{ result.score }}<span class="result-score__max"> / {{ result.maxScore }}</span>
         </p>
+        <p class="result-summary__label">Puntaje obtenido (mínimo para aprobar: 60%)</p>
+        }
+
         @if (result.studentEmail || result.studentFirstName || result.studentLastName || result.studentPhone) {
-          <ion-list lines="none" class="student-info">
-            <ion-item>
-              <ion-label>
-                <p><strong>Nombre:</strong> {{ result.studentFirstName }} {{ result.studentLastName }}</p>
-              </ion-label>
-            </ion-item>
-            <ion-item>
-              <ion-label>
-                <p><strong>Correo:</strong> {{ result.studentEmail }}</p>
-              </ion-label>
-            </ion-item>
-            <ion-item>
-              <ion-label>
-                <p><strong>Teléfono:</strong> {{ result.studentPhone }}</p>
-              </ion-label>
-            </ion-item>
-          </ion-list>
+        <ul class="list-group list-group-flush text-start">
+          <li class="list-group-item px-0 d-flex justify-content-between gap-3">
+            <span class="text-secondary">Nombre</span>
+            <strong>{{ result.studentFirstName }} {{ result.studentLastName }}</strong>
+          </li>
+          <li class="list-group-item px-0 d-flex justify-content-between gap-3">
+            <span class="text-secondary">Correo</span>
+            <strong>{{ result.studentEmail }}</strong>
+          </li>
+          <li class="list-group-item px-0 d-flex justify-content-between gap-3">
+            <span class="text-secondary">Teléfono</span>
+            <strong>{{ result.studentPhone }}</strong>
+          </li>
+        </ul>
         }
-        @if (result.pendingReview) {
-          <ion-badge color="warning">
-            Algunas preguntas abiertas aún están pendientes de revisión
-          </ion-badge>
+
+        @if (result.integrityFailed) {
+        <div class="alert alert-danger mt-3 mb-0" role="alert">
+          El intento fue reprobado y cerrado por una afectación a la integridad académica.
+        </div>
+        } @else if (result.pendingReview) {
+        <div class="alert alert-warning mt-3 mb-0" role="alert">
+          <h3 class="h6">El examen está en revisión</h3>
+          <p class="mb-0">Pronto tendrás el resultado. Tu calificación estará disponible cuando se revisen las preguntas abiertas.</p>
+        </div>
         } @else {
-          <ion-text color="success">
-            <p>Todas las respuestas han sido revisadas.</p>
-          </ion-text>
+        <p class="text-success mt-3 mb-0">Todas las respuestas han sido revisadas.</p>
         }
-      </ion-card-content>
-    </ion-card>
+      </div>
+    </section>
 
-    <ion-list>
-      @for (question of result.questions; track question.questionId; let i = $index) {
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title>
-              Pregunta {{ i + 1 }}
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <p class="statement">{{ question.statement }}</p>
-            <p><ion-text color="medium">Tipo:</ion-text> {{ question.questionType }}</p>
-
-            @if (question.questionType === 'OPEN_ENDED') {
-              <div class="answer-section">
-                <p class="section-label">Respuesta del estudiante:</p>
-                <p class="student-answer">{{ question.openTextAnswer || '(sin respuesta)' }}</p>
-              </div>
-            } @else {
-              <div class="answer-section">
-                <p class="section-label">Respuesta del estudiante:</p>
-                <ul class="answer-list">
-                  @for (optId of question.selectedOptionIds; track optId) {
-                    <li>{{ getOptionText(question, optId) }}</li>
-                  }
-                  @empty {
-                    <li class="empty">No respondió</li>
-                  }
-                </ul>
-              </div>
-
-              <div class="answer-section">
-                <p class="section-label">Respuesta correcta:</p>
-                <ul class="answer-list">
-                  @for (opt of question.options; track opt.id) {
-                    @if (opt.correct) {
-                      <li class="correct-option">{{ opt.text }}</li>
-                    }
-                  }
-                  @empty {
-                    <li class="empty">No hay opción marcada como correcta</li>
-                  }
-                </ul>
-              </div>
-            }
-
-            <ion-list lines="none" class="qualification">
-              <ion-item>
-                <ion-label>
-                  <p><strong>Puntuación:</strong> {{ question.score }}</p>
-                </ion-label>
-              </ion-item>
-              @if (question.feedback) {
-                <ion-item>
-                  <ion-label>
-                    <p class="feedback"><strong>Retroalimentación:</strong> {{ question.feedback }}</p>
-                  </ion-label>
-                </ion-item>
-              }
-            </ion-list>
-
+    @for (question of result.questions; track question.questionId; let i = $index) {
+    <section class="card mb-3">
+      <div class="card-body">
+        <h3 class="d-flex align-items-center justify-content-between gap-2">
+          <span>Pregunta {{ i + 1 }}</span>
+          <span class="d-flex align-items-center gap-2">
             @if (question.pendingReview) {
-              <ion-badge color="warning">Pendiente de revisión</ion-badge>
+            <span class="badge rounded-pill text-bg-warning">Pendiente de revisión</span>
             }
-          </ion-card-content>
-        </ion-card>
-      }
-    </ion-list>
+            <span class="badge rounded-pill text-bg-secondary">{{ question.score }} / {{ question.points }} pts</span>
+          </span>
+        </h3>
+        <p class="statement">{{ question.statement }}</p>
+        <p class="text-secondary mb-3">Tipo: {{ question.questionType }}</p>
 
-    <ion-button expand="block" class="ion-margin-top" routerLink="/home">
-      Volver al panel
-    </ion-button>
-  }
+        @if (question.questionType === 'OPEN_ENDED') {
+        <div class="answer-section">
+          <p class="section-label">Respuesta del estudiante:</p>
+          <p class="student-answer">{{ question.openTextAnswer || '(sin respuesta)' }}</p>
+        </div>
+
+        <!-- Calificación en línea: el profesor corrige la respuesta abierta sin salir de este panel. -->
+        @if (canGrade() && question.answerId) {
+        @if (editingQuestionId() === question.questionId) {
+        <div class="border rounded p-3 mt-3">
+          <h4 class="h6">Calificar respuesta abierta</h4>
+          <div class="row g-3">
+            <div class="col-12 col-md-3">
+              <label class="form-label" [attr.for]="'grade-score-' + question.questionId">
+                Puntuación (0 a {{ question.points }})
+              </label>
+              <input class="form-control" type="number" min="0" [max]="question.points"
+                [id]="'grade-score-' + question.questionId" [value]="gradingScore().toString()"
+                (input)="onGradingScoreInput($any($event.target).value)" />
+            </div>
+            <div class="col-12 col-md-9">
+              <label class="form-label" [attr.for]="'grade-feedback-' + question.questionId">
+                Comentario (feedback)
+              </label>
+              <textarea class="form-control" rows="3" [id]="'grade-feedback-' + question.questionId"
+                placeholder="Escribe un comentario para el estudiante..." [value]="gradingFeedback()"
+                (input)="onGradingFeedbackInput($any($event.target).value)"></textarea>
+            </div>
+          </div>
+          @if (gradingError()) {
+          <p class="field-error mt-2 mb-0">{{ gradingError() }}</p>
+          }
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="gradingSaving()"
+              (click)="cancelGrading()">Cancelar</button>
+            <button type="button" class="btn btn-primary" [disabled]="gradingSaving()" (click)="submitGrade(question)">
+              @if (gradingSaving()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Guardando...
+              } @else {
+              Guardar calificación
+              }
+            </button>
+          </div>
+        </div>
+        } @else {
+        <div class="d-flex justify-content-end mt-2">
+          <button type="button" class="btn btn-sm btn-outline-primary"
+            (click)="startGrading(question)">
+            {{ question.pendingReview ? 'Calificar' : 'Corregir calificación' }}
+          </button>
+        </div>
+        }
+        }
+        } @else {
+        <div class="answer-section">
+          <p class="section-label">Respuesta del estudiante:</p>
+          <ul class="list-group list-group-flush">
+            @for (optId of question.selectedOptionIds; track optId) {
+            <li class="list-group-item px-0">{{ getOptionText(question, optId) }}</li>
+            }
+            @empty {
+            <li class="list-group-item px-0 text-secondary fst-italic">No respondió</li>
+            }
+          </ul>
+        </div>
+
+        <div class="answer-section">
+          <p class="section-label">Respuesta correcta:</p>
+          <ul class="list-group list-group-flush">
+            @for (opt of question.options; track opt.id) {
+            @if (opt.correct) {
+            <li class="list-group-item px-0 correct-option">{{ opt.text }}</li>
+            }
+            }
+            @empty {
+            <li class="list-group-item px-0 text-secondary fst-italic">No hay opción marcada como correcta</li>
+            }
+          </ul>
+        </div>
+        }
+
+        <ul class="list-group list-group-flush qualification">
+          <li class="list-group-item px-0 d-flex justify-content-between gap-2">
+            <span class="text-secondary">Puntuación</span>
+            <strong>{{ question.score }} / {{ question.points }}</strong>
+          </li>
+          @if (question.feedback) {
+          <li class="list-group-item px-0">
+            <p class="section-label mb-1">Retroalimentación:</p>
+            <p class="feedback mb-0">{{ question.feedback }}</p>
+          </li>
+          }
+        </ul>
+      </div>
+    </section>
+    }
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+      <a class="btn btn-primary" routerLink="/home">Volver al panel</a>
+    </div>
+    }
+  </div>
 </ion-content>

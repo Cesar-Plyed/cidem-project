@@ -49,9 +49,19 @@ export const routes: Routes = [
     loadComponent: () => import('./presentation/pages/exam-results/exam-results.page').then((m) => m.ExamResultsPage)
   },
   {
+    path: 'exams/:examId/oversight',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
+    loadComponent: () => import('./presentation/pages/oversight/oversight.page').then((m) => m.OversightPage)
+  },
+  {
     path: 'attempts/:attemptId/result',
     canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR, Role.ALUMNO])],
     loadComponent: () => import('./presentation/pages/exam-result/exam-result.page').then((m) => m.ExamResultPage)
+  },
+  {
+    path: 'exam-history',
+    canActivate: [roleGuard([Role.ALUMNO])],
+    loadComponent: () => import('./presentation/pages/exam-history/exam-history.page').then((m) => m.ExamHistoryPage)
   },
   {
     path: 'attempts/:attemptId',

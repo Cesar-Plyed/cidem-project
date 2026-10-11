@@ -1,78 +1,106 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
-    </ion-buttons>
-    <ion-title>{{ exam()?.title ?? 'Examen' }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header [title]="exam()?.title ?? 'Examen'" backHref="/home" />
 
-<ion-content [fullscreen]="true" class="ion-padding">
-  @if (loading()) {
-    <div class="loading"><ion-spinner name="crescent"></ion-spinner></div>
+<ion-content [fullscreen]="true">
+  @if (safeguard.warning(); as warning) {
+  <div slot="fixed" class="safeguard-warning" role="alert">
+    <span>{{ warning.message }}</span>
+    @if (warning.type === 'FULLSCREEN_EXIT') {
+    <button type="button" class="btn btn-sm btn-light" (click)="safeguard.requestFullscreen()">
+      Pantalla completa
+    </button>
+    }
+    <button type="button" class="btn btn-sm btn-outline-light" (click)="safeguard.dismissWarning()">Entendido</button>
+  </div>
   }
 
-  @if (!loading() && errorMessage() && !exam()) {
-    <ion-text color="danger"><p>{{ errorMessage() }}</p></ion-text>
-  }
-
-  @if (!loading() && exam(); as exam) {
-    <div class="exam-summary">
-      <p>{{ exam.description }}</p>
-      <ion-badge color="medium">{{ exam.durationMinutes }} min</ion-badge>
-      <ion-badge color="medium">{{ exam.questions.length }} preguntas</ion-badge>
+  <div class="page ion-padding">
+    @if (loading()) {
+    <div class="loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span class="ms-2">Cargando examen...</span>
     </div>
+    }
+
+    @if (!loading() && errorMessage() && !exam()) {
+    <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+    }
+
+    @if (!loading() && exam(); as exam) {
+    <header class="page-heading">
+      <p class="eyebrow">Examen en curso</p>
+      <h2>{{ exam.title }}</h2>
+      @if (exam.description) {
+      <p>{{ exam.description }}</p>
+      }
+      <div class="exam-badges">
+        <span class="badge rounded-pill text-bg-secondary">{{ exam.durationMinutes }} min</span>
+        <span class="badge rounded-pill text-bg-secondary">{{ exam.questions.length }} preguntas</span>
+        @if (safeguard.active()) {
+        <span class="badge rounded-pill text-bg-success">Examen protegido</span>
+        @if (safeguard.warningCount() > 0) {
+        <span class="badge rounded-pill text-bg-danger">Avisos: {{ safeguard.warningCount() }}</span>
+        }
+        @if (safeguard.connectionLost()) {
+        <span class="badge rounded-pill text-bg-warning">Sin conexión con SafeGuard ({{ safeguard.pendingEvents() }} pendientes)</span>
+        }
+        }
+      </div>
+    </header>
 
     @if (submitted()) {
-    <div class="submitted-banner">
-      <ion-text color="success">
-        <p>Examen enviado correctamente. Buena suerte.</p>
-      </ion-text>
-    </div>
+    <div class="alert alert-success" role="alert">Examen enviado correctamente. Buena suerte.</div>
     }
 
     @if (!submitted()) {
     <form [formGroup]="form" (ngSubmit)="submit()">
       @for (question of exam.questions; track question.id; let i = $index) {
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>Pregunta {{ i + 1 }} ({{ question.points }} pts)</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <p>{{ question.statement }}</p>
+      <section class="card mb-3">
+        <div class="card-body">
+          <h3>
+            Pregunta {{ i + 1 }}
+            <span class="badge rounded-pill text-bg-secondary ms-2">{{ question.points }} pts</span>
+          </h3>
+          <p class="question-statement">{{ question.statement }}</p>
 
           @if (question.type === QuestionType.MULTIPLE_CHOICE) {
-          <ion-radio-group [formControlName]="question.id">
+          <div role="radiogroup" [attr.aria-label]="'Pregunta ' + (i + 1)">
             @for (option of question.options; track option.id) {
-            <ion-item lines="none">
-              <ion-radio [value]="option.id" slot="start"></ion-radio>
-              <ion-label>{{ option.text }}</ion-label>
-            </ion-item>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" [id]="'q-' + question.id + '-' + option.id"
+                [name]="'question-' + question.id" [formControlName]="question.id" [value]="option.id" />
+              <label class="form-check-label" [attr.for]="'q-' + question.id + '-' + option.id">
+                {{ option.text }}
+              </label>
+            </div>
             }
-          </ion-radio-group>
+          </div>
           }
 
           @if (question.type === QuestionType.OPEN) {
-          <ion-item lines="none">
-            <ion-textarea
-              [formControlName]="question.id"
-              placeholder="Escribe tu respuesta..."
-              autoGrow="true"
-            ></ion-textarea>
-          </ion-item>
+          <label class="form-label" [attr.for]="'q-' + question.id">Tu respuesta</label>
+          <textarea class="form-control" rows="4" [id]="'q-' + question.id" [formControlName]="question.id"
+            [attr.aria-label]="'Respuesta a la pregunta ' + (i + 1)" placeholder="Escribe tu respuesta..."></textarea>
           }
-        </ion-card-content>
-      </ion-card>
+        </div>
+      </section>
       }
 
-      @if (errorMessage()) { <ion-text color="danger"><p class="form-error">{{ errorMessage() }}</p></ion-text> }
+      @if (errorMessage()) {
+      <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+      }
 
-      <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="submitting()">
-        @if (submitting()) { <ion-spinner name="crescent" slot="start"></ion-spinner> }
-        @if (!submitting()) { <span>Enviar examen</span> }
-        @if (submitting()) { <span>Enviando...</span> }
-      </ion-button>
+      <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button class="btn btn-primary btn-lg" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Enviando...
+          } @else {
+          Enviar examen
+          }
+        </button>
+      </div>
     </form>
     }
-  }
+    }
+  </div>
 </ion-content>

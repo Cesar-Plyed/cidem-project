@@ -24,6 +24,7 @@ public class ExamMapper {
                 entity.getDescription(),
                 entity.getCreatedByUserId(),
                 entity.getCreatedAt(),
+                entity.getDurationMinutes(),
                 entity.getQuestions().stream().map(questionMapper::toDomain).toList(),
                 entity.getStatus());
     }
@@ -39,6 +40,7 @@ public class ExamMapper {
                 domain.getDescription(),
                 domain.getCreatedByUserId(),
                 domain.getCreatedAt(),
+                domain.getDurationMinutes(),
                 domain.getStatus());
 
         entity.setQuestions(domain.getQuestions().stream().map(questionMapper::toEntity).toList());

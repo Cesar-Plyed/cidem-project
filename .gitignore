@@ -15,6 +15,7 @@ logs/
 *.swo
 *.tmp
 .kilo/
+.freebuff/
 
 # ==========================================
 # 2. Archivos de entorno y secretos

@@ -1,28 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonButton,
-  IonText,
-} from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 import { CreateRemoteExamUseCase } from '../../../application/use-cases/evaluator/create-remote-exam.use-case';
 import { GenerateAccessCodeUseCase } from '../../../application/use-cases/evaluator/generate-access-code.use-case';
 import { JoinRemoteExamUseCase } from '../../../application/use-cases/evaluator/join-remote-exam.use-case';
 import { SubmitRemoteAnswerUseCase } from '../../../application/use-cases/evaluator/submit-remote-answer.use-case';
 import { SubmitRemoteAttemptUseCase } from '../../../application/use-cases/evaluator/submit-remote-attempt.use-case';
 import { SessionService } from '../../../application/session/session.service';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 /**
  * Página de VERIFICACIÓN, no de producto. Ejercita las 5 operaciones que
@@ -41,22 +28,11 @@ import { SessionService } from '../../../application/session/session.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonButton,
-    IonText,
+    AppHeaderComponent,
   ],
 })
-export class EvaluatorDemoPage {
+export class EvaluatorDemoPage implements OnInit {
     private readonly fb = inject(FormBuilder)
     private readonly sessionService = inject(SessionService)
     private readonly createRemoteExamUseCase = inject(CreateRemoteExamUseCase)
@@ -65,31 +41,32 @@ export class EvaluatorDemoPage {
     private readonly submitRemoteAnswerUseCase = inject(SubmitRemoteAnswerUseCase)
     private readonly submitRemoteAttemptUseCase = inject(SubmitRemoteAttemptUseCase)
 
-
-  currentUserId: string | null = null;
+  // Señales: la app es zoneless, mutar campos planos dentro de subscribe()
+  // no repinta la vista (los resultados y errores nunca se mostraban).
+  readonly currentUserId = signal<string | null>(null);
 
   readonly createExamForm = this.fb.group({
     title: ['Examen de prueba', Validators.required],
     description: ['Creado desde la pantalla de verificación'],
   });
-  createExamResult: unknown = null;
-  createExamError: string | null = null;
+  readonly createExamResult = signal<unknown>(null);
+  readonly createExamError = signal<string | null>(null);
 
   readonly accessCodeForm = this.fb.group({
     examId: ['', Validators.required],
     expiresInMinutes: [20, [Validators.required, Validators.min(1)]],
     code: [''],
   });
-  accessCodeResult: unknown = null;
-  accessCodeError: string | null = null;
+  readonly accessCodeResult = signal<unknown>(null);
+  readonly accessCodeError = signal<string | null>(null);
 
   readonly joinForm = this.fb.group({
     examId: ['', Validators.required],
     code: ['', Validators.required],
     studentId: ['', Validators.required],
   });
-  joinResult: unknown = null;
-  joinError: string | null = null;
+  readonly joinResult = signal<unknown>(null);
+  readonly joinError = signal<string | null>(null);
 
   readonly answerForm = this.fb.group({
     attemptId: ['', Validators.required],
@@ -97,18 +74,20 @@ export class EvaluatorDemoPage {
     selectedOptionIds: [''], // separados por coma
     openTextAnswer: [''],
   });
-  answerResult: unknown = null;
-  answerError: string | null = null;
+  readonly answerResult = signal<unknown>(null);
+  readonly answerError = signal<string | null>(null);
 
   readonly submitForm = this.fb.group({
     attemptId: ['', Validators.required],
   });
-  submitResult: unknown = null;
-  submitError: string | null = null;
+  readonly submitResult = signal<unknown>(null);
+  readonly submitError = signal<string | null>(null);
 
-  constructor() {
-    this.sessionService.getUserId().then((id) => {
-      this.currentUserId = id;
+  // El id de sesión solo se puede leer al iniciar; el callback escribe en
+  // signals (la app es zoneless, un campo plano no repintaría la vista).
+  ngOnInit(): void {
+    void this.sessionService.getUserId().then((id) => {
+      this.currentUserId.set(id);
       if (id) {
         this.joinForm.patchValue({ studentId: id });
       }
@@ -116,63 +95,63 @@ export class EvaluatorDemoPage {
   }
 
   createExam(): void {
-    if (this.createExamForm.invalid || !this.currentUserId) {
-      this.createExamError = !this.currentUserId
+    if (this.createExamForm.invalid || !this.currentUserId()) {
+      this.createExamError.set(!this.currentUserId()
         ? 'Necesitas iniciar sesión primero (falta el userId del token).'
-        : 'Revisa los campos.';
+        : 'Revisa los campos.');
       return;
     }
-    this.createExamError = null;
+    this.createExamError.set(null);
     const { title, description } = this.createExamForm.getRawValue();
-    this.createRemoteExamUseCase.execute(title!, description || undefined, this.currentUserId).subscribe({
+    this.createRemoteExamUseCase.execute(title!, description || undefined, this.currentUserId()!).subscribe({
       next: (exam) => {
-        this.createExamResult = exam;
+        this.createExamResult.set(exam);
         // precarga el examId en el siguiente paso para no copiar/pegar
         this.accessCodeForm.patchValue({ examId: exam.id });
       },
-      error: (err: HttpErrorResponse) => (this.createExamError = this.formatError(err)),
+      error: (err: HttpErrorResponse) => this.createExamError.set(this.formatError(err)),
     });
   }
 
   generateAccessCode(): void {
     if (this.accessCodeForm.invalid) {
-      this.accessCodeError = 'Revisa los campos.';
+      this.accessCodeError.set('Revisa los campos.');
       return;
     }
-    this.accessCodeError = null;
+    this.accessCodeError.set(null);
     const { examId, expiresInMinutes, code } = this.accessCodeForm.getRawValue();
     this.generateAccessCodeUseCase.execute(examId!, expiresInMinutes!, code || undefined).subscribe({
       next: (result) => {
-        this.accessCodeResult = result;
+        this.accessCodeResult.set(result);
         this.joinForm.patchValue({ examId: examId!, code: result.code });
       },
-      error: (err: HttpErrorResponse) => (this.accessCodeError = this.formatError(err)),
+      error: (err: HttpErrorResponse) => this.accessCodeError.set(this.formatError(err)),
     });
   }
 
   joinExam(): void {
     if (this.joinForm.invalid) {
-      this.joinError = 'Revisa los campos.';
+      this.joinError.set('Revisa los campos.');
       return;
     }
-    this.joinError = null;
+    this.joinError.set(null);
     const { examId, code, studentId } = this.joinForm.getRawValue();
     this.joinRemoteExamUseCase.execute(examId!, code!, studentId!).subscribe({
       next: (attempt) => {
-        this.joinResult = attempt;
+        this.joinResult.set(attempt);
         this.answerForm.patchValue({ attemptId: attempt.id });
         this.submitForm.patchValue({ attemptId: attempt.id });
       },
-      error: (err: HttpErrorResponse) => (this.joinError = this.formatError(err)),
+      error: (err: HttpErrorResponse) => this.joinError.set(this.formatError(err)),
     });
   }
 
   submitAnswer(): void {
     if (this.answerForm.invalid) {
-      this.answerError = 'Revisa los campos.';
+      this.answerError.set('Revisa los campos.');
       return;
     }
-    this.answerError = null;
+    this.answerError.set(null);
     const { attemptId, questionId, selectedOptionIds, openTextAnswer } = this.answerForm.getRawValue();
     const optionIds = (selectedOptionIds || '')
       .split(',')
@@ -182,21 +161,21 @@ export class EvaluatorDemoPage {
     this.submitRemoteAnswerUseCase
       .execute(attemptId!, questionId!, optionIds, openTextAnswer || undefined)
       .subscribe({
-        next: (answer) => (this.answerResult = answer),
-        error: (err: HttpErrorResponse) => (this.answerError = this.formatError(err)),
+        next: (answer) => this.answerResult.set(answer),
+        error: (err: HttpErrorResponse) => this.answerError.set(this.formatError(err)),
       });
   }
 
   submitAttempt(): void {
     if (this.submitForm.invalid) {
-      this.submitError = 'Revisa el attemptId.';
+      this.submitError.set('Revisa el identificador del intento (attemptId).');
       return;
     }
-    this.submitError = null;
+    this.submitError.set(null);
     const { attemptId } = this.submitForm.getRawValue();
     this.submitRemoteAttemptUseCase.execute(attemptId!).subscribe({
-      next: (attempt) => (this.submitResult = attempt),
-      error: (err: HttpErrorResponse) => (this.submitError = this.formatError(err)),
+      next: (attempt) => this.submitResult.set(attempt),
+      error: (err: HttpErrorResponse) => this.submitError.set(this.formatError(err)),
     });
   }
 

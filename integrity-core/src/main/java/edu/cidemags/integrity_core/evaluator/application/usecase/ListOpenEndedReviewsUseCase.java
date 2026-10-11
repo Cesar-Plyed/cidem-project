@@ -48,70 +48,72 @@ public class ListOpenEndedReviewsUseCase {
 
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ExamNotFoundException(examId));
-
-        boolean isOwner = exam.getCreatedByUserId().equals(requesterId);
-        if (!isOwner && !administrator) {
-            throw new IllegalStateException("No puedes consultar revisiones de otro profesor");
-        }
+        requireOwnerOrAdmin(exam, requesterId, administrator);
 
         Map<UUID, Question> openEndedQuestions = exam.getQuestions().stream()
                 .filter(q -> q.getType() == QuestionType.OPEN_ENDED)
                 .collect(Collectors.toMap(Question::getId, q -> q));
-
         if (openEndedQuestions.isEmpty()) {
             return List.of();
         }
 
-        List<ExamAttempt> attempts = examAttemptRepository.findByExamId(examId);
-        if (attempts.isEmpty()) {
+        List<ExamAttempt> submittedAttempts = examAttemptRepository.findByExamId(examId).stream()
+                .filter(ExamAttempt::isSubmitted)
+                .toList();
+        if (submittedAttempts.isEmpty()) {
             return List.of();
         }
 
-        List<UUID> allAnswerIds = new ArrayList<>();
-        List<ExamAttempt> nonSubmittedAttempts = new ArrayList<>();
-
-        for (ExamAttempt attempt : attempts) {
-            if (!attempt.isSubmitted()) {
-                nonSubmittedAttempts.add(attempt);
-                continue;
-            }
-            List<ExamAnswer> answers = examAnswerRepository.findByAttemptId(attempt.getId());
-            for (ExamAnswer answer : answers) {
-                if (openEndedQuestions.containsKey(answer.getQuestionId())) {
-                    allAnswerIds.add(answer.getId());
-                }
-            }
-        }
-
-        if (allAnswerIds.isEmpty()) {
+        List<AnswerInContext> contexts = collectOpenEndedAnswers(submittedAttempts, openEndedQuestions);
+        if (contexts.isEmpty()) {
             return List.of();
         }
 
-        Map<UUID, EvaluationReview> reviewsByAnswerId = evaluationReviewRepository.findByAnswerIds(allAnswerIds)
+        Map<UUID, EvaluationReview> reviewsByAnswerId = evaluationReviewRepository
+                .findByAnswerIds(contexts.stream().map(context -> context.answer().getId()).toList())
                 .stream()
                 .collect(Collectors.toMap(EvaluationReview::getAnswerId, r -> r));
 
-        List<OpenEndedReviewResponse> results = new ArrayList<>();
-        for (ExamAttempt attempt : attempts) {
-            if (!attempt.isSubmitted()) {
-                continue;
-            }
-            List<ExamAnswer> answers = examAnswerRepository.findByAttemptId(attempt.getId());
-            for (ExamAnswer answer : answers) {
+        return buildResponses(contexts, reviewsByAnswerId, onlyPending);
+    }
+
+    private void requireOwnerOrAdmin(Exam exam, UUID requesterId, boolean administrator) {
+        boolean isOwner = exam.getCreatedByUserId().equals(requesterId);
+        if (!isOwner && !administrator) {
+            throw new IllegalStateException("No puedes consultar revisiones de otro profesor");
+        }
+    }
+
+    /** Una sola lectura de respuestas por intento (antes se recorría dos veces). */
+    private List<AnswerInContext> collectOpenEndedAnswers(List<ExamAttempt> submittedAttempts,
+            Map<UUID, Question> openEndedQuestions) {
+        List<AnswerInContext> contexts = new ArrayList<>();
+        for (ExamAttempt attempt : submittedAttempts) {
+            for (ExamAnswer answer : examAnswerRepository.findByAttemptId(attempt.getId())) {
                 Question question = openEndedQuestions.get(answer.getQuestionId());
-                if (question == null) {
-                    continue;
+                if (question != null) {
+                    contexts.add(new AnswerInContext(attempt, answer, question));
                 }
-                EvaluationReview review = reviewsByAnswerId.get(answer.getId());
-                boolean reviewed = review != null;
-                if (onlyPending && reviewed) {
-                    continue;
-                }
-                results.add(toResponse(answer, attempt, question, review));
             }
         }
+        return contexts;
+    }
 
+    private List<OpenEndedReviewResponse> buildResponses(List<AnswerInContext> contexts,
+            Map<UUID, EvaluationReview> reviewsByAnswerId, boolean onlyPending) {
+        List<OpenEndedReviewResponse> results = new ArrayList<>();
+        for (AnswerInContext context : contexts) {
+            EvaluationReview review = reviewsByAnswerId.get(context.answer().getId());
+            if (onlyPending && review != null) {
+                continue;
+            }
+            results.add(toResponse(context.answer(), context.attempt(), context.question(), review));
+        }
         return results;
+    }
+
+    /** Respuesta de examen abierta con su pregunta y su intento ya resueltos. */
+    private record AnswerInContext(ExamAttempt attempt, ExamAnswer answer, Question question) {
     }
 
     private OpenEndedReviewResponse toResponse(ExamAnswer answer, ExamAttempt attempt, Question question,
@@ -123,6 +125,7 @@ public class ListOpenEndedReviewsUseCase {
                 question.getId(),
                 question.getPrompt(),
                 answer.getOpenTextAnswer(),
+                question.getPoints(),
                 review != null ? review.getScore() : null,
                 review != null ? review.getFeedback() : null,
                 review != null ? review.getReviewerId() : null,

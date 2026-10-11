@@ -14,4 +14,6 @@ public interface ExamAttemptRepository {
     List<ExamAttempt> findByStudentId(UUID studentId);
 
     List<ExamAttempt> findByExamId(UUID examId);
+
+    boolean existsByExamId(UUID examId);
 }

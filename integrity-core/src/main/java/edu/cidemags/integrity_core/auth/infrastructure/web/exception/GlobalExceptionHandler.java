@@ -1,6 +1,5 @@
 package edu.cidemags.integrity_core.auth.infrastructure.web.exception;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -21,6 +20,7 @@ import edu.cidemags.integrity_core.auth.domain.exception.InvalidRoleAssignmentEx
 import edu.cidemags.integrity_core.auth.domain.exception.UserNotFoundException;
 import edu.cidemags.integrity_core.auth.infrastructure.web.dto.ErrorResponse;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAccessCodeNotFoundException;
+import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAlreadyAttemptedException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamClosedException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamNotFoundException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.QuestionBankNotFoundException;
@@ -68,6 +68,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(ExamAlreadyAttemptedException.class)
+    public ResponseEntity<ErrorResponse> handleExamAlreadyAttempted(ExamAlreadyAttemptedException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidRoleAssignmentException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRoleAssignment(InvalidRoleAssignmentException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
@@ -85,13 +90,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> fieldErrors = new HashMap<>();
+        // LinkedHashMap: conserva el orden de los campos en la respuesta.
+        Map<String, String> fieldErrors = new java.util.LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors()
-                .forEach(fieldError -> fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage()));
+                .forEach(fieldError -> fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage()));
 
         ErrorResponse body = ErrorResponse.ofValidation(
                 HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // Violaciones de restricciones unicas (p. ej. duplicados) -> 409 en vez de 500.
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Violacion de integridad de datos: {}", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "La operacion entra en conflicto con datos existentes");
     }
 
     @ExceptionHandler(Exception.class)
@@ -107,7 +121,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleUnreadable(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleUnreadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        log.warn("Cuerpo ilegible: {}", cause != null ? cause.getMessage() : ex.getMessage());
         return build(HttpStatus.BAD_REQUEST, "El cuerpo de la petición no es válido");
     }
 

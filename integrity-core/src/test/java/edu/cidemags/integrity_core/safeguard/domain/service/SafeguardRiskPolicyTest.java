@@ -39,7 +39,10 @@ class SafeguardRiskPolicyTest {
             "FULLSCREEN_EXIT,3",    "COPY_PASTE,3",
             "NO_FACE_DETECTED,3",   "MICROPHONE_DISABLED,3",
             "CAMERA_DISABLED,4",    "DEVICE_CHANGE,4",
-            "MULTIPLE_FACES,5",     "SUSPICIOUS_ACTIVITY,5"
+            "SCREEN_SHARE_STOPPED,4",
+            "CAMERA_BLOCKED,4",     "MICROPHONE_ANOMALY,4",
+            "MULTIPLE_FACES,5",     "SUSPICIOUS_ACTIVITY,5",
+            "DEVTOOLS_OPENED,5"
     })
     void assess_assignsExpectedSeverityAndPoints(SafeguardEventType type, int expectedSeverity) {
         SafeguardRiskPolicy.Assessment a = policy.assess(type, 0, config(3));
@@ -75,13 +78,12 @@ class SafeguardRiskPolicyTest {
         assertEquals(10, a.riskPoints());
     }
 
-    @ParameterizedTest(name = "{0} sin puntaje definido")
-    @ValueSource(strings = {"DEVTOOLS_OPENED", "CAMERA_BLOCKED", "MICROPHONE_ANOMALY", "SCREEN_SHARE_STOPPED"})
-    void eventTypesWithoutPolicyRules_throwIllegalArgumentException(String typeName) {
-        // Caracterización: estos tipos existen en el enum pero aún no tienen regla
-        // (el switch cae a default). Queda documentado en safeguard/README.md §8.
-        SafeguardEventType type = SafeguardEventType.valueOf(typeName);
+    @Test
+    void devtoolsOpened_closedOrOpen_logsAndPenalizesOncePerAttempt() {
+        // DEVTOOLS_OPENED no escala por repetición: prior alto no cambia la severidad
+        SafeguardRiskPolicy.Assessment a = policy.assess(SafeguardEventType.DEVTOOLS_OPENED, 99, config(3));
 
-        assertThrows(IllegalArgumentException.class, () -> policy.assess(type, 0, config(3)));
+        assertEquals(5, a.severity());
+        assertEquals(35, a.riskPoints());
     }
 }

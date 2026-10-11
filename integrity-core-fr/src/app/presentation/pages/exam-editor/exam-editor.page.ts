@@ -1,5 +1,4 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import {
   FormArray,
   FormBuilder,
@@ -10,25 +9,8 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
   IonContent,
-  IonList,
-  IonItem,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
-  IonButton,
   IonIcon,
-  IonText,
-  IonSpinner,
-  IonRadioGroup,
-  IonRadio,
-  IonCard,
-  IonCardContent,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { addOutline, trashOutline } from 'ionicons/icons';
@@ -37,6 +19,7 @@ import { CreateExamUseCase } from '../../../application/use-cases/exam/create-ex
 import { UpdateExamUseCase } from '../../../application/use-cases/exam/update-exam.use-case';
 import { QuestionType } from '../../../domain/models/exam/question-type.enum';
 import { Exam } from '../../../domain/models/exam/exam.model';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 
 interface QuestionFormValue {
   id: string;
@@ -52,27 +35,10 @@ interface QuestionFormValue {
   templateUrl: 'exam-editor.page.html',
   styleUrls: ['exam-editor.page.scss'],
   imports: [
-    CommonModule,
     ReactiveFormsModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
     IonContent,
-    IonList,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
-    IonButton,
     IonIcon,
-    IonText,
-    IonSpinner,
-    IonRadioGroup,
-    IonRadio,
-    IonCard,
-    IonCardContent,
+    AppHeaderComponent,
   ],
 })
 export class ExamEditorPage implements OnInit {
@@ -106,6 +72,22 @@ export class ExamEditorPage implements OnInit {
     return this.form.controls.questions;
   }
 
+  /** Tope total de puntos del examen: la nota se expresa sobre 10. */
+  readonly maxTotalPoints = 10;
+
+  /** Suma de los puntos de todas las preguntas (para el indicador "Total: X / 10"). */
+  get totalPoints(): number {
+    return this.questions.controls.reduce((sum, group) => {
+      const value = Number(group.get('points')?.value);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+  }
+
+  /** true cuando la suma de puntos se pasa del tope de 10. */
+  get exceedsTotalPoints(): boolean {
+    return this.totalPoints > this.maxTotalPoints;
+  }
+
   get title() {
     return this.form.controls.title;
   }
@@ -120,10 +102,6 @@ export class ExamEditorPage implements OnInit {
 
   questionCtrl(index: number, name: string) {
     return this.questions.at(index)?.get(name);
-  }
-
-  questionOptions(index: number): FormArray<FormGroup> {
-    return this.optionsOf(index);
   }
 
   optionTextTouched(questionIndex: number, optionIndex: number): boolean {
@@ -190,7 +168,7 @@ export class ExamEditorPage implements OnInit {
       id: [crypto.randomUUID()],
       type: [type, Validators.required],
       statement: ['', Validators.required],
-      points: [1, [Validators.required, Validators.min(1)]],
+      points: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
       correctOptionId: [null as string | null],
       options: this.fb.array<FormGroup>(
         type === QuestionType.MULTIPLE_CHOICE
@@ -271,7 +249,6 @@ export class ExamEditorPage implements OnInit {
       const message = invalidFields.length > 0
         ? `Revisa los siguientes campos: ${invalidFields.join(', ')}.`
         : 'Revisa los campos marcados.';
-      console.log('[ExamEditor] Campos inválidos:', invalidFields);
       this.errorMessage.set(
         this.questions.length === 0
           ? 'Agrega al menos una pregunta.'
@@ -291,11 +268,18 @@ export class ExamEditorPage implements OnInit {
       return;
     }
 
+    if (this.exceedsTotalPoints) {
+      this.errorMessage.set(
+        `La suma de puntos del examen no puede exceder ${this.maxTotalPoints} (llevas ${this.totalPoints}).`,
+      );
+      return;
+    }
+
     this.saving.set(true);
     this.errorMessage.set(null);
 
     const raw = this.form.getRawValue();
-    const questionValues = raw.questions as unknown as QuestionFormValue[];
+    const questionValues = raw.questions as QuestionFormValue[];
 
     const examPayload = {
       title: raw.title!,
@@ -341,7 +325,6 @@ export class ExamEditorPage implements OnInit {
     Object.keys(this.form.controls).forEach((key) => {
       const control = this.form.get(key);
       if (control && control.invalid) {
-        console.log(`[ExamEditor] Control "${key}" inválido:`, control.errors, 'valor:', control.value);
         fields.push(key);
       }
     });
@@ -350,7 +333,6 @@ export class ExamEditorPage implements OnInit {
         const control = group.get(key);
         if (control && control.invalid) {
           const label = this.fieldLabel(key);
-          console.log(`[ExamEditor] questions[${index}].${key} inválido:`, control.errors, 'valor:', control.value);
           fields.push(`Pregunta ${index + 1}: ${label}`);
         }
       });
@@ -359,7 +341,6 @@ export class ExamEditorPage implements OnInit {
         Object.keys(opt.controls).forEach((key) => {
           const control = opt.get(key);
           if (control && control.invalid) {
-            console.log(`[ExamEditor] questions[${index}].options[${optIndex}].${key} inválido:`, control.errors, 'valor:', control.value);
             fields.push(`Pregunta ${index + 1}, opción ${optIndex + 1}: ${this.fieldLabel(key)}`);
           }
         });

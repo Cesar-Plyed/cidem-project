@@ -12,5 +12,7 @@ public interface ExamAttemptPort {
     /** TRUE si el alumno tiene al menos un intento en el examen (lectura de config por ALUMNO). */
     boolean attemptExistsForStudent(UUID examId, UUID studentId);
 
+    void failAttemptForIntegrity(UUID attemptId);
+
     record AttemptRef(UUID attemptId, UUID examId, UUID studentId) {}
 }
