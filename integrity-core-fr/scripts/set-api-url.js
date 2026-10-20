@@ -22,6 +22,6 @@ if (process.env.VERCEL && !apiUrl.startsWith('https://')) {
 
 writeFileSync(
   'src/environments/environment.prod.ts',
-  `export const environment = {\n  production: true,\n  apiUrl: '${apiUrl}',\n};\n`,
+  `export const environment = {\n  production: true,\n  useMocks: false,\n  apiUrl: '${apiUrl}',\n};\n`,
 );
 console.log(`[set-api-url] apiUrl = ${apiUrl}`);
