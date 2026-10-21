@@ -1,11 +1,11 @@
 # CIDEM Integrity
 
-Plataforma de integridad academica con un backend Spring Boot y un frontend Angular/Ionic.
+Plataforma de integridad académica con un backend Spring Boot y un frontend Angular/Ionic.
 
 ## Estructura
 
-- `integrity-core/`: API REST, autenticacion JWT, persistencia JPA, Flyway, evaluator y sentinel.
-- `integrity-core-fr/`: aplicacion web Angular/Ionic.
+- `integrity-core/`: API REST, autenticación JWT, persistencia JPA, Flyway, evaluator y sentinel.
+- `integrity-core-fr/`: aplicación web Angular/Ionic.
 - `docker-compose.yml`: entorno completo con PostgreSQL, Redis, backend y frontend.
 
 ## Requisitos
@@ -17,7 +17,7 @@ Plataforma de integridad academica con un backend Spring Boot y un frontend Angu
 
 ## Ejecutar con Compose
 
-Desde la raiz del repositorio:
+Desde la raíz del repositorio:
 
 ```bash
 docker compose up -d --build
@@ -28,19 +28,13 @@ Servicios disponibles:
 - Frontend: http://localhost:8081
 - Backend: http://localhost:8080
 - Health check: http://localhost:8080/actuator/health
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
 Para detener los servicios:
 
 ```bash
 docker compose down
-```
-
-El Compose usa el volumen externo configurado en `docker-compose.yml`. Si el volumen no existe en una instalacion nueva, crealo antes de levantar los servicios:
-
-```bash
-docker volume create b98896fb802fe6281d6f268378511036b8ffdb8283b9e5c582ee9fc7f79da7c7
 ```
 
 ## Ejecutar en desarrollo
@@ -53,15 +47,22 @@ docker compose up -d db redis
 
 ### Backend
 
-Las variables requeridas son:
+Copia el archivo `.env.example` y define valores reales en tu entorno local antes de ejecutar:
+
+```bash
+cp .env.example .env
+# Luego edita .env con tus valores locales
+```
+
+El backend usa estas variables:
 
 ```bash
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/integrity_db
 export SPRING_DATASOURCE_USERNAME=postgres
-export SPRING_DATASOURCE_PASSWORD=postgres
-export JWT_SECRET=tu_clave_secreta_super_segura_para_jwt_32_caracteres_min
-export ADMIN_REGISTRATION_CODE=admin-local
-export PROFESOR_REGISTRATION_CODE=profesor-local
+export SPRING_DATASOURCE_PASSWORD=change_me_postgres_password
+export JWT_SECRET=change_me_jwt_secret_32_chars
+export ADMIN_REGISTRATION_CODE=change_me_admin_code
+export PROFESOR_REGISTRATION_CODE=change_me_professor_code
 ```
 
 Luego:
@@ -71,7 +72,7 @@ cd integrity-core
 ./mvnw spring-boot:run
 ```
 
-Flyway crea y actualiza el esquema automaticamente al iniciar.
+Flyway crea y actualiza el esquema automáticamente al iniciar.
 
 ### Frontend
 
@@ -83,19 +84,19 @@ npm install
 npm start
 ```
 
-La aplicacion queda disponible en http://localhost:4200 y usa el backend de http://localhost:8080.
+La aplicación queda disponible en http://localhost:4200 y usa el backend de http://localhost:8080.
 
 ## Funcionalidades principales
 
-- Registro e inicio de sesion con JWT.
-- Catalogo de paises con Mexico como registro inicial.
+- Registro e inicio de sesión con JWT.
+- Catálogo de países con México como registro inicial.
 - Dashboard por rol: administrador, profesor y alumno.
 - Administradores pueden consultar todos los usuarios.
 - Profesores pueden consultar los alumnos.
-- Alumnos ingresan a examenes mediante codigo de acceso.
-- Creacion de examenes con preguntas y opciones correctas en una sola peticion.
-- Modulo evaluator para examenes, intentos, respuestas y resultados.
-- Modulo sentinel para eventos sospechosos y alertas.
+- Alumnos ingresan a exámenes mediante código de acceso.
+- Creación de exámenes con preguntas y opciones correctas en una sola petición.
+- Módulo evaluator para exámenes, intentos, respuestas y resultados.
+- Módulo sentinel para eventos sospechosos y alertas.
 
 ## Pruebas y validaciones
 
@@ -116,7 +117,7 @@ npm run lint
 
 ## Migraciones
 
-Las migraciones de base de datos estan en `integrity-core/src/main/resources/db/migration/` y son administradas por Flyway. No se debe modificar una migracion que ya haya sido aplicada; agrega una nueva con la siguiente version disponible.
+Las migraciones de base de datos están en `integrity-core/src/main/resources/db/migration/` y son administradas por Flyway. No se debe modificar una migración que ya haya sido aplicada; agrega una nueva con la siguiente versión disponible.
 
 ## API
 
@@ -126,28 +127,26 @@ La API se publica bajo:
 http://localhost:8080
 ```
 
-El endpoint publico de paises es `GET /auth/countries`. La documentacion OpenAPI, si esta habilitada, esta disponible en `/swagger-ui/index.html`.
+El endpoint público de países es `GET /auth/countries`. La documentación OpenAPI, si está habilitada, está disponible en `/swagger-ui/index.html`.
 
 ## Despliegue del frontend en Vercel
 
-El frontend se despliega como sitio estatico independiente; el backend Spring Boot, PostgreSQL y Redis deben estar desplegados y ser accesibles por HTTPS en otro servicio.
+El frontend se despliega como sitio estático independiente; el backend Spring Boot, PostgreSQL y Redis deben estar desplegados y ser accesibles por HTTPS en otro servicio.
 
 1. Importa este repositorio en Vercel y configura **Root Directory** como `integrity-core-fr`.
-2. Conserva los comandos y la salida definidos en `integrity-core-fr/vercel.json`: `npm ci`, build de produccion y directorio `www/`. Las reescrituras SPA permiten que las rutas Angular funcionen al recargar.
-3. Configura la variable de entorno `API_URL` en Vercel para Preview y Production con la URL HTTPS publica del backend (sin barra final). El build falla si falta o si no usa HTTPS, en vez de publicar una app apuntando a localhost.
-4. En el servicio del backend, configura `CORS_ALLOWED_ORIGINS` con los origenes de Vercel permitidos (dominio de produccion y, si aplica, dominio Preview). No uses `*` con autenticacion por credenciales.
-
-El workflow de GitHub Actions en `.github/workflows/ci.yml` sigue ejecutando tests, lint y builds de backend/frontend en push a `main` y en Pull Requests. No hace un segundo deploy: al conectar el proyecto Vercel con GitHub, Vercel crea Preview Deployments para Pull Requests y Production Deployments desde `main`; usa los checks de GitHub como proteccion de despliegue si se requiere que CI pase antes de publicar. El primer enlace del repositorio y la configuracion de variables se completan en el panel de Vercel; no se guardan tokens ni IDs de proyecto en Git.
+2. Conserva los comandos y la salida definidos en `integrity-core-fr/vercel.json`: `npm ci`, build de producción y directorio `www/`.
+3. Configura la variable de entorno `API_URL` en Vercel para Preview y Production con la URL HTTPS pública del backend (sin barra final).
+4. En el servicio del backend, configura `CORS_ALLOWED_ORIGINS` con los orígenes de Vercel permitidos.
 
 ## Releases alpha de Tauri
 
-El workflow `.github/workflows/tauri-alpha.yml` primero valida el backend con `verify` y ejecuta lint, luego compila instaladores para Linux, Windows, macOS Apple Silicon y macOS Intel y los publica como GitHub Pre-release al subir un tag con formato `v*-alpha*` (por ejemplo, `v0.1.0-alpha.1`). Antes, configura la variable de repositorio `API_URL` en **Settings → Secrets and variables → Actions → Variables** con la misma URL HTTPS del backend que se usa en Vercel. No es un secreto; el endpoint queda incorporado en la aplicación.
+El workflow `.github/workflows/tauri-alpha.yml` valida el backend, ejecuta lint y compila instaladores para Linux, Windows, macOS Apple Silicon y macOS Intel.
 
-El workflow exige esa variable, genera un CSP que solo permite conexiones HTTPS/WSS al origen configurado (además de localhost para desarrollo) y después compila Tauri. Para crear una alpha:
+Para crear una alpha:
 
 ```bash
 git tag v0.1.0-alpha.1
 git push origin v0.1.0-alpha.1
 ```
 
-Configura `CORS_ALLOWED_ORIGINS` en el backend para aceptar los origenes del frontend web y de Tauri (`tauri://localhost` y `http://tauri.localhost` cuando aplique). `GITHUB_TOKEN` lo proporciona Actions automáticamente para publicar los assets; no requiere un token personal.
+Configura `CORS_ALLOWED_ORIGINS` en el backend para aceptar los orígenes del frontend web y de Tauri.
