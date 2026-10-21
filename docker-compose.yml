@@ -4,15 +4,15 @@ services:
     container_name: integrity-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: integrity_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-integrity_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_postgres_password}
     ports:
       - "5432:5432"
     volumes:
       - integrity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d integrity_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-integrity_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -47,14 +47,14 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/integrity_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      JWT_SECRET: tu_clave_secreta_super_segura_para_jwt_32_caracteres_min
-      ADMIN_REGISTRATION_CODE: admin-local
-      PROFESOR_REGISTRATION_CODE: profesor-local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-integrity_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-change_me_postgres_password}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret_32_chars}
+      ADMIN_REGISTRATION_CODE: ${ADMIN_REGISTRATION_CODE:-change_me_admin_code}
+      PROFESOR_REGISTRATION_CODE: ${PROFESOR_REGISTRATION_CODE:-change_me_professor_code}
     ports:
       - "8080:8080"
     networks:
