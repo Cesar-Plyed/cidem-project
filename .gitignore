@@ -72,6 +72,8 @@ integrity-core-fr/.env
 # ==========================================
 infra/ssh_keys/authorized_keys
 
-#AI docs
+# AI docs
 AGENTS.md
 MEMORY.md
+IDEA.md
+specs/
