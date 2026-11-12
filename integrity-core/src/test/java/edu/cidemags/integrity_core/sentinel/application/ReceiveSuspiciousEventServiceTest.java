@@ -1,6 +1,6 @@
 package edu.cidemags.integrity_core.sentinel.application;
 
-import edu.cidemags.integrity_core.sentinel.application.event.AlertGeneratedEvent;
+import edu.cidemags.integrity_core.sentinel.application.service.SentinelEventPublisher;
 import edu.cidemags.integrity_core.sentinel.domain.*;
 import edu.cidemags.integrity_core.sentinel.ports.in.ReceiveSuspiciousEventCommand;
 import edu.cidemags.integrity_core.sentinel.ports.out.AlertRepositoryPort;
@@ -10,7 +10,6 @@ import edu.cidemags.integrity_core.sentinel.ports.out.SuspiciousEventRepositoryP
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,12 +26,13 @@ class ReceiveSuspiciousEventServiceTest {
     private EventWindowPort eventWindowPort;
     private AlertRepositoryPort alertRepository;
     private AlertEscalationPolicy escalationPolicy;
-    private ApplicationEventPublisher eventPublisher;
+    private SentinelEventPublisher eventPublisher;
     private ReceiveSuspiciousEventService service;
 
     private final UUID examSessionId = UUID.randomUUID();
     private final UUID studentId = UUID.randomUUID();
     private final UUID attemptId = UUID.randomUUID();
+    private final UUID examId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -40,7 +40,7 @@ class ReceiveSuspiciousEventServiceTest {
         eventWindowPort = mock(EventWindowPort.class);
         alertRepository = mock(AlertRepositoryPort.class);
         escalationPolicy = mock(AlertEscalationPolicy.class);
-        eventPublisher = mock(ApplicationEventPublisher.class);
+        eventPublisher = mock(SentinelEventPublisher.class);
 
         service = new ReceiveSuspiciousEventService(
             eventRepository, eventWindowPort, alertRepository, escalationPolicy, eventPublisher
@@ -49,7 +49,7 @@ class ReceiveSuspiciousEventServiceTest {
 
     private ReceiveSuspiciousEventCommand command() {
         return new ReceiveSuspiciousEventCommand(
-            examSessionId, studentId, attemptId, EventType.WINDOW_FOCUS_LOST, Instant.now()
+            examSessionId, studentId, attemptId, EventType.WINDOW_FOCUS_LOST, Instant.now(), examId
         );
     }
 
@@ -61,10 +61,15 @@ class ReceiveSuspiciousEventServiceTest {
         Optional<Alert> result = service.receive(command());
 
         assertThat(result).isEmpty();
-        verify(eventRepository).save(any(SuspiciousEvent.class));
+
+        ArgumentCaptor<SuspiciousEvent> captor = ArgumentCaptor.forClass(SuspiciousEvent.class);
+        verify(eventRepository).save(captor.capture());
+        assertThat(captor.getValue().examId()).isEqualTo(examId);
+        assertThat(captor.getValue().source()).isEqualTo("SENTINEL");
+
         verify(eventWindowPort).record(any(SuspiciousEvent.class));
         verify(alertRepository, never()).save(any());
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -72,7 +77,7 @@ class ReceiveSuspiciousEventServiceTest {
         Alert alert = new Alert(
             UUID.randomUUID(), new ExamSessionId(examSessionId), new StudentId(studentId), new AttemptId(attemptId),
             AlertSeverity.HIGH, "Cambio de aplicación detectado",
-            List.of(UUID.randomUUID()), Instant.now()
+            List.of(UUID.randomUUID()), Instant.now(), "TAB_SWITCH", examId, false
         );
 
         when(eventWindowPort.findRecentEvents(any(), any(), any(), any())).thenReturn(List.of());
@@ -82,10 +87,7 @@ class ReceiveSuspiciousEventServiceTest {
 
         assertThat(result).contains(alert);
         verify(alertRepository).save(alert);
-
-        ArgumentCaptor<AlertGeneratedEvent> captor = ArgumentCaptor.forClass(AlertGeneratedEvent.class);
-        verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue().alert()).isEqualTo(alert);
+        verify(eventPublisher).publish(alert);
     }
 
     @Test
