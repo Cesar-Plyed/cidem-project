@@ -46,10 +46,9 @@ public class SentinelWebSocketController {
             return;
         }
 
-        boolean owned = attemptOwnershipPort.findOwner(payload.attemptId())
-            .map(owner -> owner.studentId().equals(principalUserId))
-            .orElse(false);
-        if (!owned) {
+        var owner = attemptOwnershipPort.findOwner(payload.attemptId())
+            .filter(candidate -> candidate.studentId().equals(principalUserId));
+        if (owner.isEmpty()) {
             return;
         }
 
@@ -58,7 +57,8 @@ public class SentinelWebSocketController {
             principalUserId,
             payload.attemptId(),
             payload.type(),
-            payload.occurredAt()
+            payload.occurredAt(),
+            owner.get().examId()
         );
 
         Optional<Alert> alert = receiveSuspiciousEventUseCase.receive(command);
