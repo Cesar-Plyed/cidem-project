@@ -23,6 +23,13 @@ management:
     health:
       show-details: never   # no exponer detalles internos en producción
 
+sentinel:
+  escalation:
+    tab-switch-window: 300s      # 5 min
+    focus-loss-window: 60s       # 1 min
+    disconnection-window: 300s   # 5 min
+    copy-paste-window: 120s      # 2 min
+
 security:
   jwt:
     secret: ${JWT_SECRET}
