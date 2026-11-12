@@ -1,6 +1,6 @@
 package edu.cidemags.integrity_core.sentinel.application;
 
-import edu.cidemags.integrity_core.sentinel.application.event.AlertGeneratedEvent;
+import edu.cidemags.integrity_core.sentinel.application.service.SentinelEventPublisher;
 import edu.cidemags.integrity_core.sentinel.domain.Alert;
 import edu.cidemags.integrity_core.sentinel.domain.AlertEscalationPolicy;
 import edu.cidemags.integrity_core.sentinel.domain.AttemptId;
@@ -12,7 +12,6 @@ import edu.cidemags.integrity_core.sentinel.ports.in.ReceiveSuspiciousEventUseCa
 import edu.cidemags.integrity_core.sentinel.ports.out.AlertRepositoryPort;
 import edu.cidemags.integrity_core.sentinel.ports.out.EventWindowPort;
 import edu.cidemags.integrity_core.sentinel.ports.out.SuspiciousEventRepositoryPort;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -29,14 +28,14 @@ public class ReceiveSuspiciousEventService implements ReceiveSuspiciousEventUseC
     private final EventWindowPort eventWindowPort;
     private final AlertRepositoryPort alertRepository;
     private final AlertEscalationPolicy escalationPolicy;
-    private final ApplicationEventPublisher eventPublisher;
+    private final SentinelEventPublisher eventPublisher;
 
     public ReceiveSuspiciousEventService(
         SuspiciousEventRepositoryPort eventRepository,
         EventWindowPort eventWindowPort,
         AlertRepositoryPort alertRepository,
         AlertEscalationPolicy escalationPolicy,
-        ApplicationEventPublisher eventPublisher
+        SentinelEventPublisher eventPublisher
     ) {
         this.eventRepository = eventRepository;
         this.eventWindowPort = eventWindowPort;
@@ -53,7 +52,9 @@ public class ReceiveSuspiciousEventService implements ReceiveSuspiciousEventUseC
 
         SuspiciousEvent newEvent = new SuspiciousEvent(
             UUID.randomUUID(), examSessionId, studentId, attemptId,
-            command.type(), command.occurredAt()
+            command.type(), command.occurredAt(), command.examId(),
+            command.source() == null ? "SENTINEL" : command.source(),
+            command.payload()
         );
 
         eventRepository.save(newEvent);
@@ -67,7 +68,7 @@ public class ReceiveSuspiciousEventService implements ReceiveSuspiciousEventUseC
 
         generatedAlert.ifPresent(alert -> {
             alertRepository.save(alert);
-            eventPublisher.publishEvent(new AlertGeneratedEvent(alert));
+            eventPublisher.publish(alert);
         });
 
         return generatedAlert;
