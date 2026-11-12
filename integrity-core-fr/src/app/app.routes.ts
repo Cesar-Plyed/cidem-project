@@ -79,6 +79,11 @@ export const routes: Routes = [
     loadComponent: () => import('./presentation/pages/evaluator-demo/evaluator-demo.page').then((m) => m.EvaluatorDemoPage)
   },
   {
+    path: 'sentinel/alerts',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
+    loadComponent: () => import('./presentation/pages/sentinel-alerts/sentinel-alerts.page').then((m) => m.SentinelAlertsPage)
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }
