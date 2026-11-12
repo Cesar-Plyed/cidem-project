@@ -47,14 +47,14 @@ public final class ModuleConfig {
         OVERSIGHT("oversight"),
         SHARED("shared");
 
-        private final String name;
+        private final String label;
 
-        Module(String name) {
-            this.name = name;
+        Module(String label) {
+            this.label = label;
         }
 
-        public String name() {
-            return name;
+        public String label() {
+            return label;
         }
     }
 

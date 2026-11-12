@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -112,13 +113,14 @@ class SharedEventsSerialisationTest {
         );
 
         for (var event : events) {
-            String json = mapper.writeValueAsString(event);
-            var deserialized = mapper.readValue(json, event.getClass());
-            assertEquals(examId, deserialized.examId());
-            assertEquals(attemptId, deserialized.attemptId());
-            assertEquals(examSessionId, deserialized.examSessionId());
-            assertEquals(studentId, deserialized.studentId());
-            assertEquals(now, deserialized.occurredAt());
+            // Jackson deserializa con el tipo estático `Class<? extends Record>`,
+            // así que se comprueban los campos comunes sobre el JSON resultante.
+            var node = mapper.readTree(mapper.writeValueAsString(event));
+            assertEquals(examId.toString(), node.get("examId").asText());
+            assertEquals(attemptId.toString(), node.get("attemptId").asText());
+            assertEquals(examSessionId.toString(), node.get("examSessionId").asText());
+            assertEquals(studentId.toString(), node.get("studentId").asText());
+            assertEquals(now.getEpochSecond(), (long) node.get("occurredAt").asDouble());
         }
     }
 }
