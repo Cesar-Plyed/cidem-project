@@ -47,6 +47,12 @@ public class SafeguardConfigurationEntity {
     @Column(name = "auto_terminate_on_threshold", nullable = false)
     private boolean autoTerminateOnThreshold = false;
 
+    @Column(name = "allow_external_apps", nullable = false)
+    private boolean allowExternalApps = false;
+
+    @Column(name = "allow_external_tabs", nullable = false)
+    private boolean allowExternalTabs = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -147,6 +153,22 @@ public class SafeguardConfigurationEntity {
 
     public void setAutoTerminateOnThreshold(boolean autoTerminateOnThreshold) {
         this.autoTerminateOnThreshold = autoTerminateOnThreshold;
+    }
+
+    public boolean isAllowExternalApps() {
+        return allowExternalApps;
+    }
+
+    public void setAllowExternalApps(boolean allowExternalApps) {
+        this.allowExternalApps = allowExternalApps;
+    }
+
+    public boolean isAllowExternalTabs() {
+        return allowExternalTabs;
+    }
+
+    public void setAllowExternalTabs(boolean allowExternalTabs) {
+        this.allowExternalTabs = allowExternalTabs;
     }
 
     public Instant getCreatedAt() {

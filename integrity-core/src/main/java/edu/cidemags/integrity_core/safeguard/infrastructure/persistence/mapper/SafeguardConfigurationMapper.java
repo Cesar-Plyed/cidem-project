@@ -28,6 +28,8 @@ public class SafeguardConfigurationMapper {
         domain.setMaxTabSwitches(entity.getMaxTabSwitches());
         domain.setRiskThreshold(entity.getRiskThreshold());
         domain.setAutoTerminateOnThreshold(entity.isAutoTerminateOnThreshold());
+        domain.setAllowExternalApps(entity.isAllowExternalApps());
+        domain.setAllowExternalTabs(entity.isAllowExternalTabs());
         return domain;
     }
 
@@ -52,5 +54,7 @@ public class SafeguardConfigurationMapper {
         entity.setMaxTabSwitches(domain.getMaxTabSwitches());
         entity.setRiskThreshold(domain.getRiskThreshold());
         entity.setAutoTerminateOnThreshold(domain.isAutoTerminateOnThreshold());
+        entity.setAllowExternalApps(domain.isAllowExternalApps());
+        entity.setAllowExternalTabs(domain.isAllowExternalTabs());
     }
 }

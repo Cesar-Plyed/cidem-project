@@ -411,7 +411,8 @@ class SafeguardControllerTest {
                 + "\"requireFullscreen\":true,\"blockCopyPaste\":true,"
                 + "\"maxTabSwitches\":" + maxTabSwitches
                 + ",\"riskThreshold\":" + riskThreshold
-                + ",\"autoTerminateOnThreshold\":true}";
+                + ",\"autoTerminateOnThreshold\":true"
+                + ",\"restrictions\":[],\"allowExternalApps\":false,\"allowExternalTabs\":false}";
     }
 
     private static ConfigView configView(int maxTabSwitches, int riskThreshold) {

@@ -1,5 +1,6 @@
 package edu.cidemags.integrity_core.safeguard.infrastructure.web.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ import edu.cidemags.integrity_core.safeguard.application.dto.RecordEventCommand;
 import edu.cidemags.integrity_core.safeguard.application.dto.RecordEventResult;
 import edu.cidemags.integrity_core.safeguard.application.dto.StartSessionCommand;
 import edu.cidemags.integrity_core.safeguard.application.dto.UpsertConfigCommand;
+import edu.cidemags.integrity_core.safeguard.domain.model.Restriction;
 import edu.cidemags.integrity_core.safeguard.application.usecase.SafeguardService;
 import edu.cidemags.integrity_core.safeguard.infrastructure.security.CurrentStudentProvider;
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.ConfigResponse;
@@ -31,6 +33,7 @@ import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.HeartbeatRes
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.RecordEventRequest;
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.RecordEventResponse;
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.SaveConfigurationRequest;
+import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.SaveRestrictionRequest;
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.SessionResponse;
 import edu.cidemags.integrity_core.safeguard.infrastructure.web.dto.StartSessionRequest;
 
@@ -65,8 +68,20 @@ public class SafeguardController {
                                        @Valid @RequestBody SaveConfigurationRequest body) {
         var cmd = new UpsertConfigCommand(examId, body.enabled(), body.requireCamera(),
                 body.requireMicrophone(), body.requireFullscreen(), body.blockCopyPaste(),
-                body.maxTabSwitches(), body.riskThreshold(), body.autoTerminateOnThreshold());
+                body.maxTabSwitches(), body.riskThreshold(), body.autoTerminateOnThreshold(),
+                toRestrictions(body.restrictions()), body.allowExternalApps(), body.allowExternalTabs());
         return ConfigResponse.from(service.upsertConfiguration(cmd));
+    }
+
+    /** Traduce las restricciones de la request a dominio; {@code null} si no se enviaron. */
+    private static List<Restriction> toRestrictions(List<SaveRestrictionRequest> restrictions) {
+        if (restrictions == null) {
+            return null;
+        }
+        return restrictions.stream()
+                .map(r -> Restriction.of(r.type(), r.enabled(), r.maxOccurrences(),
+                        r.windowSeconds(), r.severity()))
+                .toList();
     }
 
     @PostMapping("/sessions/start")
