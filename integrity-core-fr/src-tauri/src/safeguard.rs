@@ -136,6 +136,25 @@ pub fn take_screenshot(app: AppHandle) -> Result<String, String> {
     Ok("/tmp/screenshot.png".to_string())
 }
 
+/// Detecta si el SO/navegador impone restricciones web para el examen dado
+/// (modo kiosco, bloqueo del navegador, restricciones a nivel de SO, etc.).
+///
+/// TODO: implement native detection (kiosk mode / browser lock / OS-level web
+/// restrictions). Hoy devuelve `true` como marcador hasta cablear la detección
+/// real por plataforma (Win32/Accessibility/X11).
+#[tauri::command]
+pub fn detect_web_restrictions(exam_id: String) -> Result<bool, String> {
+    log::debug!("detect_web_restrictions called for exam {}", exam_id);
+    // TODO: implement native detection
+    Ok(true)
+}
+
+/// Comando de capacidad mínima: verifica que el puente Angular <-> Rust responde.
+#[tauri::command]
+pub fn hello() -> String {
+    "Hello from Tauri".to_string()
+}
+
 /// Emite una violación nativa al webview (lo consume TauriSafeguardPlatform).
 ///
 /// Aún no hay productor: la detección portable de "ventana activa del SO" require
