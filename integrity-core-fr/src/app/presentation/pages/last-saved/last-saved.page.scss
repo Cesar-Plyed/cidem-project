@@ -1,0 +1,19 @@
+.last-saved {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .info {
+    .saved-label {
+      font-weight: 600;
+      font-size: 15px;
+      margin: 0 0 4px 0;
+    }
+
+    .saved-detail {
+      font-size: 13px;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
+  }
+}

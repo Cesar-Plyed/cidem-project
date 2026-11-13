@@ -1,0 +1,23 @@
+.recovery-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 24px;
+
+  .alert-icon {
+    flex-shrink: 0;
+  }
+
+  .alert-content {
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+    }
+
+    p {
+      color: var(--ion-color-medium);
+      font-size: 14px;
+      margin: 0 0 16px 0;
+    }
+  }
+}
