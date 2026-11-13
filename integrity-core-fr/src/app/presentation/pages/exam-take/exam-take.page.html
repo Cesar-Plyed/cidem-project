@@ -52,6 +52,9 @@
     }
 
     @if (!submitted()) {
+    @if (!legalAccepted()) {
+    <app-legal-notice (accepted)="legalAccepted.set(true)" (rejected)="onLegalRejected()" />
+    } @else {
     <form [formGroup]="form" (ngSubmit)="submit()">
       @for (question of exam.questions; track question.id; let i = $index) {
       <section class="card mb-3">
@@ -100,6 +103,7 @@
         </button>
       </div>
     </form>
+    }
     }
     }
   </div>
