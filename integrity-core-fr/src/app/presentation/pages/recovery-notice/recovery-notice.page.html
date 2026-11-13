@@ -1,0 +1,49 @@
+<ion-header *ngIf="recoveryMessage()">
+  <ion-toolbar color="warning">
+    <ion-title>
+      <ion-icon name="warning-outline" slot="start"></ion-icon>
+      {{ recoveryMessage() }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="recovery-notice" *ngIf="showAlert()">
+    <div class="alert-icon">
+      <ion-icon name="cloud-offline-outline" [color]="connectionLost() ? 'danger' : 'warning'"></ion-icon>
+    </div>
+    <div class="alert-content">
+      <h3>{{ title() }}</h3>
+      <p>{{ description() }}</p>
+      <ion-button *ngIf="!connectionLost()" size="small" fill="outline" (click)="retry()">
+        <ion-icon slot="start" name="refresh"></ion-icon>
+        Intentar de nuevo
+      </ion-button>
+      <ion-button *ngIf="connectionLost()" size="small" color="danger" (click)="reconnect()">
+        <ion-icon slot="start" name="cloud-download-outline"></ion-icon>
+        Restaurar progreso
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
+
+<style>
+  .recovery-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .alert-icon {
+    flex-shrink: 0;
+  }
+  .alert-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+  }
+  .alert-content p {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    margin: 0 0 16px 0;
+  }
+</style>

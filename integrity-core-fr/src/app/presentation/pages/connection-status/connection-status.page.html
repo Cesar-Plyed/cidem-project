@@ -1,0 +1,55 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Estado de Conexión</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="connection-status">
+    <div class="status-indicator" [class.connected]="isConnected()" [class.disconnected]="!isConnected()">
+      <ion-icon [name]="isConnected() ? 'checkmark-circle' : 'close-circle'"
+                [color]="isConnected() ? 'success' : 'danger'"></ion-icon>
+      <span class="label">{{ isConnected() ? 'Conectado' : 'Desconectado' }}</span>
+    </div>
+
+    <p class="detail-text" *ngIf="lastReconnectionDate()">
+      Última reconexión: {{ lastReconnectionDate() | date:'medium' }}
+    </p>
+
+    <p class="detail-text" *ngIf="connectionAttempts() > 0">
+      Reintentos: {{ connectionAttempts() }}
+    </p>
+
+    <ion-button *ngIf="!isConnected()" fill="outline" size="small" (click)="reconnect()">
+      <ion-icon slot="start" name="refresh"></ion-icon>
+      Reconectar
+    </ion-button>
+  </div>
+</ion-content>
+
+<style>
+  .connection-status {
+    padding: 16px;
+  }
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .status-indicator.connected ion-icon {
+    color: var(--ion-color-success);
+  }
+  .status-indicator.disconnected ion-icon {
+    color: var(--ion-color-danger);
+  }
+  .label {
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .detail-text {
+    color: var(--ion-color-medium);
+    font-size: 13px;
+    margin: 4px 0;
+  }
+</style>
