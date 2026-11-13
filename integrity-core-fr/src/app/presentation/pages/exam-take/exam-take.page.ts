@@ -10,6 +10,7 @@ import { QuestionType } from '../../../domain/models/exam/question-type.enum';
 import { ExamAnswer } from '../../../domain/models/exam/exam-answer.model';
 import { SafeguardMonitorService } from '../../../application/safeguard/safeguard-monitor.service';
 import { AppHeaderComponent } from '../../components/app-header/app-header.component';
+import { LegalNoticeComponent } from '../../../shared/components/legal-notice/legal-notice.component';
 
 @Component({
   selector: 'app-exam-take',
@@ -19,6 +20,7 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
     ReactiveFormsModule,
     // Shell de la página: cabecera con título, botón atrás y cierre de sesión.
     AppHeaderComponent,
+    LegalNoticeComponent,
     IonContent,
   ],
 })
@@ -38,8 +40,15 @@ export class ExamTakePage implements OnInit, OnDestroy {
   readonly submitting = signal(false);
   readonly submitted = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  /** El examen no se muestra hasta aceptar el aviso legal (spec 37). */
+  readonly legalAccepted = signal(false);
 
   form: FormGroup = this.fb.group({});
+
+  onLegalRejected(): void {
+    // El propio aviso redirige a /login; aquí solo se mantiene el examen bloqueado.
+    this.legalAccepted.set(false);
+  }
 
   constructor(
   ) {}
