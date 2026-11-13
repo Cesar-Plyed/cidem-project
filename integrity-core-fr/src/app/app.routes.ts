@@ -16,6 +16,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'legal',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR, Role.ALUMNO])],
+    loadComponent: () => import('./presentation/pages/legal/legal.page').then((m) => m.LegalPage)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./presentation/pages/login/login.page').then((m) => LoginPage)
   },

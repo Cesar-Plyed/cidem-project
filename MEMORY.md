@@ -89,3 +89,57 @@ y se eliminó el duplicado. Se mantienen las tablas de `V8` como fuente única.
 - `build-images.yml` usa `ghcr.io/cidem/` con push solo en push a main
 
 ---
+
+### Specs 36-50 — Cumplimiento legal / GDPR-LOPDGDD
+
+**Backend (`legal/`, Spring Boot 4.1 + Java 25):**
+- `V17__legal_compliance.sql` — agrupa todas las tablas (los specs pedían V005-V007,
+  pero la última aplicada es V16): `consent_logs`, `data_retention_policy`,
+  `archived_responses`, `audit_logs`, `data_capture_policy`, `erasure_requests`,
+  `object_requests`, `restriction_requests`, `data_breach_notifications`, `dpia`
+  y `is_deleted` en `users`/`exam_answers`/`sentinel_alerts`.
+- **36/40/48:** `ConsentLog` append-only (regla SQL bloquea UPDATE/DELETE),
+  `ConsentService` (grant/revoke/revoke-all/isGranted/status/history),
+  `ConsentController` (`/api/legal/consent/**`).
+- **38:** `DataRetentionPolicy`, `DataRetentionService` (`@Scheduled` día 1 a las
+  02:00), archiva en `archived_responses` antes de borrar de `exam_answers`.
+- **39:** `AuditLog` `@Immutable`, `@AuditTrail`, `AuditInterceptor`
+  (`HandlerInterceptor`, sin dependencia AOP), `AuditController` (solo ADMIN).
+- **41:** `DataCapturePolicy`, `DataMinimizationService` (SHA-256+salt, `maskIP`),
+  `/api/legal/data-types`, seed de 10 tipos.
+- **42/45:** `AccessService` y `PortabilityService` exportan JSON pretty y CSV
+  RFC-4180; descargas con `Content-Disposition`.
+- **43:** `RectificationService` con whitelist entityType/campo (sin SQL
+  injection) + borrado lógico; `@AuditTrail(action="RECTIFY_DATA")`.
+- **44:** `ErasureService` + `erasure_requests`. Hard delete de respuestas y
+  alertas; el audit trail se **pseudonimiza** (actor/IP/user-agent a NULL)
+  porque el spec 39 lo declara inmutable; `users` se marca `is_deleted`.
+- **46:** `ObjectService`/`ObjectRequest`; **47:** `RestrictionService`/`RestrictionRequest`
+  (ACTIVE al solicitar, expira a 365 días); **49:** `BreachNotificationService`
+  + `BreachNotifier` (adaptador de log sustituible por SMTP/FCM);
+  **50:** `DPIAService` + PDF propio (`SimplePdfWriter`, sin dependencias).
+
+**Frontend (Angular 22, zoneless, signals):**
+- `core/services/legal-api.service.ts` — cliente de todos los endpoints.
+- `core/services/legal-content.service.ts` — Art. 13/14, política y formulario.
+- `shared/components/`: consent-dialog, legal-notice, consent-management,
+  consent-manager, access-request, data-rectification, portability-export,
+  restriction-request, breach-notice, dpia-review.
+- `presentation/pages/legal` — centro de privacidad en `/legal` (+ enlace en home).
+- `exam-take` bloquea el examen hasta aceptar el aviso legal (spec 37).
+
+**Tests:** 51 unitarios backend del módulo legal (`./mvnw test -Dtest='edu.cidemags.integrity_core.legal.**'`)
+y 16 specs frontend (`ng test --include 'src/app/shared/**/*.spec.ts'`).
+
+### Decisiones
+- Una sola migración `V17` en lugar de V005/V006/V007 (evita renumerar Flyway).
+- Inmutabilidad: `consent_logs` sí bloquea UPDATE/DELETE en SQL; `audit_logs`
+  permite solo la pseudonimización del Art. 17 (no hay endpoint de update).
+- Interceptor de auditoría vía `HandlerInterceptor` (no se añadió AOP).
+- PDF de EIPD generado a mano para no añadir dependencia ni requerir red.
+- No se pudo ejecutar Flyway/Testcontainers: entorno sin Docker. Pendiente
+  validar `V17` contra Postgres real.
+- Fallos preexistentes ajenos: `safeguard-monitor.service.spec.ts` (24 tests) y
+  lint de `ngIf` en connection-status/last-saved/recovery-notice.
+
+---

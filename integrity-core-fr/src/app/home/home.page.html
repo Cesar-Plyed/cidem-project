@@ -21,6 +21,10 @@
       } }
     </header>
 
+    <div class="d-flex justify-content-end mb-3">
+      <a class="btn btn-sm btn-outline-secondary" routerLink="/legal">Privacidad y datos</a>
+    </div>
+
     @if (errorMessage()) {
     <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
     }
