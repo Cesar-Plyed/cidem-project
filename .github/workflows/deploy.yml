@@ -1,0 +1,56 @@
+# =====================================================================
+# Deploy to Production via SSH
+# Triggers on push to main (backend or frontend changes).
+# Requires secrets: PROD_SSH_HOST, PROD_SSH_USER, PROD_SSH_KEY.
+# =====================================================================
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'integrity-core/**'
+      - 'integrity-core-fr/**'
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Pull & start containers ---
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/cidem-integrity
+            docker compose -f docker-compose.production.yml pull
+            docker compose -f docker-compose.production.yml up -d
+            docker image prune -f
+
+      # --- Run Flyway migrations ---
+      - name: Run Flyway migrations
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/cidem-integrity/integrity-core
+            ./mvnw flyway:migrate
+
+      # --- Post-deploy healthcheck ---
+      - name: Post-deploy healthcheck
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            curl -sf http://localhost:8081/health
+            curl -sf http://localhost:8080/actuator/health
