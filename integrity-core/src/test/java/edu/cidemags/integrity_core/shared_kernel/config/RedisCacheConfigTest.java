@@ -9,6 +9,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -28,8 +29,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RedisCacheConfigTest {
 
     @Container
+    @ServiceConnection
     static final GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
             .withExposedPorts(6379);
+
+    // El contexto completo necesita un datasource: sin Postgres, Flyway/Hibernate
+    // no arrancan y el test fallaba por "Failed to determine a suitable driver".
+    @Container
+    @ServiceConnection
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired
     private CacheManager cacheManager;
@@ -51,9 +59,9 @@ class RedisCacheConfigTest {
         assertThat(cache).isNotNull();
 
         cache.put("test-key", "test-value");
-        Object val = cache.get("test-key");
+        Cache.ValueWrapper val = cache.get("test-key");
         assertThat(val).isNotNull();
-        assertThat(val).isEqualTo("test-value");
+        assertThat(val.get()).isEqualTo("test-value");
     }
 
     @Test

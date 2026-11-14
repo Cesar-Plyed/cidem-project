@@ -10,7 +10,6 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -29,23 +28,20 @@ public class OversightWebSocketConfig implements WebSocketMessageBrokerConfigure
 
     private final WebSocketSessionRegistry sessionRegistry;
     private final WebSocketAuthorizationService authzService;
-    private final AuthenticationManager authManager;
 
     public OversightWebSocketConfig(
             ObjectMapper objectMapper,
             WebSocketSessionRegistry sessionRegistry,
-            WebSocketAuthorizationService authzService,
-            AuthenticationManager authManager
+            WebSocketAuthorizationService authzService
     ) {
         this.messageConverters = List.of(createJacksonMessageConverter(objectMapper));
         this.sessionRegistry = sessionRegistry;
         this.authzService = authzService;
-        this.authManager = authManager;
     }
 
     @Bean
     public StompAuthorizationInterceptor stompAuthorizationInterceptor() {
-        return new StompAuthorizationInterceptor(authzService, authManager, sessionRegistry);
+        return new StompAuthorizationInterceptor(authzService, sessionRegistry);
     }
 
     @Override

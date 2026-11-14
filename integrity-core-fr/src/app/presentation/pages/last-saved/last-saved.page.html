@@ -1,11 +1,13 @@
-<ion-header *ngIf="lastSaved()">
-  <ion-toolbar size="small" color="light">
-    <ion-title>
-      <ion-icon name="time-outline" slot="start"></ion-icon>
-      Último guardado: {{ lastSaved() | date:'shortTime' }}
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+@if (lastSaved()) {
+  <ion-header>
+    <ion-toolbar size="small" color="light">
+      <ion-title>
+        <ion-icon name="time-outline" slot="start"></ion-icon>
+        Último guardado: {{ lastSaved() | date:'shortTime' }}
+      </ion-title>
+    </ion-toolbar>
+  </ion-header>
+}
 
 <ion-content class="ion-padding">
   <div class="last-saved">
@@ -13,10 +15,12 @@
     <div class="info">
       <p class="saved-label">Autosave activado</p>
       <p class="saved-detail">Tu progreso se guarda cada 30 segundos.</p>
-      <ion-button *ngIf="autosaveFailed()" fill="outline" size="small" (click)="retrySave()">
-        <ion-icon slot="start" name="retry"></ion-icon>
-        Reintentar guardado
-      </ion-button>
+      @if (autosaveFailed()) {
+        <ion-button fill="outline" size="small" (click)="retrySave()">
+          <ion-icon slot="start" name="retry"></ion-icon>
+          Reintentar guardado
+        </ion-button>
+      }
     </div>
   </div>
 </ion-content>

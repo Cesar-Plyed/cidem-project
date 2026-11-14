@@ -19,7 +19,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class LegalApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/legal`;
+  private readonly baseUrl = `${environment.apiUrl}/api/legal`;
 
   getConsentStatus(studentId: string): Observable<ConsentOverview> {
     return this.http.get<ConsentOverview>(`${this.baseUrl}/consent/${studentId}`);
