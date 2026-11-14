@@ -143,3 +143,54 @@ y 16 specs frontend (`ng test --include 'src/app/shared/**/*.spec.ts'`).
   lint de `ngIf` en connection-status/last-saved/recovery-notice.
 
 ---
+
+## 2026-11-13 — validación en Docker y QA automatizada
+
+Se levantó el stack completo (Postgres, Redis, backend, frontend) y se montó una
+suite que prueba la app funcionando, no solo compilando.
+
+### Cambios
+- **Migración `V18__create_exam_session_table.sql`**: la entidad
+  `RedisSessionEntity` mapeaba `exam_session` sin migración; `ddl-auto: validate`
+  abortaba el arranque.
+- **`RedisCacheConfig` eliminado**: duplicaba el bean `cacheManager` de
+  `shared_kernel/config/CacheConfig` y el backend no arrancaba con perfil Docker.
+- **`JacksonConfig`**: sin `Jackson2ObjectMapperBuilder` (Spring Boot 4 usa
+  Jackson 3); el mapper de Jackson 2 de los servicios legal se construye a mano.
+- **`application.yml`**: `spring.jackson.deserialization.fail-on-null-for-primitives: false`
+  porque Jackson 3 rechaza `null` en primitivos y los PUT con flags opcionales
+  devolvían 400.
+- **`OversightWebSocketConfig` / `StompAuthorizationInterceptor`**: se quitó la
+  dependencia de `AuthenticationManager` (no existía como bean y no se usaba).
+- **`LegalConfig`**: declara el `AuditInterceptor` con `@ConditionalOnBean` y lo
+  registra vía `ObjectProvider`; `AuditInterceptor` deja de ser `@Component`
+  porque `@WebMvcTest` incluye todo `HandlerInterceptor` y rompía 12 slices.
+- **`SecurityConfig`**: `/v3/api-docs/**` y `/swagger-ui/**` pasan a públicos.
+- **`LegalApiService`**: `baseUrl` corregido a `/api/legal` (llamaba a `/legal`).
+- **Frontend**: `nginx.conf` escucha también IPv6 y el healthcheck usa
+  `127.0.0.1`; `*ngIf` → `@if` en connection-status, last-saved y recovery-notice.
+- **Tests arreglados**: `RedisSessionIntegrationTest` (siembra users/exams/attempts
+  por las FKs y usa `Timestamp`), `RedisCacheConfigTest` (`@ServiceConnection` de
+  Redis/Postgres y `ValueWrapper`), `safeguard-monitor.service.spec.ts` (mock con
+  `connectForExam`).
+- **QA**: `scripts/dev-up.sh`, `scripts/smoke.sh`, `scripts/backend-dev.sh`,
+  `scripts/qa.sh`, `scripts/qa-triage.sh`, `docs/qa.md`, E2E con Playwright en
+  `integrity-core-fr/e2e/` y workflow `.github/workflows/nightly-qa.yml`.
+- `docker-compose.yml`: builds con `network: host` (la red bridge del host no
+  tiene egreso y Maven/npm no resolvían DNS durante el build) y
+  `SECURITY_RATE_LIMIT_MAX_ATTEMPTS=100` en dev.
+
+### Decisiones
+- Un solo usuario E2E por corrida (`e2e/global-setup.ts`) para no agotar el rate
+  limit de `/auth/register`.
+- El triage es idempotente: busca un issue abierto con el mismo título antes de
+  crear; soporta `--dry-run`.
+- Los artefactos van a `qa-artifacts/<fecha>/` (ignorado por git), no dentro del
+  código.
+
+### Estado
+- Backend 490/490 tests, frontend 61/61, lint y build limpios, smoke 14/14 y
+  E2E 10/10 contra el stack en Docker.
+- `V17` y `V18` verificadas contra Postgres 16 real.
+
+---

@@ -100,6 +100,17 @@ La aplicación queda disponible en http://localhost:4200 y usa el backend de htt
 
 ## Pruebas y validaciones
 
+Suite completa (tests backend + frontend, lint, build, smoke y E2E) con reporte
+en `qa-artifacts/<fecha>/`:
+
+```bash
+./scripts/dev-up.sh      # stack completo en Docker
+./scripts/qa.sh          # todo lo anterior; --triage abre issues con los fallos
+```
+
+Detalle de la estrategia, artefactos y triage automático en
+[`docs/qa.md`](docs/qa.md).
+
 Backend:
 
 ```bash
@@ -113,6 +124,7 @@ Frontend:
 cd integrity-core-fr
 npm run build -- --configuration development
 npm run lint
+npm run e2e            # Playwright contra http://localhost:8081
 ```
 
 ## Migraciones
