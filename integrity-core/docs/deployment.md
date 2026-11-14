@@ -1,6 +1,13 @@
 # Deployment Guide
 
-## Pasos de Deploy
+> **Estado actual:** frontend y backend se despliegan en **Vercel**
+> (`cidem-project-1guv` para la SPA y `cidem-project` para el backend con
+> `Dockerfile.vercel` + Neon/Upstash). Este documento describe el
+> **self-hosting opcional** con Docker + Nginx; no lo ejecuta ningún workflow
+> de GitHub. El antiguo `.github/workflows/deploy.yml` se eliminó porque no
+> tenía servidor ni secretos configurados y fallaba en cada push a `main`.
+
+## Pasos de Deploy (self-hosting manual)
 
 1. **Pull images**: `docker compose -f docker-compose.production.yml pull`
 2. **SSH Deploy**: Ejecutar `scripts/deploy-prod.sh --host <server>`
