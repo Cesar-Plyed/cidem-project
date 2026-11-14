@@ -194,3 +194,36 @@ suite que prueba la app funcionando, no solo compilando.
 - `V17` y `V18` verificadas contra Postgres 16 real.
 
 ---
+
+## 2026-11-13 (PR #12 — CI)
+
+Primera corrida del PR destapó dos fallos que no se ven en local.
+
+### Cambios
+- **`build-images.yml`**: eliminado el job `build-tauri`. Apuntaba a
+  `integrity-core-fr/src-tauri` como contexto, donde no hay `Dockerfile`
+  (`failed to read dockerfile: open Dockerfile: no such file or directory`).
+  Tauri se publica como instalador nativo en `tauri-alpha.yml`; no tiene
+  sentido una imagen de servidor.
+- **`build-images.yml`**: `permissions: packages: write` y nombre de imagen
+  `ghcr.io/<owner en minúsculas>/…`. El workflow publicaba en
+  `ghcr.io/cidem/…`, una organización que no existe, así que el push en `main`
+  habría fallado.
+- **`RedisCacheConfigTest`**: reescrito sin `@SpringBootTest`. Antes levantaba
+  contexto completo + Postgres/Flyway/Redis para probar `CacheConfig` y el
+  round-trip fallaba de forma intermitente en CI. Ahora instancia `CacheConfig`
+  directamente contra un Redis de Testcontainers y comprueba cachés, TTLs por
+  dominio y serialización.
+
+### Decisiones
+- Un test de `CacheConfig` no necesita el contexto de la aplicación: al
+  levantarlo competía con los contenedores de otras clases y ocultaba el
+  origen del fallo.
+- El nombre de la imagen se calcula en bash (`${GITHUB_REPOSITORY_OWNER,,}`)
+  porque las expresiones de GitHub no tienen `lowercase()`.
+
+### Estado
+- Backend 490/490 en local con el test reescrito (3 corridas seguidas).
+- Pendiente: verificar el rerun del PR.
+
+---
