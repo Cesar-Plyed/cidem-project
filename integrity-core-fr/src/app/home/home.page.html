@@ -21,6 +21,10 @@
       } }
     </header>
 
+    <div class="d-flex justify-content-end mb-3">
+      <a class="btn btn-sm btn-outline-secondary" routerLink="/legal">Privacidad y datos</a>
+    </div>
+
     @if (errorMessage()) {
     <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
     }
@@ -69,6 +73,7 @@
             <div class="mt-auto d-grid gap-2">
               <a class="btn btn-primary" routerLink="/exams">Ver exámenes</a>
               <a class="btn btn-outline-secondary" routerLink="/exams/new">Crear examen</a>
+              <a class="btn btn-outline-secondary" routerLink="/sentinel/alerts">Alertas de integridad</a>
             </div>
           </div>
         </section>

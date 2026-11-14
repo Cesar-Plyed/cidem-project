@@ -72,6 +72,16 @@ integrity-core-fr/.env
 # ==========================================
 infra/ssh_keys/authorized_keys
 
-#AI docs
+# AI docs
 AGENTS.md
 MEMORY.md
+IDEA.md
+specs/
+# ==========================================
+# 6. QA / E2E
+# ==========================================
+qa-artifacts/
+integrity-core-fr/e2e/.auth/
+integrity-core-fr/e2e-results/
+integrity-core-fr/playwright-report/
+integrity-core-fr/test-results/

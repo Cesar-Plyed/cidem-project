@@ -1,0 +1,44 @@
+@if (lastSaved()) {
+  <ion-header>
+    <ion-toolbar size="small" color="light">
+      <ion-title>
+        <ion-icon name="time-outline" slot="start"></ion-icon>
+        Último guardado: {{ lastSaved() | date:'shortTime' }}
+      </ion-title>
+    </ion-toolbar>
+  </ion-header>
+}
+
+<ion-content class="ion-padding">
+  <div class="last-saved">
+    <ion-icon name="checkmark-done-circle" color="success" size="large"></ion-icon>
+    <div class="info">
+      <p class="saved-label">Autosave activado</p>
+      <p class="saved-detail">Tu progreso se guarda cada 30 segundos.</p>
+      @if (autosaveFailed()) {
+        <ion-button fill="outline" size="small" (click)="retrySave()">
+          <ion-icon slot="start" name="retry"></ion-icon>
+          Reintentar guardado
+        </ion-button>
+      }
+    </div>
+  </div>
+</ion-content>
+
+<style>
+  .last-saved {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .saved-label {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 4px 0;
+  }
+  .saved-detail {
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+</style>

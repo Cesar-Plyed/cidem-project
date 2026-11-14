@@ -19,6 +19,8 @@ public class SafeguardConfiguration {
     private int maxTabSwitches = 3;
     private int riskThreshold = 100;
     private boolean autoTerminateOnThreshold = false;
+    private boolean allowExternalApps = false;
+    private boolean allowExternalTabs = false;
 
     public SafeguardConfiguration() {
         // Vacío a propósito: JPA/Hibernate necesita un constructor sin argumentos
@@ -103,6 +105,22 @@ public class SafeguardConfiguration {
 
     public void setAutoTerminateOnThreshold(boolean autoTerminateOnThreshold) {
         this.autoTerminateOnThreshold = autoTerminateOnThreshold;
+    }
+
+    public boolean isAllowExternalApps() {
+        return allowExternalApps;
+    }
+
+    public void setAllowExternalApps(boolean allowExternalApps) {
+        this.allowExternalApps = allowExternalApps;
+    }
+
+    public boolean isAllowExternalTabs() {
+        return allowExternalTabs;
+    }
+
+    public void setAllowExternalTabs(boolean allowExternalTabs) {
+        this.allowExternalTabs = allowExternalTabs;
     }
 
     @Override

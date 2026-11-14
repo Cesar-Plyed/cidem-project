@@ -16,6 +16,11 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'legal',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR, Role.ALUMNO])],
+    loadComponent: () => import('./presentation/pages/legal/legal.page').then((m) => m.LegalPage)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./presentation/pages/login/login.page').then((m) => LoginPage)
   },
@@ -77,6 +82,11 @@ export const routes: Routes = [
     path: 'evaluator-demo',
     canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
     loadComponent: () => import('./presentation/pages/evaluator-demo/evaluator-demo.page').then((m) => m.EvaluatorDemoPage)
+  },
+  {
+    path: 'sentinel/alerts',
+    canActivate: [roleGuard([Role.ADMINISTRATIVO, Role.PROFESOR])],
+    loadComponent: () => import('./presentation/pages/sentinel-alerts/sentinel-alerts.page').then((m) => m.SentinelAlertsPage)
   },
   {
     path: '**',

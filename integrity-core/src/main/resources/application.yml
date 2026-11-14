@@ -1,4 +1,9 @@
 spring:
+  jackson:
+    # Jackson 3 (Spring Boot 4) activa FAIL_ON_NULL_FOR_PRIMITIVES por defecto;
+    # los DTOs usan primitivos y los clientes omiten flags opcionales.
+    deserialization:
+      fail-on-null-for-primitives: false
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -22,6 +27,13 @@ management:
   endpoint:
     health:
       show-details: never   # no exponer detalles internos en producción
+
+sentinel:
+  escalation:
+    tab-switch-window: 300s      # 5 min
+    focus-loss-window: 60s       # 1 min
+    disconnection-window: 300s   # 5 min
+    copy-paste-window: 120s      # 2 min
 
 security:
   jwt:

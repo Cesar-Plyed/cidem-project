@@ -19,6 +19,8 @@ import { SafeguardRepository } from './app/domain/ports/safeguard.repository';
 import { SafeguardHttpRepository } from './app/infrastructure/http/safeguard-http.repository';
 import { OversightRepository } from './app/domain/ports/oversight.repository';
 import { OversightHttpRepository } from './app/infrastructure/http/oversight-http.repository';
+import { SentinelRepository } from './app/domain/ports/sentinel.repository';
+import { SentinelHttpRepository } from './app/infrastructure/http/sentinel-http.repository';
 import { SafeguardPlatform } from './app/domain/ports/safeguard-platform';
 import { WebSafeguardPlatform } from './app/infrastructure/platform/web-safeguard-platform';
 import { TauriSafeguardPlatform } from './app/infrastructure/platform/tauri-safeguard-platform';
@@ -47,6 +49,8 @@ bootstrapApplication(AppComponent, {
     // Oversight: los use-cases inyectan la clase abstracta; sin este provider
     // la página /exams/:id/oversight revienta con NG0201 en runtime.
     { provide: OversightRepository, useClass: OversightHttpRepository },
+    // Sentinel: pantalla de alertas para profesores (GET/PUT /sentinel/*).
+    { provide: SentinelRepository, useClass: SentinelHttpRepository },
     // Plataforma donde corre SafeGuard: Tauri (atajos nativos) o web (solo DOM).
     { provide: SafeguardPlatform, useClass: safeguardPlatform },
     importProvidersFrom(IonicStorageModule.forRoot()),

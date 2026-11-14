@@ -29,6 +29,7 @@ describe('SafeguardMonitorService', () => {
   let exitProtectedMode: ReturnType<typeof vi.fn<() => Promise<void>>>;
   let sentinelPublish: ReturnType<typeof vi.fn<(event: unknown) => Promise<void>>>;
   let sentinelDisconnect: ReturnType<typeof vi.fn<() => Promise<void>>>;
+  let sentinelConnect: ReturnType<typeof vi.fn<() => Promise<void>>>;
   let monitor: SafeguardMonitorService;
 
   beforeEach(() => {
@@ -43,6 +44,7 @@ describe('SafeguardMonitorService', () => {
     exitProtectedMode = vi.fn(() => Promise.resolve());
     sentinelPublish = vi.fn(() => Promise.resolve());
     sentinelDisconnect = vi.fn(() => Promise.resolve());
+    sentinelConnect = vi.fn(() => Promise.resolve());
 
     TestBed.configureTestingModule({
       providers: [
@@ -75,6 +77,7 @@ describe('SafeguardMonitorService', () => {
         {
           provide: SentinelStompService,
           useValue: {
+            connectForExam: sentinelConnect,
             publish: sentinelPublish,
             disconnect: sentinelDisconnect,
           },

@@ -1,0 +1,37 @@
+<app-header title="Privacidad y datos" backHref="/home" />
+
+<ion-content [fullscreen]="true">
+  <div class="page ion-padding">
+    <header class="page-heading">
+      <p class="eyebrow">Cumplimiento GDPR / LOPDGDD</p>
+      <h2>Tus derechos sobre los datos</h2>
+      <p>Consulta, rectifica, exporta o limita el tratamiento de tus datos personales.</p>
+    </header>
+
+    @if (studentId(); as id) {
+      <app-legal-notice />
+
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <app-consent-manager [studentId]="id" />
+          <app-consent-management [studentId]="id" />
+        </div>
+        <div class="col-12 col-xl-6">
+          <app-access-request [studentId]="id" />
+          <app-portability-export [studentId]="id" />
+          <app-data-rectification [entityId]="id" />
+          <app-restriction-request [studentId]="id" />
+          <app-breach-notice [studentId]="id" />
+          @if (staff()) {
+            <app-dpia-review [studentId]="id" />
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="loading">
+        <span class="spinner-border" role="status" aria-hidden="true"></span>
+        <span class="ms-2">Cargando tus datos...</span>
+      </div>
+    }
+  </div>
+</ion-content>

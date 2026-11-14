@@ -54,7 +54,8 @@ class SafeguardConfigAuthorizationTest {
     private static String body() {
         return "{\"enabled\":true,\"requireCamera\":true,\"requireMicrophone\":false,"
                 + "\"requireFullscreen\":true,\"blockCopyPaste\":true,"
-                + "\"maxTabSwitches\":3,\"riskThreshold\":100,\"autoTerminateOnThreshold\":false}";
+                + "\"maxTabSwitches\":3,\"riskThreshold\":100,\"autoTerminateOnThreshold\":false,"
+                + "\"restrictions\":[],\"allowExternalApps\":false,\"allowExternalTabs\":false}";
     }
 
     private void stubStaffGet() {

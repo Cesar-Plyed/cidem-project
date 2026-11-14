@@ -12,6 +12,9 @@ import java.util.UUID;
 @Component
 public class AlertEscalationPolicy {
 
+    public static final String TAB_SWITCH_ALERT_TYPE = "TAB_SWITCH";
+    public static final String FOCUS_LOSS_ALERT_TYPE = "FOCUS_LOSS";
+
     private static final int FOCUS_LOST_THRESHOLD = 3;
     private static final Duration FOCUS_LOST_WINDOW = Duration.ofMinutes(2);
 
@@ -40,7 +43,10 @@ public class AlertEscalationPolicy {
                 AlertSeverity.HIGH,
                 "Cambio de aplicación/pestaña detectado",
                 List.of(e.id()),
-                Instant.now()
+                Instant.now(),
+                TAB_SWITCH_ALERT_TYPE,
+                e.examId(),
+                false
             ));
     }
 
@@ -75,7 +81,10 @@ public class AlertEscalationPolicy {
             AlertSeverity.MEDIUM,
             "Múltiples pérdidas de foco detectadas en un periodo corto",
             sourceIds,
-            Instant.now()
+            Instant.now(),
+            FOCUS_LOSS_ALERT_TYPE,
+            anyEvent.examId(),
+            false
         ));
     }
 }

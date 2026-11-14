@@ -36,7 +36,9 @@ pub fn run() {
       safeguard::block_keyboard_shortcut,
       safeguard::unblock_all_shortcuts,
       safeguard::get_active_window_title,
-      safeguard::take_screenshot
+      safeguard::take_screenshot,
+      safeguard::detect_web_restrictions,
+      safeguard::hello
     ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");

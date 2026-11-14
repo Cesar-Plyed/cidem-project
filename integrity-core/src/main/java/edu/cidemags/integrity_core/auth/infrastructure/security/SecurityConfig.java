@@ -23,6 +23,8 @@ public class SecurityConfig {
             "/auth/countries",
             "/auth/refresh",
             "/auth/logout",
+            "/v3/api-docs", "/v3/api-docs/**",
+            "/swagger-ui/**", "/swagger-ui.html",   // documentación OpenAPI (spec 3x)
             "/actuator/health"   // solo estado UP/DOWN (show-details: never); sirve para probar el deploy
     };
 
