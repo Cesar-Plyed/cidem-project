@@ -1,30 +1,38 @@
-<ion-header *ngIf="recoveryMessage()">
-  <ion-toolbar color="warning">
-    <ion-title>
-      <ion-icon name="warning-outline" slot="start"></ion-icon>
-      {{ recoveryMessage() }}
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+@if (recoveryMessage()) {
+  <ion-header>
+    <ion-toolbar color="warning">
+      <ion-title>
+        <ion-icon name="warning-outline" slot="start"></ion-icon>
+        {{ recoveryMessage() }}
+      </ion-title>
+    </ion-toolbar>
+  </ion-header>
+}
 
 <ion-content class="ion-padding">
-  <div class="recovery-notice" *ngIf="showAlert()">
-    <div class="alert-icon">
-      <ion-icon name="cloud-offline-outline" [color]="connectionLost() ? 'danger' : 'warning'"></ion-icon>
+  @if (showAlert()) {
+    <div class="recovery-notice">
+      <div class="alert-icon">
+        <ion-icon name="cloud-offline-outline" [color]="connectionLost() ? 'danger' : 'warning'"></ion-icon>
+      </div>
+      <div class="alert-content">
+        <h3>{{ title() }}</h3>
+        <p>{{ description() }}</p>
+        @if (!connectionLost()) {
+          <ion-button size="small" fill="outline" (click)="retry()">
+            <ion-icon slot="start" name="refresh"></ion-icon>
+            Intentar de nuevo
+          </ion-button>
+        }
+        @if (connectionLost()) {
+          <ion-button size="small" color="danger" (click)="reconnect()">
+            <ion-icon slot="start" name="cloud-download-outline"></ion-icon>
+            Restaurar progreso
+          </ion-button>
+        }
+      </div>
     </div>
-    <div class="alert-content">
-      <h3>{{ title() }}</h3>
-      <p>{{ description() }}</p>
-      <ion-button *ngIf="!connectionLost()" size="small" fill="outline" (click)="retry()">
-        <ion-icon slot="start" name="refresh"></ion-icon>
-        Intentar de nuevo
-      </ion-button>
-      <ion-button *ngIf="connectionLost()" size="small" color="danger" (click)="reconnect()">
-        <ion-icon slot="start" name="cloud-download-outline"></ion-icon>
-        Restaurar progreso
-      </ion-button>
-    </div>
-  </div>
+  }
 </ion-content>
 
 <style>

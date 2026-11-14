@@ -7,7 +7,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,16 +20,13 @@ import org.springframework.stereotype.Component;
 public class StompAuthorizationInterceptor implements ChannelInterceptor {
 
     private final WebSocketAuthorizationService authorizationService;
-    private final AuthenticationManager authenticationManager;
     private final WebSocketSessionRegistry sessionRegistry;
 
     public StompAuthorizationInterceptor(
             WebSocketAuthorizationService authorizationService,
-            AuthenticationManager authenticationManager,
             WebSocketSessionRegistry sessionRegistry
     ) {
         this.authorizationService = authorizationService;
-        this.authenticationManager = authenticationManager;
         this.sessionRegistry = sessionRegistry;
     }
 

@@ -37,6 +37,9 @@ services:
     build:
       context: ./integrity-core
       dockerfile: Dockerfile
+      # El build necesita salir a internet (Maven). Con la red bridge del
+      # host deshabilitada, BuildKit no resuelve DNS; host lo evita.
+      network: host
     image: localhost/integrity-core:local
     container_name: integrity-core
     restart: unless-stopped
@@ -55,6 +58,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret_32_chars}
       ADMIN_REGISTRATION_CODE: ${ADMIN_REGISTRATION_CODE:-change_me_admin_code}
       PROFESOR_REGISTRATION_CODE: ${PROFESOR_REGISTRATION_CODE:-change_me_professor_code}
+      # En dev/tests se registran varios usuarios seguidos; el limite de 5/min
+      # solo tiene sentido en produccion.
+      SECURITY_RATE_LIMIT_MAX_ATTEMPTS: ${SECURITY_RATE_LIMIT_MAX_ATTEMPTS:-100}
     ports:
       - "8080:8080"
     networks:
@@ -64,6 +70,8 @@ services:
     build:
       context: ./integrity-core-fr
       dockerfile: Dockerfile
+      # Igual que el backend: npm ci necesita DNS durante el build.
+      network: host
     image: localhost/integrity-core-fr:local
     container_name: integrity-core-fr
     restart: unless-stopped

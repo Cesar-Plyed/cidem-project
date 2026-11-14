@@ -10,7 +10,6 @@ import edu.cidemags.integrity_core.legal.domain.annotation.AuditTrail;
 import edu.cidemags.integrity_core.legal.domain.model.ActorRole;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -18,8 +17,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * Interceptor de auditoria (spec 39): toda accion anotada con {@link AuditTrail}
  * deja una fila en {@code audit_logs} con actor, accion, estado previo/actual
  * e IP/user-agent.
+ *
+ * <p>No lleva {@code @Component} a propósito: los tests de slice
+ * ({@code @WebMvcTest}) incluyen cualquier {@code HandlerInterceptor} y fallaban
+ * al no existir {@code AuditService}. Lo declara {@code LegalConfig}, que sí
+ * puede condicionarlo a que el servicio esté presente.</p>
  */
-@Component
 public class AuditInterceptor implements HandlerInterceptor {
 
     private static final String PREVIOUS_STATE_ATTRIBUTE = AuditInterceptor.class.getName() + ".previous";
