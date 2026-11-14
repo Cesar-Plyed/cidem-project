@@ -61,6 +61,7 @@ services:
       # En dev/tests se registran varios usuarios seguidos; el limite de 5/min
       # solo tiene sentido en produccion.
       SECURITY_RATE_LIMIT_MAX_ATTEMPTS: ${SECURITY_RATE_LIMIT_MAX_ATTEMPTS:-100}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:4200}
     ports:
       - "8080:8080"
     networks:
