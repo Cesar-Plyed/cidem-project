@@ -28,7 +28,7 @@ public class SecurityConfig {
             "/actuator/health"   // solo estado UP/DOWN (show-details: never); sirve para probar el deploy
     };
 
-    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:4200}")
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:4200,tauri://localhost,http://tauri.localhost,https://tauri.localhost}")
     private String[] allowedOrigins;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
