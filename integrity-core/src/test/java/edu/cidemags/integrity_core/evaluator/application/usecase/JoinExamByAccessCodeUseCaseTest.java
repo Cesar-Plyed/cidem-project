@@ -1,6 +1,7 @@
 package edu.cidemags.integrity_core.evaluator.application.usecase;
 
 import edu.cidemags.integrity_core.evaluator.application.dto.JoinExamByAccessCodeCommand;
+import edu.cidemags.integrity_core.evaluator.domain.exception.DesktopAppRequiredException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAlreadyAttemptedException;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
@@ -90,6 +91,46 @@ class JoinExamByAccessCodeUseCaseTest {
         verify(fixture.attemptRepository, never()).save(any());
     }
 
+    @Test
+    void rejectsBrowserJoinWhenExamRequiresDesktopApp() {
+        Fixture fixture = new Fixture();
+        fixture.givenValidExamAndCode("BROWSER-CODE", false);
+
+        assertThrows(DesktopAppRequiredException.class, () -> fixture.useCase.execute(
+                new JoinExamByAccessCodeCommand(fixture.examId, "BROWSER-CODE", fixture.studentId), false));
+
+        verify(fixture.participationRepository, never()).reserve(any(), any());
+        verify(fixture.attemptRepository, never()).save(any());
+    }
+
+    @Test
+    void allowsDesktopJoinWhenExamRequiresDesktopApp() {
+        Fixture fixture = new Fixture();
+        fixture.givenValidExamAndCode("DESKTOP-CODE", false);
+        when(fixture.attemptRepository.findByStudentId(fixture.studentId)).thenReturn(List.of());
+        when(fixture.participationRepository.reserve(fixture.examId, fixture.studentId)).thenReturn(true);
+        when(fixture.attemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExamAttempt result = fixture.useCase.execute(
+                new JoinExamByAccessCodeCommand(fixture.examId, "DESKTOP-CODE", fixture.studentId), true);
+
+        assertEquals(fixture.examId, result.getExamId());
+    }
+
+    @Test
+    void allowsBrowserJoinWhenExamAllowsBrowsers() {
+        Fixture fixture = new Fixture();
+        fixture.givenValidExamAndCode("OPEN-CODE", true);
+        when(fixture.attemptRepository.findByStudentId(fixture.studentId)).thenReturn(List.of());
+        when(fixture.participationRepository.reserve(fixture.examId, fixture.studentId)).thenReturn(true);
+        when(fixture.attemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExamAttempt result = fixture.useCase.execute(
+                new JoinExamByAccessCodeCommand(fixture.examId, "OPEN-CODE", fixture.studentId), false);
+
+        assertEquals(fixture.examId, result.getExamId());
+    }
+
     private static final class Fixture {
         private final UUID examId = UUID.randomUUID();
         private final UUID studentId = UUID.randomUUID();
@@ -101,8 +142,12 @@ class JoinExamByAccessCodeUseCaseTest {
                 examRepository, accessCodeRepository, attemptRepository, participationRepository);
 
         private void givenValidExamAndCode(String code) {
+            givenValidExamAndCode(code, true);
+        }
+
+        private void givenValidExamAndCode(String code, boolean browserAllowed) {
             Exam exam = new Exam(examId, "Examen", null, UUID.randomUUID(), OffsetDateTime.now(), 30,
-                    List.of(), ExamStatus.PUBLISHED);
+                    List.of(), ExamStatus.PUBLISHED, browserAllowed);
             when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
             when(accessCodeRepository.findByExamIdAndCode(examId, code))
                     .thenReturn(Optional.of(new ExamAccessCode(examId, code, OffsetDateTime.now().plusMinutes(5))));

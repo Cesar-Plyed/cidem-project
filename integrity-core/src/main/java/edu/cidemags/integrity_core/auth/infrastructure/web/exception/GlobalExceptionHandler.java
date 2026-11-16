@@ -73,6 +73,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(edu.cidemags.integrity_core.evaluator.domain.exception.DesktopAppRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleDesktopAppRequired(
+            edu.cidemags.integrity_core.evaluator.domain.exception.DesktopAppRequiredException ex) {
+        ErrorResponse body = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "DESKTOP_APP_REQUIRED", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
     @ExceptionHandler(InvalidRoleAssignmentException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRoleAssignment(InvalidRoleAssignmentException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());

@@ -33,6 +33,7 @@ public class CreateExamUseCase {
         }
         Exam exam = new Exam(command.title(), command.description(), command.createdByUserId(),
                 command.durationMinutes() == null ? 30 : command.durationMinutes());
+        exam.setBrowserAllowed(command.browserAllowedOrDefault());
         List<CreateQuestionCommand> questions = command.questions() == null ? List.of() : command.questions();
         for (CreateQuestionCommand questionCommand : questions) {
             List<QuestionOption> options = questionCommand.options() == null ? List.of()

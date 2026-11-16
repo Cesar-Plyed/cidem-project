@@ -26,7 +26,8 @@ public class ExamMapper {
                 entity.getCreatedAt(),
                 entity.getDurationMinutes(),
                 entity.getQuestions().stream().map(questionMapper::toDomain).toList(),
-                entity.getStatus());
+                entity.getStatus(),
+                entity.isBrowserAllowed());
     }
 
     public ExamEntity toEntity(Exam domain) {
@@ -45,6 +46,7 @@ public class ExamMapper {
 
         entity.setQuestions(domain.getQuestions().stream().map(questionMapper::toEntity).toList());
         entity.getQuestions().forEach(question -> question.setExam(entity));
+        entity.setBrowserAllowed(domain.isBrowserAllowed());
         return entity;
     }
 }

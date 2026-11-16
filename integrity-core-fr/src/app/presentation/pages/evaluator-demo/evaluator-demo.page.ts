@@ -10,6 +10,7 @@ import { SubmitRemoteAnswerUseCase } from '../../../application/use-cases/evalua
 import { SubmitRemoteAttemptUseCase } from '../../../application/use-cases/evaluator/submit-remote-attempt.use-case';
 import { SessionService } from '../../../application/session/session.service';
 import { AppHeaderComponent } from '../../components/app-header/app-header.component';
+import { ExamDesktopRequiredComponent } from '../exam-desktop-required/exam-desktop-required.component';
 
 /**
  * Página de VERIFICACIÓN, no de producto. Ejercita las 5 operaciones que
@@ -30,6 +31,7 @@ import { AppHeaderComponent } from '../../components/app-header/app-header.compo
     ReactiveFormsModule,
     IonContent,
     AppHeaderComponent,
+    ExamDesktopRequiredComponent,
   ],
 })
 export class EvaluatorDemoPage implements OnInit {
@@ -67,6 +69,7 @@ export class EvaluatorDemoPage implements OnInit {
   });
   readonly joinResult = signal<unknown>(null);
   readonly joinError = signal<string | null>(null);
+  readonly desktopRequired = signal(false);
 
   readonly answerForm = this.fb.group({
     attemptId: ['', Validators.required],
@@ -138,11 +141,16 @@ export class EvaluatorDemoPage implements OnInit {
     const { examId, code, studentId } = this.joinForm.getRawValue();
     this.joinRemoteExamUseCase.execute(examId!, code!, studentId!).subscribe({
       next: (attempt) => {
+        this.desktopRequired.set(false);
         this.joinResult.set(attempt);
         this.answerForm.patchValue({ attemptId: attempt.id });
         this.submitForm.patchValue({ attemptId: attempt.id });
       },
-      error: (err: HttpErrorResponse) => this.joinError.set(this.formatError(err)),
+      error: (err: HttpErrorResponse) => {
+        // Spec 51: el backend exige la app de escritorio para este examen.
+        this.desktopRequired.set(err.error?.error === 'DESKTOP_APP_REQUIRED');
+        this.joinError.set(this.formatError(err));
+      },
     });
   }
 

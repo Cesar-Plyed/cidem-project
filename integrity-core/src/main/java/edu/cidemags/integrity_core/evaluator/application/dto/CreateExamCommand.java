@@ -16,13 +16,24 @@ public record CreateExamCommand(@NotBlank(message = "El titulo del examen no pue
 		@Size(max = 2000, message = "La descripcion del examen no puede exceder 2000 caracteres") String description,
 		UUID createdByUserId,
 		@Valid @Size(max = 100, message = "El examen no puede tener mas de 100 preguntas") List<CreateQuestionCommand> questions,
-		@NotNull @Min(value = 1, message = "La duracion debe ser al menos un minuto") Integer durationMinutes) {
+		@NotNull @Min(value = 1, message = "La duracion debe ser al menos un minuto") Integer durationMinutes,
+		Boolean browserAllowed) {
 	public CreateExamCommand(String title, String description, UUID createdByUserId) {
-		this(title, description, createdByUserId, List.of(), 30);
+		this(title, description, createdByUserId, List.of(), 30, false);
 	}
 
 	public CreateExamCommand(String title, String description, UUID createdByUserId,
 			List<CreateQuestionCommand> questions) {
-		this(title, description, createdByUserId, questions, 30);
+		this(title, description, createdByUserId, questions, 30, false);
+	}
+
+	public CreateExamCommand(String title, String description, UUID createdByUserId,
+			List<CreateQuestionCommand> questions, Integer durationMinutes) {
+		this(title, description, createdByUserId, questions, durationMinutes, false);
+	}
+
+	/** Normaliza el flag: null (cliente antiguo) equivale a false. */
+	public boolean browserAllowedOrDefault() {
+		return Boolean.TRUE.equals(browserAllowed);
 	}
 }

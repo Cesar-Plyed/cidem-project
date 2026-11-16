@@ -61,6 +61,8 @@ export class ExamEditorPage implements OnInit {
     title: ['', Validators.required],
     description: ['', Validators.required],
     durationMinutes: [30, [Validators.required, Validators.min(1)]],
+    // Desactivado por defecto: el examen exige la app de escritorio (spec 51).
+    browserAllowed: [false],
     questions: this.fb.array<FormGroup>([]),
   });
 
@@ -141,6 +143,7 @@ export class ExamEditorPage implements OnInit {
       title: exam.title,
       description: exam.description,
       durationMinutes: exam.durationMinutes,
+      browserAllowed: exam.browserAllowed ?? false,
     });
     this.questions.clear();
     exam.questions.forEach((question) => {
@@ -285,6 +288,7 @@ export class ExamEditorPage implements OnInit {
       title: raw.title!,
       description: raw.description!,
       durationMinutes: raw.durationMinutes!,
+      browserAllowed: raw.browserAllowed ?? false,
       questions: questionValues.map((q) => ({
         id: q.id,
         type: q.type,

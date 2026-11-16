@@ -1,5 +1,6 @@
 package edu.cidemags.integrity_core.auth.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +51,14 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public Optional<User> findById(UUID id) {
         return userJpaRepository.findById(id).map(userMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findAllById(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return userJpaRepository.findAllById(ids).stream().map(userMapper::toDomain).toList();
     }
 
     @Override

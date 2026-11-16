@@ -19,6 +19,7 @@ public class Exam {
     private int durationMinutes;
     private final List<Question> questions;
     private ExamStatus status;
+    private boolean browserAllowed;
 
     public Exam(String title, String description, UUID createdByUserId) {
         this(title, description, createdByUserId, 30);
@@ -36,6 +37,12 @@ public class Exam {
 
     public Exam(UUID id, String title, String description, UUID createdByUserId, OffsetDateTime createdAt,
             int durationMinutes, List<Question> questions, ExamStatus status) {
+        this(id, title, description, createdByUserId, createdAt, durationMinutes, questions, status, false);
+    }
+
+    /** Constructor de hidratación desde persistencia: no valida estado ni flujo. */
+    public Exam(UUID id, String title, String description, UUID createdByUserId, OffsetDateTime createdAt,
+            int durationMinutes, List<Question> questions, ExamStatus status, boolean browserAllowed) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("El titulo del examen no puede estar vacio");
         }
@@ -56,6 +63,7 @@ public class Exam {
         this.durationMinutes = durationMinutes;
         this.questions = questions == null ? new ArrayList<>() : new ArrayList<>(questions);
         this.status = status;
+        this.browserAllowed = browserAllowed;
     }
 
     public UUID getId() {
@@ -93,6 +101,18 @@ public class Exam {
 
     public ExamStatus getStatus() {
         return status;
+    }
+
+    /** true si el examen puede realizarse desde un navegador común (por defecto exige la app de escritorio). */
+    public boolean isBrowserAllowed() {
+        return browserAllowed;
+    }
+
+    public void setBrowserAllowed(boolean browserAllowed) {
+        if (status != ExamStatus.DRAFT) {
+            throw new IllegalStateException("Solo se puede cambiar la restriccion de navegador en un borrador");
+        }
+        this.browserAllowed = browserAllowed;
     }
 
     public void addQuestion(Question question) {

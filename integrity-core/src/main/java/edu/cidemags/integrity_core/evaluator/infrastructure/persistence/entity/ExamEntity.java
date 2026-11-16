@@ -40,6 +40,9 @@ public class ExamEntity {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes = 30;
 
+    @Column(name = "browser_allowed", nullable = false)
+    private boolean browserAllowed = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ExamStatus status;
@@ -111,6 +114,14 @@ public class ExamEntity {
 
     public void setDurationMinutes(int durationMinutes) {
         this.durationMinutes = durationMinutes;
+    }
+
+    public boolean isBrowserAllowed() {
+        return browserAllowed;
+    }
+
+    public void setBrowserAllowed(boolean browserAllowed) {
+        this.browserAllowed = browserAllowed;
     }
 
     public ExamStatus getStatus() {

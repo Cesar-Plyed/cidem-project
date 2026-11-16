@@ -31,6 +31,9 @@ public class UpdateExamUseCase {
                 .orElseThrow(() -> new ExamNotFoundException(command.examId()));
         exam.updateDetails(command.title(), command.description(),
                 command.durationMinutes() == null ? exam.getDurationMinutes() : command.durationMinutes());
+        if (command.browserAllowed() != null) {
+            exam.setBrowserAllowed(command.browserAllowed());
+        }
         // El editor guarda el listado completo de preguntas; si no viene, no se tocan.
         if (command.questions() != null && !command.questions().isEmpty()) {
             exam.replaceQuestions(toDomainQuestions(command.questions()));

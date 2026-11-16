@@ -35,6 +35,7 @@ export class ExamHttpRepository extends ExamRepository {
       title: exam.title,
       description: exam.description,
       durationMinutes: exam.durationMinutes,
+      browserAllowed: exam.browserAllowed ?? false,
       questions: exam.questions.map((question) => ({
         prompt: question.statement,
         type: this.toBackendQuestionType(question.type),
@@ -57,6 +58,7 @@ export class ExamHttpRepository extends ExamRepository {
       title: exam.title,
       description: exam.description,
       durationMinutes: exam.durationMinutes,
+      browserAllowed: exam.browserAllowed ?? false,
       questions: exam.questions.map((question) => ({
         prompt: question.statement,
         type: this.toBackendQuestionType(question.type),
@@ -115,6 +117,9 @@ export class ExamHttpRepository extends ExamRepository {
       durationMinutes: exam.durationMinutes,
       status: exam.status,
       questions: (exam.questions ?? []).map((question) => this.toQuestion(question)),
+      questionCount: exam.questions?.length,
+      createdByName: exam.createdByName,
+      browserAllowed: exam.browserAllowed,
     };
   }
 

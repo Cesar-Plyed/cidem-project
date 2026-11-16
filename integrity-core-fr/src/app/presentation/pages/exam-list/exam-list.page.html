@@ -47,7 +47,12 @@
           </div>
           <div class="card-body d-flex flex-column">
             <p class="dashboard-card__hint">{{ exam.description }}</p>
-            <p class="exam-meta">{{ exam.questions.length }} preguntas · {{ exam.durationMinutes }} min</p>
+            <p class="exam-meta">
+              {{ exam.questionCount ?? exam.questions.length }} preguntas · {{ exam.durationMinutes }} min
+              @if (exam.createdByName) {
+              <span class="text-body-secondary">· Creado por {{ exam.createdByName }}</span>
+              }
+            </p>
 
             @if (codes()[exam.id]; as active) {
             <div class="access-code input-group mb-3">

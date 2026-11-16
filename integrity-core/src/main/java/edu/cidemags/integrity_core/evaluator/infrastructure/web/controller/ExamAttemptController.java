@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +34,10 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/evaluator")
 public class ExamAttemptController {
 
+    /** Header que marca las peticiones del cliente de escritorio Tauri (spec 51). */
+    public static final String DESKTOP_CLIENT_HEADER = "X-Cidem-Client";
+    private static final String DESKTOP_CLIENT_VALUE = "tauri-desktop";
+
     private final JoinExamByAccessCodeUseCase joinExamByAccessCodeUseCase;
     private final SubmitExamAttemptUseCase submitExamAttemptUseCase;
     private final SubmitQuestionAnswerUseCase submitQuestionAnswerUseCase;
@@ -56,23 +61,30 @@ public class ExamAttemptController {
 
     @PostMapping("/attempts/join")
     public ResponseEntity<ExamAttempt> joinExam(@Valid @RequestBody JoinExamByAccessCodeCommand command,
+            @RequestHeader(value = DESKTOP_CLIENT_HEADER, required = false) String clientHeader,
             Authentication authentication) {
         UUID studentId = (UUID) authentication.getPrincipal();
         return ResponseEntity.ok(joinExamByAccessCodeUseCase.execute(
-                new JoinExamByAccessCodeCommand(command.examId(), command.code(), studentId)));
+                new JoinExamByAccessCodeCommand(command.examId(), command.code(), studentId),
+                isDesktopClient(clientHeader)));
     }
 
     @PostMapping("/attempts/join-by-code")
     public ResponseEntity<ExamAttempt> joinExamByCode(@Valid @RequestBody JoinExamByCodeRequest request,
+            @RequestHeader(value = DESKTOP_CLIENT_HEADER, required = false) String clientHeader,
             Authentication authentication) {
         return ResponseEntity.ok(joinExamByAccessCodeUseCase.executeByCode(
-                request.code(), (UUID) authentication.getPrincipal()));
+                request.code(), (UUID) authentication.getPrincipal(), isDesktopClient(clientHeader)));
     }
 
     @GetMapping("/attempts/{attemptId}/exam")
     public ResponseEntity<AttemptExamResponse> getAttemptExam(@PathVariable UUID attemptId,
             Authentication authentication) {
         return ResponseEntity.ok(getAttemptExamUseCase.execute(attemptId, (UUID) authentication.getPrincipal()));
+    }
+
+    private boolean isDesktopClient(String clientHeader) {
+        return DESKTOP_CLIENT_VALUE.equals(clientHeader);
     }
 
     @PostMapping("/attempts/{attemptId}/submit")

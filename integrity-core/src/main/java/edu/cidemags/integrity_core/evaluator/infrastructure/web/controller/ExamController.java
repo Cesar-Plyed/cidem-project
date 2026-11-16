@@ -1,7 +1,10 @@
 package edu.cidemags.integrity_core.evaluator.infrastructure.web.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateExamCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.CreateQuestionCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamAverageResponse;
+import edu.cidemags.integrity_core.evaluator.application.dto.ExamResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.ExamResultResponse;
 import edu.cidemags.integrity_core.evaluator.application.dto.GenerateExamAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.application.dto.PagedExamResultsResponse;
@@ -33,6 +37,8 @@ import edu.cidemags.integrity_core.evaluator.application.usecase.GenerateExamAcc
 import edu.cidemags.integrity_core.evaluator.application.usecase.GetExamResultUseCase;
 import edu.cidemags.integrity_core.evaluator.domain.model.Exam;
 import edu.cidemags.integrity_core.evaluator.domain.model.ExamAccessCode;
+import edu.cidemags.integrity_core.auth.domain.model.User;
+import edu.cidemags.integrity_core.auth.domain.port.UserRepository;
 import jakarta.validation.Valid;
 
 @RestController
@@ -45,19 +51,22 @@ public class ExamController {
     private final ExamQuestionManagementUseCase questionManagementUseCase;
     private final GetExamResultUseCase getExamResultUseCase;
     private final ExportExamResultsUseCase exportExamResultsUseCase;
+    private final UserRepository userRepository;
 
     public ExamController(CreateExamUseCase createExamUseCase,
             GenerateExamAccessCodeUseCase generateExamAccessCodeUseCase,
             ExamManagementUseCase examManagementUseCase,
             ExamQuestionManagementUseCase questionManagementUseCase,
             GetExamResultUseCase getExamResultUseCase,
-            ExportExamResultsUseCase exportExamResultsUseCase) {
+            ExportExamResultsUseCase exportExamResultsUseCase,
+            UserRepository userRepository) {
         this.createExamUseCase = createExamUseCase;
         this.generateExamAccessCodeUseCase = generateExamAccessCodeUseCase;
         this.examManagementUseCase = examManagementUseCase;
         this.questionManagementUseCase = questionManagementUseCase;
         this.getExamResultUseCase = getExamResultUseCase;
         this.exportExamResultsUseCase = exportExamResultsUseCase;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -67,16 +76,21 @@ public class ExamController {
         UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED).body(createExamUseCase.execute(
             new CreateExamCommand(command.title(), command.description(), userId, command.questions(),
-                    command.durationMinutes())));
+                    command.durationMinutes(), command.browserAllowed())));
     }
 
     // Staff-only: la serialización incluye Question.correctAnswerText y
     // QuestionOption.isCorrect (clave de respuestas). Los alumnos usan el
     // endpoint saneado /attempts/{attemptId}/exam, que no expone respuestas.
+    // El listado usa ExamResponse: resumen sin preguntas y con la autoria resuelta.
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'PROFESOR')")
-    public ResponseEntity<List<Exam>> listExams() {
-        return ResponseEntity.ok(examManagementUseCase.list());
+    public ResponseEntity<List<ExamResponse>> listExams() {
+        List<Exam> exams = examManagementUseCase.list();
+        Map<UUID, String> creators = resolveCreatorNames(exams);
+        return ResponseEntity.ok(exams.stream()
+                .map(exam -> toResponse(exam, creators.get(exam.getCreatedByUserId())))
+                .toList());
     }
 
     @GetMapping("/{examId}")
@@ -92,7 +106,7 @@ public class ExamController {
         assertCanManage(examId, authentication);
         return ResponseEntity.ok(examManagementUseCase.update(
                 new UpdateExamCommand(examId, command.title(), command.description(), command.questions(),
-                        command.durationMinutes())));
+                        command.durationMinutes(), command.browserAllowed())));
     }
 
     @DeleteMapping("/{examId}")
@@ -192,8 +206,34 @@ public class ExamController {
         return ResponseEntity.ok(getExamResultUseCase.calculateAverage(examId, requesterId, administrator));
     }
 
-    private void assertCanManage(UUID examId, Authentication authentication) {
-        if (isAdministrator(authentication)) {
+    private ExamResponse toResponse(Exam exam, String creatorName) {
+        return new ExamResponse(
+                exam.getId(),
+                exam.getTitle(),
+                exam.getDescription(),
+                exam.getStatus().name(),
+                exam.getDurationMinutes(),
+                exam.getQuestions().size(),
+                exam.getCreatedAt(),
+                exam.getCreatedByUserId(),
+                creatorName,
+                exam.isBrowserAllowed());
+    }
+
+    /** Resuelve nombres de creadores en una sola consulta por lote (evita N+1). */
+    private Map<UUID, String> resolveCreatorNames(List<Exam> exams) {
+        Set<UUID> creatorIds = exams.stream().map(Exam::getCreatedByUserId).collect(Collectors.toSet());
+        if (creatorIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> names = new java.util.HashMap<>();
+        for (User creator : userRepository.findAllById(List.copyOf(creatorIds))) {
+            names.put(creator.getId(), (creator.getFirstNames() + " " + creator.getLastNames()).trim());
+        }
+        return names;
+    }
+
+    private void assertCanManage(UUID examId, Authentication authentication) {        if (isAdministrator(authentication)) {
             return;
         }
         UUID requesterId = (UUID) authentication.getPrincipal();

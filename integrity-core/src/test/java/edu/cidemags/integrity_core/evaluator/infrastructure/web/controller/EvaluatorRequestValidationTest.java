@@ -91,6 +91,8 @@ class EvaluatorRequestValidationTest {
     private ReviewOpenEndedAnswerUseCase reviewOpenEndedAnswerUseCase;
     @MockitoBean
     private ListOpenEndedReviewsUseCase listOpenEndedReviewsUseCase;
+    @MockitoBean
+    private edu.cidemags.integrity_core.auth.domain.port.UserRepository userRepository;
 
     private UUID givenProfessor() {
         UUID teacherId = UUID.randomUUID();

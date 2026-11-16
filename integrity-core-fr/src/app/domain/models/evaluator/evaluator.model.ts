@@ -37,8 +37,13 @@ export interface BackendExam {
   createdByUserId: string;
   createdAt: string; // ISO-8601
   durationMinutes: number;
-  questions: BackendQuestion[]; // hoy siempre viene vacío: no hay forma de mandar preguntas al crear
+  // El listado (ExamResponse) no incluye preguntas; el detalle GET /{id} sí.
+  questions?: BackendQuestion[];
   status: BackendExamStatus;
+  /** Solo en el listado (ExamResponse): nombre del creador resuelto. */
+  createdByName?: string;
+  /** Restricción de plataforma (spec 51): false exige la app de escritorio. */
+  browserAllowed?: boolean;
 }
 
 export interface BackendExamAccessCode {

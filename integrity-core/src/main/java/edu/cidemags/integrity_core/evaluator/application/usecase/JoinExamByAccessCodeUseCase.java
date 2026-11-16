@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.cidemags.integrity_core.evaluator.application.dto.JoinExamByAccessCodeCommand;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAlreadyAttemptedException;
+import edu.cidemags.integrity_core.evaluator.domain.exception.DesktopAppRequiredException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamAccessCodeNotFoundException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamClosedException;
 import edu.cidemags.integrity_core.evaluator.domain.exception.ExamNotFoundException;
@@ -41,6 +42,16 @@ public class JoinExamByAccessCodeUseCase {
 
     @Transactional
     public ExamAttempt execute(JoinExamByAccessCodeCommand command) {
+        return execute(command, true);
+    }
+
+    /**
+     * fromDesktop=true cuando la petición proviene del cliente Tauri
+     * (header X-Cidem-Client: tauri-desktop). Los exámenes con
+     * browserAllowed=false rechazan intentos iniciados desde un navegador.
+     */
+    @Transactional
+    public ExamAttempt execute(JoinExamByAccessCodeCommand command, boolean fromDesktop) {
         if (command == null) {
             throw new IllegalArgumentException("El comando no puede ser nulo");
         }
@@ -51,6 +62,7 @@ public class JoinExamByAccessCodeUseCase {
 
         Exam exam = examRepository.findById(command.examId())
                 .orElseThrow(() -> new ExamNotFoundException(command.examId()));
+        assertDesktopAllowed(exam, fromDesktop);
 
         if (exam.getStatus() == ExamStatus.CLOSED) {
             throw new ExamClosedException(command.examId());
@@ -82,13 +94,24 @@ public class JoinExamByAccessCodeUseCase {
 
     @Transactional
     public ExamAttempt executeByCode(String code, UUID studentId) {
+        return executeByCode(code, studentId, true);
+    }
+
+    @Transactional
+    public ExamAttempt executeByCode(String code, UUID studentId, boolean fromDesktop) {
         if (code == null || code.isBlank() || studentId == null) {
             throw new IllegalArgumentException("Codigo y estudiante son obligatorios");
         }
 
         ExamAccessCode accessCode = examAccessCodeRepository.findByCode(code)
                 .orElseThrow(() -> new ExamAccessCodeNotFoundException(null, code));
-        return execute(new JoinExamByAccessCodeCommand(accessCode.getExamId(), code, studentId));
+        return execute(new JoinExamByAccessCodeCommand(accessCode.getExamId(), code, studentId), fromDesktop);
+    }
+
+    private void assertDesktopAllowed(Exam exam, boolean fromDesktop) {
+        if (!exam.isBrowserAllowed() && !fromDesktop) {
+            throw new DesktopAppRequiredException(exam.getId());
+        }
     }
 
     private List<ExamAttempt> findAttemptsForExam(UUID examId, UUID studentId) {
