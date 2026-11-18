@@ -1,8 +1,10 @@
 {
   "name": "integrity-core-fr",
   "version": "0.0.1",
-  "author": "Ionic Framework",
-  "homepage": "https://ionicframework.com/",
+  "description": "Frontend Angular/Ionic de CIDEM Integrity: integridad academica durante examenes.",
+  "author": "Cesar Eduardo Castaneda Lopez",
+  "homepage": "https://github.com/Cesar-Plyed/cidem-project",
+  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -52,7 +54,6 @@
     "typescript-eslint": "^8.61.0",
     "vitest": "^4.0.8"
   },
-  "description": "An Ionic project",
   "allowScripts": {
     "@parcel/watcher@2.6.0": true,
     "esbuild@0.28.2": true,

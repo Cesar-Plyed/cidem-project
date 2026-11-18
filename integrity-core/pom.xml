@@ -11,20 +11,26 @@
 	<groupId>edu.cidemags</groupId>
 	<artifactId>integrity-core</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
+	<name>CIDEM Integrity Core</name>
+	<description>API REST de integridad academica: autenticacion, evaluator, sentinel y safeguard.</description>
+	<url>https://github.com/Cesar-Plyed/cidem-project</url>
 	<licenses>
-		<license/>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+			<distribution>repo</distribution>
+		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<name>Cesar Eduardo Castaneda Lopez</name>
+		</developer>
 	</developers>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>scm:git:https://github.com/Cesar-Plyed/cidem-project.git</connection>
+		<developerConnection>scm:git:git@github.com:Cesar-Plyed/cidem-project.git</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/Cesar-Plyed/cidem-project</url>
 	</scm>
 	<properties>
 		<java.version>25</java.version>
