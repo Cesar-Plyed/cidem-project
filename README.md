@@ -189,6 +189,7 @@ los textos con un asesor legal, especialmente si se tratarán datos de menores.
 
 ## Contribuir y seguridad
 
+- Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - Guía de contribución: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - Código de conducta: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 - Reporte de vulnerabilidades: [`SECURITY.md`](SECURITY.md)

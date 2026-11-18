@@ -76,6 +76,7 @@ infra/ssh_keys/authorized_keys
 AGENTS.md
 MEMORY.md
 IDEA.md
+ToDo.md
 specs/
 # ==========================================
 # 6. QA / E2E
