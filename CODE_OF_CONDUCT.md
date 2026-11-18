@@ -26,8 +26,9 @@ sexual.
 ## Aplicación
 
 Los responsables del proyecto pueden eliminar, editar o rechazar comentarios,
-commits, issues y PRs que incumplan este código. Ante un incidente, escribe a
-**conduct@cidemags.edu**; las denuncias se revisarán de forma confidencial.
+commits, issues y PRs que incumplan este código. Ante un incidente, contacta de
+forma privada con cualquier responsable a través de su perfil de GitHub; las
+denuncias se revisarán de forma confidencial.
 
 ## Atribución
 

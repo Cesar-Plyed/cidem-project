@@ -12,7 +12,8 @@ de seguridad; las ramas `feat/*` y los tags `*-alpha.*` no tienen soporte.
 
 ## Cómo reportar una vulnerabilidad
 
-**No abras un issue público.** Envía un correo a **security@cidemags.edu** con:
+**No abras un issue público.** Usa el reporte privado de vulnerabilidades de
+GitHub (*Security* → *Report a vulnerability*) e incluye:
 
 - Descripción del fallo y su impacto.
 - Pasos para reproducirlo (versión, navegador, rol de la cuenta).
