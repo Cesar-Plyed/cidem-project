@@ -73,7 +73,7 @@ class AuthControllerTest {
 
         private User sampleUser() {
                 Country country = new Country(UUID.randomUUID(), "Mexico", "MEX");
-                return new User(UUID.randomUUID(), "Armando", "Campos", "armando.campos@gmail.com",
+                return new User(UUID.randomUUID(), "Armando", "Campos", "armando.campos@example.com",
                                 "imagine-a-hased-password",
                                 country, new ArrayList<>(), Role.ALUMNO);
         }
@@ -82,7 +82,7 @@ class AuthControllerTest {
 
         @Test
         void register_should_return_201_and_the_user_created_without_password() throws Exception {
-                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@gmail.com",
+                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@example.com",
                                 "arroz123",
                                 UUID.randomUUID(), "4444444444", Role.ALUMNO, null);
 
@@ -91,31 +91,31 @@ class AuthControllerTest {
                 mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.email").value("armando.campos@gmail.com"))
+                                .andExpect(jsonPath("$.email").value("armando.campos@example.com"))
                                 .andExpect(jsonPath("$.role").value("ALUMNO"))
                                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
         }
 
         @Test
         void register_should_return_409_if_the_email_alredy_exists() throws Exception {
-                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@gmail.com",
+                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@example.com",
                                 "arroz123",
                                 UUID.randomUUID(), null, Role.ALUMNO, null);
 
                 when(registerUserUseCase.execute(any()))
-                                .thenThrow(new EmailAlreadyRegisteredException("armando.campos@gmail.com"));
+                                .thenThrow(new EmailAlreadyRegisteredException("armando.campos@example.com"));
 
                 mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.status").value(409))
                                 .andExpect(jsonPath("$.message")
-                                                .value(containsStringIgnoringCase("armando.campos@gmail.com")));
+                                                .value(containsStringIgnoringCase("armando.campos@example.com")));
         }
 
         @Test
         void register_should_return_409_on_data_integrity_violation() throws Exception {
-                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@gmail.com",
+                RegisterRequest request = new RegisterRequest("Armando", "Campos", "armando.campos@example.com",
                                 "arroz123",
                                 UUID.randomUUID(), null, Role.ALUMNO, null);
 
@@ -191,7 +191,7 @@ class AuthControllerTest {
 
         @Test
         void login_should_return_200_with_the_tokens() throws Exception {
-                LoginRequest request = new LoginRequest("armando.campos@gmail.com", "arroz123");
+                LoginRequest request = new LoginRequest("armando.campos@example.com", "arroz123");
 
                 when(loginUseCase.execute(any())).thenReturn(new AuthTokens("fake-access-token", "fake-refresh-token"));
 
@@ -204,7 +204,7 @@ class AuthControllerTest {
 
         @Test
         void login_should_return_401_with_invalid_credentials() throws Exception {
-                LoginRequest request = new LoginRequest("armando.campos@gmail.com", "password-incorrecto");
+                LoginRequest request = new LoginRequest("armando.campos@example.com", "password-incorrecto");
 
                 when(loginUseCase.execute(any())).thenThrow(new InvalidCredentialsException());
 
@@ -217,7 +217,7 @@ class AuthControllerTest {
 
         @Test
         void login_should_not_disclose_internal_details_if_an_unexpected_error_occurs() throws Exception {
-                LoginRequest request = new LoginRequest("armando.campos@gmail.com", "arroz123");
+                LoginRequest request = new LoginRequest("armando.campos@example.com", "arroz123");
 
                 when(loginUseCase.execute(any()))
                                 .thenThrow(new RuntimeException("Connection refused: tabla users, host 10.0.0.5:5432"));
