@@ -61,7 +61,7 @@ describe('LegalNoticeComponent', () => {
     const notice = service.getLegalNotice();
     expect(notice.articles.join(' ')).toContain('Art. 13');
     expect(notice.articles.join(' ')).toContain('Art. 14');
-    expect(service.getPrivacyPolicy()).toContain('POLITICA DE PRIVACIDAD');
+    expect(service.getPrivacyPolicy()).toContain('POLÍTICA DE PRIVACIDAD');
     expect(service.getConsentForm()).toHaveLength(4);
   });
 });

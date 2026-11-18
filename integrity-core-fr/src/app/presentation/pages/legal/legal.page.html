@@ -8,6 +8,23 @@
       <p>Consulta, rectifica, exporta o limita el tratamiento de tus datos personales.</p>
     </header>
 
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5">Documentos legales</h2>
+        <p class="small text-muted mb-2">
+          Texto completo de las políticas que aplican a la plataforma.
+        </p>
+        <ul class="list-unstyled small mb-0">
+          @for (doc of legalDocs; track doc.id) {
+            <li>
+              <a [routerLink]="['/legal', doc.id]">{{ doc.title }}</a>
+              <span class="text-muted">· actualizado {{ doc.updatedAt }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+
     @if (studentId(); as id) {
       <app-legal-notice />
 

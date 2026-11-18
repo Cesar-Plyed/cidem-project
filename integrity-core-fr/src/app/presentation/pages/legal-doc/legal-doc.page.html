@@ -1,0 +1,57 @@
+<ion-content [fullscreen]="true">
+  <div class="legal-doc">
+    <div class="legal-doc__bar">
+      <a class="legal-doc__brand" routerLink="/login" aria-label="CIDEM Integrity">
+        <span class="legal-doc__mark" aria-hidden="true">C</span>
+        <span>CIDEM</span>
+      </a>
+      <a class="legal-doc__back" routerLink="/login">Volver al inicio</a>
+    </div>
+
+    @if (document(); as doc) {
+      <article class="page-narrow legal-doc__body">
+        <p class="eyebrow">Legal</p>
+        <h1>{{ doc.title }}</h1>
+        <p class="legal-doc__meta">Última actualización: {{ doc.updatedAt }}</p>
+
+        @if (doc.intro) {
+          <p class="legal-doc__intro">{{ doc.intro }}</p>
+        }
+
+        @for (section of doc.sections; track section.heading) {
+          <section class="legal-doc__section">
+            <h2>{{ section.heading }}</h2>
+            @for (paragraph of section.paragraphs ?? []; track paragraph) {
+              <p>{{ paragraph }}</p>
+            }
+            @if (section.items?.length) {
+              <ul>
+                @for (item of section.items; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        <footer class="legal-doc__footer">
+          <h2>Otros documentos</h2>
+          <ul class="legal-doc__links">
+            @for (other of others(); track other.id) {
+              <li><a [routerLink]="['/legal', other.id]">{{ other.title }}</a></li>
+            }
+          </ul>
+          <p class="legal-doc__meta">
+            Dudas sobre privacidad: <a href="mailto:dpo@cidemags.edu">dpo@cidemags.edu</a>
+          </p>
+        </footer>
+      </article>
+    } @else {
+      <div class="page-narrow legal-doc__body">
+        <h1>Documento no encontrado</h1>
+        <p>El documento legal que buscas no existe o cambió de dirección.</p>
+        <p><a routerLink="/legal/aviso-legal">Ir al aviso legal</a></p>
+      </div>
+    }
+  </div>
+</ion-content>

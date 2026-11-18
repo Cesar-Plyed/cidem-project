@@ -2,6 +2,12 @@
 
 Plataforma de integridad académica con un backend Spring Boot y un frontend Angular/Ionic.
 
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](./LICENSE)
+
+> **Estado: alpha.** Proyecto desarrollado durante las estadías profesionales en
+> CIDEM. No está pensado para producción con datos reales sin revisar antes la
+> configuración de seguridad y los textos legales.
+
 ## Estructura
 
 - `integrity-core/`: API REST, autenticación JWT, persistencia JPA, Flyway, evaluator y sentinel.
@@ -162,3 +168,33 @@ git push origin v0.1.0-alpha.1
 ```
 
 Configura `CORS_ALLOWED_ORIGINS` en el backend para aceptar los orígenes del frontend web y de Tauri.
+
+## Legal y privacidad
+
+La aplicación publica los documentos legales como páginas públicas, sin
+necesidad de iniciar sesión:
+
+| Documento | Ruta |
+|---|---|
+| Aviso legal | `/legal/aviso-legal` |
+| Política de privacidad | `/legal/privacidad` |
+| Política de cookies | `/legal/cookies` |
+| Términos de uso | `/legal/terminos` |
+
+Los textos también están en [`docs/legal/`](docs/legal/). No se usan cookies de
+analítica ni de publicidad: solo almacenamiento local técnico para la sesión.
+
+Antes de un despliegue real, completa el domicilio social del titular y revisa
+los textos con un asesor legal, especialmente si se tratarán datos de menores.
+
+## Contribuir y seguridad
+
+- Guía de contribución: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Código de conducta: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- Reporte de vulnerabilidades: [`SECURITY.md`](SECURITY.md)
+- Avisos de terceros: [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
+
+## Licencia
+
+El código se distribuye bajo la [licencia MIT](LICENSE). La marca, el diseño y
+los textos legales no están cubiertos por ella; consulta el aviso legal.

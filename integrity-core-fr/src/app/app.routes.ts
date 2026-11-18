@@ -21,6 +21,12 @@ export const routes: Routes = [
     loadComponent: () => import('./presentation/pages/legal/legal.page').then((m) => m.LegalPage)
   },
   {
+    // Documentos legales públicos: aviso-legal, privacidad, cookies y terminos.
+    path: 'legal/:doc',
+    loadComponent: () =>
+      import('./presentation/pages/legal-doc/legal-doc.page').then((m) => m.LegalDocPage)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./presentation/pages/login/login.page').then((m) => LoginPage)
   },

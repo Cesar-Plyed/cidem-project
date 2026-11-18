@@ -272,6 +272,19 @@ a {
   text-align: center;
 }
 
+.auth__legal {
+  margin: 16px 0 0;
+  color: #6b7686;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+
+  a {
+    color: var(--ocean-teal-ink);
+    text-decoration: underline;
+  }
+}
+
 /* --- Estados de carga compartidos ----------------------------------------- */
 
 .loading {

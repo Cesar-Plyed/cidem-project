@@ -1,8 +1,10 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IonContent } from '@ionic/angular';
 import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 import { SessionService } from '../../../application/session/session.service';
 import { Role } from '../../../domain/models/role.enum';
+import { LegalContentService } from '../../../core/services/legal-content.service';
 import { LegalNoticeComponent } from '../../../shared/components/legal-notice/legal-notice.component';
 import { ConsentManagerComponent } from '../../../shared/components/consent-manager/consent-manager.component';
 import { ConsentManagementComponent } from '../../../shared/components/consent-management/consent-management.component';
@@ -20,6 +22,7 @@ import { DpiaReviewComponent } from '../../../shared/components/dpia-review/dpia
   styleUrls: ['legal.page.scss'],
   imports: [
     IonContent,
+    RouterLink,
     AppHeaderComponent,
     LegalNoticeComponent,
     ConsentManagerComponent,
@@ -35,6 +38,7 @@ import { DpiaReviewComponent } from '../../../shared/components/dpia-review/dpia
 export class LegalPage implements OnInit {
   private readonly session = inject(SessionService);
 
+  readonly legalDocs = inject(LegalContentService).getDocuments();
   readonly studentId = signal<string | null>(null);
   readonly staff = signal(false);
 
