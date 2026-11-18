@@ -20,6 +20,9 @@ GitHub (*Security* → *Report a vulnerability*) e incluye:
 - Prueba de concepto, si la tienes.
 - Si lo deseas, tu nombre para acreditar el hallazgo.
 
+Si el repositorio todavía no muestra el botón *Report a vulnerability*, abre un
+issue **sin detalles técnicos** pidiendo un canal privado y te contactaremos.
+
 Acuse de recibo en un máximo de 5 días laborables y una primera evaluación en
 10 días. Si el fallo es crítico, se publicará un aviso y un parche lo antes
 posible.
